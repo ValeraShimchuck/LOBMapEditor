@@ -1,17 +1,38 @@
 package ua.valeriishymchuk.lobmapeditor
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.jogamp.common.os.Platform
 import com.jogamp.opengl.GLProfile
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
+import org.jetbrains.jewel.foundation.theme.JewelTheme
+import org.jetbrains.jewel.foundation.theme.LocalThemeName
+import org.jetbrains.jewel.intui.standalone.theme.*
+import org.jetbrains.jewel.intui.window.decoratedWindow
+import org.jetbrains.jewel.intui.window.styling.dark
+import org.jetbrains.jewel.intui.window.styling.light
+import org.jetbrains.jewel.ui.ComponentStyling
+import org.jetbrains.jewel.ui.component.DefaultButton
+import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.ui.theme.defaultButtonStyle
+import org.jetbrains.jewel.window.DecoratedWindow
+import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
+import org.jetbrains.jewel.window.styling.TitleBarStyle
+import java.awt.Desktop
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URI
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
+@OptIn(ExperimentalLayoutApi::class)
 fun main() {
 //    System.setProperty("jogl.debug", "true")
 //    System.setProperty("nativewindow.debug", "all")
@@ -20,11 +41,29 @@ fun main() {
     println("Successfully loaded libs")
 
     application {
-        Window(
-            onCloseRequest = ::exitApplication,
-            title = "LOBMapEditor",
+        val textStyle = JewelTheme.createDefaultTextStyle()
+        val editorStyle = JewelTheme.createEditorTextStyle()
+
+        IntUiTheme(
+            theme = JewelTheme.darkThemeDefinition(
+                defaultTextStyle = textStyle,
+                editorTextStyle = editorStyle
+            ),
+            styling =
+                ComponentStyling.default()
+                    .decoratedWindow(
+                        titleBarStyle = TitleBarStyle.dark()
+                    ),
         ) {
-            App()
+            DecoratedWindow(
+                onCloseRequest = { exitApplication() },
+                title = "Jewel standalone sample",
+                style = DecoratedWindowStyle.dark(),
+                content = {
+                    TitleBarView()
+                    App()
+                },
+            )
         }
     }
 }
@@ -38,8 +77,8 @@ suspend fun unzip(src: String, dst: File) {
     var zipEntry: ZipEntry?
     while (zis.nextEntry.also { zipEntry = it  } != null) {
         zipEntry = zipEntry!!
-        val newFile = File(folder, zipEntry.name)
-        if (zipEntry.isDirectory) {
+        val newFile = File(folder, zipEntry!!.name)
+        if (zipEntry!!.isDirectory) {
             newFile.mkdirs()
         } else {
             File(newFile.parent).mkdirs()
@@ -55,9 +94,11 @@ suspend fun unzip(src: String, dst: File) {
 
 fun loadJogsLibs() {
     runBlocking {
-        val os = Platform.OS
-        val arch = Platform.ARCH
+        val os = System.getProperty("os.name").lowercase()
+            .let { if(it.startsWith("win")) "windows" else it  }
+        val arch = System.getProperty("os.arch").lowercase()
         val key = "${os}-${arch}".lowercase()
+
         println("Trying to find libs for $key...")
         val folder = File("natives/${key}/")
         System.setProperty("jogamp.gluegen.UseTempJarCache", "false")

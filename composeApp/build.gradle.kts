@@ -16,7 +16,6 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
@@ -26,11 +25,29 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
-            implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
-            implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
+        jvmMain {
+            repositories {
+                google()
+                mavenCentral()
+                maven("https://maven.pkg.jetbrains.space/public/p/compose/dev") // для JetBrains Compose
+                maven("https://jogamp.org/deployment/maven")
+            }
+            dependencies {
+                implementation(compose.desktop.currentOs){
+                    exclude(group = "org.jetbrains.compose.material")
+                    exclude(group = "org.jetbrains.compose.material3")
+                }
+                implementation(libs.kotlinx.coroutinesSwing)
+
+                // See https://github.com/JetBrains/Jewel/releases for the release notes
+                implementation("org.jetbrains.jewel:jewel-int-ui-standalone:0.29.0-252.24604")
+
+                // Optional, for custom decorated windows:
+                implementation("org.jetbrains.jewel:jewel-int-ui-decorated-window:0.29.0-252.24604")
+                implementation("org.jetbrains.jewel:jewel-ui:0.29.0-252.24604")
+
+                implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
+                implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {
@@ -46,6 +63,7 @@ kotlin {
 //                    runtimeOnly("org.jogamp.gluegen:gluegen-rt:2.4.0:natives-linux-amd64")
 //                }
 //            }
+            }
         }
     }
 }

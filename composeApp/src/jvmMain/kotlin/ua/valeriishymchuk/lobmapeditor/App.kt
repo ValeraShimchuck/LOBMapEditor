@@ -1,45 +1,60 @@
 package ua.valeriishymchuk.lobmapeditor
 
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL.GL_COLOR_BUFFER_BIT
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLCapabilities
 import com.jogamp.opengl.GLEventListener
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
-import com.jogamp.opengl.awt.GLJPanel
-import com.jogamp.opengl.util.FPSAnimator
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.jetbrains.jewel.foundation.theme.JewelTheme
+import org.jetbrains.jewel.foundation.theme.LocalThemeName
+import org.jetbrains.jewel.intui.standalone.theme.IntUiTheme
+import org.jetbrains.jewel.intui.standalone.theme.darkThemeDefinition
+import org.jetbrains.jewel.intui.standalone.theme.default
+import org.jetbrains.jewel.intui.window.decoratedWindow
+import org.jetbrains.jewel.intui.window.styling.light
+import org.jetbrains.jewel.ui.ComponentStyling
+import org.jetbrains.jewel.ui.component.DefaultButton
+import org.jetbrains.jewel.ui.component.OutlinedButton
+import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.window.DecoratedWindow
+import org.jetbrains.jewel.window.styling.TitleBarStyle
+import java.awt.Desktop
 import java.awt.Dimension
+import java.net.URI
 
 
 @Composable
 @Preview
 fun App() {
     var canvasRef by remember { mutableStateOf<GLCanvas?>(null) }
-    MaterialTheme {
-        Column {
-            Button(
-                onClick = { canvasRef?.repaint() }
-            ) {
-                Text("Repaint")
-            }
-            joglCanvas { canvasRef = it }
-        }
+
+
+    Column(
+        modifier = Modifier.background(JewelTheme.globalColors.panelBackground).fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+
+
+//        JoglCanvas { canvasRef = it }
     }
+
 }
 
 @Composable
-fun joglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
+fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
     factory = {
         println("Initializing factory")
         val profile = GLProfile.get(GLProfile.GL4)
@@ -61,59 +76,28 @@ fun joglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
 //                        start()
 //                    }
 
-            addGLEventListener(object: GLEventListener {
+            addGLEventListener(object : GLEventListener {
                 override fun init(drawable: GLAutoDrawable) {
-                    println("OpenGL initialized")
-                    val gl = drawable.gl
-                    gl.glClearColor(0.5f, 0.2f, 0.5f, 1.0f)
-//                            gl.glEnable(GL.GL_DEPTH_TEST)
-                }
-
-                override fun dispose(drawable: GLAutoDrawable) {
-//                            animator.stop()
+                    println("GL initialized")
+                    // Тут шейдери, VBO, VAO
                 }
 
                 override fun display(drawable: GLAutoDrawable) {
-                    println("Trying to render Frame")
-                    val gl = drawable.gl
-                    gl.glClear(GL_COLOR_BUFFER_BIT)
-
-                    drawable.swapBuffers()
-                    println("Frame rendered")
-
+                    val gl = drawable.gl.gL3
+                    gl.glClearColor(0.5f, 0f, 0.5f, 1f)
+                    gl.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
+                    // Тут рендер сцени
                 }
 
-                override fun reshape(
-                    drawable: GLAutoDrawable,
-                    x: Int,
-                    y: Int,
-                    width: Int,
-                    height: Int
-                ) {
-                    val gl = drawable.gl
-                    gl.glViewport(0,0,width, height)
-                }
+                override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {}
 
-            })
-
-            addComponentListener(object : java.awt.event.ComponentAdapter() {
-                override fun componentResized(e: java.awt.event.ComponentEvent?) {
-                    println("Component resized: ${size.width}x${size.height}")
-                }
-
-                override fun componentShown(e: java.awt.event.ComponentEvent?) {
-                    println("Component shown")
-                    repaint()
-                }
+                override fun dispose(drawable: GLAutoDrawable) {}
             })
 
             isVisible = true
             canvasRefSet(this)
 
-            javax.swing.Timer(1000) {
-                println("Forcing initial repaint")
-                repaint()
-            }.start()
+
         }
     },
     modifier = Modifier.fillMaxSize()
