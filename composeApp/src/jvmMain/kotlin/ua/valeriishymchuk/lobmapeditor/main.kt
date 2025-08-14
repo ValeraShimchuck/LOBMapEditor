@@ -1,34 +1,22 @@
 package ua.valeriishymchuk.lobmapeditor
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.jogamp.common.os.Platform
-import com.jogamp.opengl.GLProfile
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import org.jetbrains.jewel.foundation.theme.JewelTheme
-import org.jetbrains.jewel.foundation.theme.LocalThemeName
 import org.jetbrains.jewel.intui.standalone.theme.*
 import org.jetbrains.jewel.intui.window.decoratedWindow
 import org.jetbrains.jewel.intui.window.styling.dark
-import org.jetbrains.jewel.intui.window.styling.light
 import org.jetbrains.jewel.ui.ComponentStyling
-import org.jetbrains.jewel.ui.component.DefaultButton
-import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.theme.defaultButtonStyle
 import org.jetbrains.jewel.window.DecoratedWindow
 import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
 import org.jetbrains.jewel.window.styling.TitleBarStyle
-import java.awt.Desktop
+import ua.valeriishymchuk.lobmapeditor.ui.App
+import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URI
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -57,7 +45,7 @@ fun main() {
         ) {
             DecoratedWindow(
                 onCloseRequest = { exitApplication() },
-                title = "Jewel standalone sample",
+                title = "LOBMapEditor",
                 style = DecoratedWindowStyle.dark(),
                 content = {
                     TitleBarView()

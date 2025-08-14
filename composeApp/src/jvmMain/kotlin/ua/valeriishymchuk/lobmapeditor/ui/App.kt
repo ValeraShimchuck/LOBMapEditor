@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor
+package ua.valeriishymchuk.lobmapeditor.ui
 
 
 import androidx.compose.foundation.background
@@ -7,9 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import com.jogamp.opengl.GL
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLCapabilities
@@ -18,21 +16,10 @@ import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.jewel.foundation.theme.JewelTheme
-import org.jetbrains.jewel.foundation.theme.LocalThemeName
-import org.jetbrains.jewel.intui.standalone.theme.IntUiTheme
-import org.jetbrains.jewel.intui.standalone.theme.darkThemeDefinition
-import org.jetbrains.jewel.intui.standalone.theme.default
-import org.jetbrains.jewel.intui.window.decoratedWindow
-import org.jetbrains.jewel.intui.window.styling.light
-import org.jetbrains.jewel.ui.ComponentStyling
-import org.jetbrains.jewel.ui.component.DefaultButton
-import org.jetbrains.jewel.ui.component.OutlinedButton
+import org.jetbrains.jewel.ui.component.HorizontalSplitLayout
 import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.window.DecoratedWindow
-import org.jetbrains.jewel.window.styling.TitleBarStyle
-import java.awt.Desktop
+import org.jetbrains.jewel.ui.component.VerticalSplitLayout
 import java.awt.Dimension
-import java.net.URI
 
 
 @Composable
@@ -41,15 +28,37 @@ fun App() {
     var canvasRef by remember { mutableStateOf<GLCanvas?>(null) }
 
 
-    Column(
-        modifier = Modifier.background(JewelTheme.globalColors.panelBackground).fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-
-
-//        JoglCanvas { canvasRef = it }
-    }
+    HorizontalSplitLayout(
+        first = {
+            Column(
+                modifier = Modifier.background(
+                    JewelTheme.globalColors.panelBackground
+                ).fillMaxSize()
+            ) {
+                Text("First")
+            }
+        },
+        firstPaneMinWidth = 200.dp,
+        secondPaneMinWidth = 300.dp,
+        second = {
+            VerticalSplitLayout(
+                first = {
+                    JoglCanvas { canvasRef = it }
+                },
+                firstPaneMinWidth = 250.dp,
+                secondPaneMinWidth = 200.dp,
+                second = {
+                    Column(
+                        modifier = Modifier.background(
+                            JewelTheme.globalColors.panelBackground
+                        ).fillMaxSize()
+                    ) {
+                        Text("Second")
+                    }
+                }
+            )
+        }
+    )
 
 }
 

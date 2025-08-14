@@ -31,6 +31,7 @@ kotlin {
                 mavenCentral()
                 maven("https://maven.pkg.jetbrains.space/public/p/compose/dev") // для JetBrains Compose
                 maven("https://jogamp.org/deployment/maven")
+                maven("https://www.jetbrains.com/intellij-repository/releases/")
             }
             dependencies {
                 implementation(compose.desktop.currentOs){
@@ -45,6 +46,7 @@ kotlin {
                 // Optional, for custom decorated windows:
                 implementation("org.jetbrains.jewel:jewel-int-ui-decorated-window:0.29.0-252.24604")
                 implementation("org.jetbrains.jewel:jewel-ui:0.29.0-252.24604")
+                implementation("com.jetbrains.intellij.platform:icons:252.23892.439")
 
                 implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
                 implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
