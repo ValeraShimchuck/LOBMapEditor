@@ -7,24 +7,23 @@ import com.jogamp.opengl.GLProfile
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
-import kotlin.let
 
 fun main() {
+//    System.setProperty("jogl.debug", "true")
+//    System.setProperty("nativewindow.debug", "all")
+//    System.setProperty("jogl.verbose", "true")
     loadJogsLibs()
     println("Successfully loaded libs")
-    if (true) return
+
     application {
         Window(
             onCloseRequest = ::exitApplication,
             title = "LOBMapEditor",
         ) {
-            GLProfile.initSingleton()
             App()
         }
     }
@@ -60,11 +59,15 @@ fun loadJogsLibs() {
         val arch = Platform.ARCH
         val key = "${os}-${arch}".lowercase()
         println("Trying to find libs for $key...")
-        val folder = File("libs/${key}/")
-        unzip("files/natives/${key}/libs.zip", folder)
-        folder.listFiles().filter { it.isFile }.forEach {
-
-            System.load(it.absolutePath)
+        val folder = File("natives/${key}/")
+        System.setProperty("jogamp.gluegen.UseTempJarCache", "false")
+        //System.setProperty("nativewindow.debug", "all")
+        if (!folder.exists() || folder.listFiles().isEmpty()) {
+            unzip("files/natives/${key}/libs.zip", folder)
         }
+//        folder.listFiles().filter { it.isFile }.forEach {
+//            println("Loading ${it.name}")
+//            System.load(it.absolutePath)
+//        }
     }
 }

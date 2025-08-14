@@ -59,9 +59,9 @@ compose.desktop {
             "-Djogamp.gluegen.UseTempJarCache=false",
             "--add-opens=jogl.all/com.jogamp.opengl.util=ALL-UNNAMED",
             "--add-opens=jogl.all/com.jogamp.opengl.glu=ALL-UNNAMED",
-            "--add-exports=java.base/java.lang=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.java2d=ALL-UNNAMED"
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens=java.desktop/sun.java2d=ALL-UNNAMED"
         )
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
