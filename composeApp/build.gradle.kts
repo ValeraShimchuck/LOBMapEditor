@@ -50,6 +50,7 @@ kotlin {
 
                 implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
                 implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
+                implementation("com.google.code.gson:gson:2.13.1")
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {

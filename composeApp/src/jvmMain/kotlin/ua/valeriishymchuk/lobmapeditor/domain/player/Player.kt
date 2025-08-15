@@ -1,0 +1,5 @@
+package ua.valeriishymchuk.lobmapeditor.domain.player
+
+data class Player(
+    val team: PlayerTeam
+)
