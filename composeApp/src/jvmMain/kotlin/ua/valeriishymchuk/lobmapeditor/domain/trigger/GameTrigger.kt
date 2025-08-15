@@ -32,4 +32,30 @@ data class GameTrigger(
         }
     }
 
+    companion object {
+        fun deserialize(json: JsonObject): GameTrigger {
+            val actionsArray = json.getAsJsonArray("actions")
+            val actions = actionsArray.map {
+                GameAction.deserialize(it.asJsonObject)
+            }.toList()
+
+            val conditionsArray = json.getAsJsonArray("conditions")
+            val conditions = conditionsArray.map {
+                Condition.deserialize(it.asJsonObject)
+            }.toList()
+
+            val eventType = EventTriggerType.findByKey(json.getAsJsonPrimitive("event").asString)
+            val conditionLogicType = ConditionLogicType.findByKey(json.getAsJsonPrimitive("conditionLogic").asString)
+            val once = json.getAsJsonPrimitive("once").asBoolean
+
+            return GameTrigger(
+                actions = actions,
+                conditions = conditions,
+                eventType = eventType,
+                conditionLogicType = conditionLogicType,
+                once = once
+            )
+        }
+    }
+
 }

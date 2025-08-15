@@ -7,5 +7,13 @@ enum class PlayerTeam(
     val color: Color
 ) {
     BLUE(1, Color(0, 0, 255)),
-    RED(2, Color(255, 0, 0))
+    RED(2, Color(255, 0, 0));
+
+    companion object {
+        fun fromId(id: Int): PlayerTeam {
+            return entries.firstOrNull { it.id == id }
+                ?: throw NoSuchElementException("Can't find team with id $id")
+        }
+    }
+
 }

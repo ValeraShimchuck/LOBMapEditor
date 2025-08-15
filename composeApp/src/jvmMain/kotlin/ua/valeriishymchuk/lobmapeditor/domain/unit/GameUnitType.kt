@@ -1,5 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.domain.unit
 
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+
 enum class GameUnitType(
     val category: GameUnitCategory,
     val id: Int
@@ -30,7 +32,16 @@ enum class GameUnitType(
 
     // Skirmishers
     SKIRMISHERS(GameUnitCategory.SKIRMISHERS, 16),
-    RIFLES(GameUnitCategory.SKIRMISHERS, 17)
+    RIFLES(GameUnitCategory.SKIRMISHERS, 17);
+
+
+    companion object {
+
+        fun fromId(id: Int): GameUnitType {
+            return entries.firstOrNull { it.id == id }
+                ?: throw NoSuchElementException("Can't find unit type with id $id")
+        }
+    }
 
 }
 

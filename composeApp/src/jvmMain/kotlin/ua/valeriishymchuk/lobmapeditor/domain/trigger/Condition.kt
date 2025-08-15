@@ -109,4 +109,35 @@ sealed interface Condition {
 
     }
 
+    companion object {
+        fun deserialize(json: JsonObject): Condition {
+            val type = json.getAsJsonPrimitive("type").asString
+            val value = json.get("value")
+
+            return when (type) {
+                "isTurn" -> IsTurn(value.asJsonPrimitive.asInt)
+                "objectiveBelongsTo" -> {
+                    val obj = value.asJsonObject
+                    ObjectiveBelongsTo(
+                        objectiveName = obj.getAsJsonPrimitive("name").asString,
+                        team = PlayerTeam.fromId(obj.getAsJsonPrimitive("team").asInt)
+                    )
+                }
+                "isTurnMultipleOf" -> {
+                    val obj = value.asJsonObject
+                    IsTurnMultipleOf(
+                        multiple = obj.getAsJsonPrimitive("multiple").asInt,
+                        offset = obj.getAsJsonPrimitive("offset").asInt
+                    )
+                }
+                "isTurnGreaterThan" -> IsTurnGreaterThan(value.asJsonPrimitive.asInt)
+                "isTurnLessThan" -> IsTurnLessThan(value.asJsonPrimitive.asInt)
+                "isUnitNotAlive" -> IsUnitNotAlive(value.asJsonPrimitive.asString)
+                "isUnitRouting" -> IsUnitRouting(value.asJsonPrimitive.asString)
+                "chance" -> Chance(value.asJsonPrimitive.asFloat)
+                else -> throw IllegalArgumentException("Unknown Condition type: $type")
+            }
+        }
+    }
+
 }

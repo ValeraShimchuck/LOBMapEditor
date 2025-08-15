@@ -13,4 +13,13 @@ data class Position(
             add("y", JsonPrimitive(y))
         }
     }
+
+    companion object {
+        fun deserialize(json: JsonObject): Position {
+            return Position(
+                json.getAsJsonPrimitive("x").asFloat,
+                json.getAsJsonPrimitive("y").asFloat
+            )
+        }
+    }
 }

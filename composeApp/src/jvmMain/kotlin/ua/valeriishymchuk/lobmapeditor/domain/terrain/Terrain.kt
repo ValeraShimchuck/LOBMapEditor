@@ -43,6 +43,41 @@ data class Terrain (
 
     companion object {
 
+
+        fun deserialize(json: JsonObject): Terrain {
+            // Extract dimensions in pixels
+            val widthPixels = json.getAsJsonPrimitive("width").asInt
+            val heightPixels = json.getAsJsonPrimitive("height").asInt
+
+            // Calculate dimensions in cells
+            val cellsX = widthPixels / GameConstants.TILE_SIZE
+            val cellsY = heightPixels / GameConstants.TILE_SIZE
+
+            // Deserialize terrain types
+            val terrainsArray = json.getAsJsonArray("terrains")
+            val terrainMap2D = Array(cellsY) { y ->
+                val row = terrainsArray[y].asJsonArray
+                Array(cellsX) { x ->
+                    val terrainId = row[x].asInt
+                    TerrainType.fromId(terrainId)
+                }
+            }
+
+            // Deserialize height map
+            val heightArray = json.getAsJsonArray("heightMap")
+            val heightMap2D = Array(cellsY) { y ->
+                val row = heightArray[y].asJsonArray
+                Array(cellsX) { x ->
+                    row[x].asInt
+                }
+            }
+
+            return Terrain(
+                terrainMap = TerrainMap(terrainMap2D),
+                terrainHeight = ArrayMap2d(heightMap2D)
+            )
+        }
+
         fun ofPixels(pixelSizeX: Int = 1504, pixelSizeY: Int = 1312): Terrain {
             return Terrain(
                 TerrainMap.ofPixels(pixelSizeX, pixelSizeY),
@@ -61,7 +96,7 @@ data class Terrain (
 
 }
 
-class TerrainMap private constructor(
+class TerrainMap (
     map: Array<Array<TerrainType>>
 ): ArrayMap2d<TerrainType>(map) {
 

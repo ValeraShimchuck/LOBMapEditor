@@ -27,5 +27,10 @@ enum class TerrainType(val id: Int) {
 
     companion object {
         val DEFAULT: TerrainType = GRASS
+
+        fun fromId(id: Int): TerrainType {
+            return TerrainType.entries.firstOrNull { it.id == id }
+                ?: throw NoSuchElementException("Can't find terrain with id $id")
+        }
     }
 }

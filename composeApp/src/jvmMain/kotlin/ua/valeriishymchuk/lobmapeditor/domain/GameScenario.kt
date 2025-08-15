@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
@@ -113,5 +114,66 @@ sealed interface GameScenario<T : GameScenario<T>> {
         val objectives: List<Objective>,
         val triggers: List<GameTrigger>
     )
+
+    companion object {
+        fun deserialize(json: JsonObject): GameScenario<*> {
+            val name = json.getAsJsonPrimitive("name").asString
+            val description = json.getAsJsonPrimitive("description").asString
+            val type = json.getAsJsonPrimitive("type").asString
+
+            // Deserialize objectives
+            val objectivesArray = json.getAsJsonArray("objectives") ?: JsonArray()
+            val objectives = objectivesArray.map { element ->
+                Objective.deserialize(element.asJsonObject)
+            }.toList()
+
+            // Deserialize triggers
+            val triggersArray = json.getAsJsonArray("triggers") ?: JsonArray()
+            val triggers = triggersArray.map { element ->
+                GameTrigger.deserialize(element.asJsonObject)
+            }.toList()
+
+            // Deserialize map
+            val mapJson = json.getAsJsonObject("map")
+            val map = Terrain.deserialize(mapJson)
+
+            val commonData = CommonData(name, description, map, objectives, triggers)
+
+            return when (type) {
+                "preset" -> {
+                    // Deserialize players
+                    val playersArray = json.getAsJsonArray("players") ?: JsonArray()
+                    val players = playersArray.sortedBy { element ->
+                        val playerId = element.asJsonObject.getAsJsonPrimitive("player").asInt
+                        playerId
+                    }.map { element ->
+                        val playerObj = element.asJsonObject
+                        val teamId = playerObj.getAsJsonPrimitive("team").asInt
+                        Player(
+                            team = PlayerTeam.fromId(teamId)
+                        )
+                    }.toList()
+
+                    // Deserialize units
+                    val unitsArray = json.getAsJsonArray("units") ?: JsonArray()
+                    val units = unitsArray.map { element ->
+                        GameUnit.deserialize(element.asJsonObject)
+                    }.toList()
+
+                    Preset(commonData, units, players)
+                }
+                "hybrid" -> {
+                    // Deserialize deployment zones
+                    val deploymentZonesArray = mapJson.getAsJsonArray("deploymentZones") ?: JsonArray()
+                    val deploymentZones = deploymentZonesArray.map { element ->
+                        DeploymentZone.deserialize(element.asJsonObject)
+                    }.toList()
+
+                    Hybrid(commonData, deploymentZones)
+                }
+                else -> throw IllegalArgumentException("Unknown scenario type: $type")
+            }
+        }
+    }
 
 }

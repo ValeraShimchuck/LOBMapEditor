@@ -24,4 +24,23 @@ data class GameUnit(
             add("type", JsonPrimitive(type.id))
         }
     }
+
+    companion object {
+        fun deserialize(json: JsonObject): GameUnit {
+            val name = json.getAsJsonPrimitive("name")?.asString
+            val playerKey = json.getAsJsonPrimitive("player").asInt
+            val position = Position.deserialize(json.getAsJsonObject("pos"))
+            val rotation = json.getAsJsonPrimitive("rotation").asFloat
+            val typeId = json.getAsJsonPrimitive("type").asInt
+            val unitType = GameUnitType.fromId(typeId)
+
+            return GameUnit(
+                name = name,
+                owner = Reference(playerKey),
+                position = position,
+                rotationRadians = rotation,
+                type = unitType
+            )
+        }
+    }
 }

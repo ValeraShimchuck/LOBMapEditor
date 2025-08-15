@@ -5,6 +5,13 @@ enum class EventTriggerType(
 ) {
 
     ON_TURN_START("onTurnStart"),
-    ON_TURN_END("onTurnEnd")
+    ON_TURN_END("onTurnEnd");
+
+    companion object {
+        fun findByKey(key: String): EventTriggerType {
+            return entries.firstOrNull { it.key == key }
+                ?: throw NoSuchElementException("Can't find event with key $key")
+        }
+    }
 
 }

@@ -59,7 +59,7 @@ sealed interface GameAction {
         val zoom: Float,
         val duration: Float
     ): GameAction {
-        override val key: String = "defeatPlayer"
+        override val key: String = "moveCamera"
 
         override fun serializeValue(): JsonElement {
             return position.serialize().apply {
@@ -68,5 +68,36 @@ sealed interface GameAction {
             }
         }
     }
+    companion object {
+        fun deserialize(json: JsonObject): GameAction {
+            val type = json.getAsJsonPrimitive("type").asString
+            val value = json.get("value")
 
+            return when (type) {
+                "addUnit" -> {
+                    val unitJson = value.asJsonObject
+                    AddUnit(GameUnit.deserialize(unitJson))
+                }
+                "showMessage" -> {
+                    val obj = value.asJsonObject
+                    ShowMessage(
+                        title = obj.getAsJsonPrimitive("title").asString,
+                        message = obj.getAsJsonPrimitive("message").asString
+                    )
+                }
+                "defeatPlayer" -> {
+                    DefeatPlayer(Reference(value.asJsonPrimitive.asInt))
+                }
+                "moveCamera" -> {  // Fixed key from "defeatPlayer" to "moveCamera"
+                    val obj = value.asJsonObject
+                    MoveCamera(
+                        position = Position.deserialize(obj),
+                        zoom = obj.getAsJsonPrimitive("zoom").asFloat,
+                        duration = obj.getAsJsonPrimitive("duration").asFloat
+                    )
+                }
+                else -> throw IllegalArgumentException("Unknown GameAction type: $type")
+            }
+        }
+    }
 }
