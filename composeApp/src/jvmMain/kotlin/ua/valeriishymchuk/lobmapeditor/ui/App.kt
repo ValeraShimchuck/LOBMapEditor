@@ -4,14 +4,10 @@ package ua.valeriishymchuk.lobmapeditor.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
-import com.jogamp.opengl.GL
-import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLCapabilities
-import com.jogamp.opengl.GLEventListener
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -19,6 +15,12 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.HorizontalSplitLayout
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.VerticalSplitLayout
+import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.player.Player
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
+import ua.valeriishymchuk.lobmapeditor.render.OpenGLListener
 import java.awt.Dimension
 
 
@@ -81,27 +83,26 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
             println("Initializing GLProfile singleton")
 
 
-//                    val animator = FPSAnimator(this, 60).apply {
-//                        start()
-//                    }
+            val glListener = OpenGLListener(CommandDispatcher(GameScenario.Preset(
+                GameScenario.CommonData(
+                    "test",
+                    "description",
+                    Terrain.ofCells(),
+                    emptyList(),
+                    emptyList()
+                ),
+                emptyList(),
+                listOf(
+                    Player(PlayerTeam.RED),
+                    Player(PlayerTeam.BLUE)
+                )
+            )))
 
-            addGLEventListener(object : GLEventListener {
-                override fun init(drawable: GLAutoDrawable) {
-                    println("GL initialized")
-                    // Тут шейдери, VBO, VAO
-                }
-
-                override fun display(drawable: GLAutoDrawable) {
-                    val gl = drawable.gl.gL3
-                    gl.glClearColor(0.5f, 0f, 0.5f, 1f)
-                    gl.glClear(GL.GL_COLOR_BUFFER_BIT or GL.GL_DEPTH_BUFFER_BIT)
-                    // Тут рендер сцени
-                }
-
-                override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {}
-
-                override fun dispose(drawable: GLAutoDrawable) {}
-            })
+            addGLEventListener(glListener)
+            addMouseMotionListener(glListener.MouseMotionListener(this::repaint))
+            val mouseListener = glListener.MouseListener(this::repaint)
+            addMouseListener(mouseListener)
+            addMouseWheelListener(mouseListener)
 
             isVisible = true
             canvasRefSet(this)

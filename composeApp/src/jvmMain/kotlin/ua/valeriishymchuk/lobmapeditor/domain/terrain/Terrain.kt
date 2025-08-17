@@ -11,6 +11,9 @@ data class Terrain (
     val terrainHeight: ArrayMap2d<Int>
 ) {
 
+    val widthPixels: Int get() = terrainHeight.sizeX * GameConstants.TILE_SIZE
+    val heightPixels: Int get() = terrainHeight.sizeY * GameConstants.TILE_SIZE
+
     fun serialize(): JsonObject {
         return JsonObject().apply {
             val sizeX = terrainHeight.sizeX
