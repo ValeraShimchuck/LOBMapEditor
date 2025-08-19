@@ -4,17 +4,21 @@ import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
+import com.jogamp.opengl.TraceGL3
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import org.joml.Matrix4f
 import org.joml.Vector2f
+import org.joml.Vector2i
 import org.joml.Vector3f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.BackgroundProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
+import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
 import java.awt.Graphics2D
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -34,6 +38,7 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
     private val textures: MutableMap<String, Int> = ConcurrentHashMap()
     private lateinit var colorProgram: ColorProgram
     private lateinit var backgroundProgram: BackgroundProgram
+    private lateinit var tileMapProgram: TileMapProgram
 
     private var backgroundImage: Int = -1
 
@@ -66,17 +71,18 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
     )
 
 
-    private val frameTestBorderOffset = 0f
-    private val frameTestColor = Vector4f(120f, 132f, 64f, 255f).div(255f)
-    private val frameTestVertices = floatArrayOf(
-        -frameTestBorderOffset, commandDispatcher.scenario.map.heightPixels + frameTestBorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frameTestBorderOffset, -frameTestBorderOffset,
-        -frameTestBorderOffset, -frameTestBorderOffset,
+    private var terrainMaskTexture: Int = -1
 
-        -frameTestBorderOffset, commandDispatcher.scenario.map.heightPixels + frameTestBorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frameTestBorderOffset, commandDispatcher.scenario.map.heightPixels + frameTestBorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frameTestBorderOffset, -frameTestBorderOffset,
+    private val tileMapVertices = floatArrayOf(
+        0f, commandDispatcher.scenario.map.heightPixels.toFloat(),
+        commandDispatcher.scenario.map.widthPixels.toFloat(), 0f,
+        0f, 0f,
+
+        0f, commandDispatcher.scenario.map.heightPixels.toFloat(),
+        commandDispatcher.scenario.map.widthPixels.toFloat(), commandDispatcher.scenario.map.heightPixels.toFloat(),
+        commandDispatcher.scenario.map.widthPixels.toFloat(), 0f,
     )
+
 
     val testObjectVertices = floatArrayOf(
             150.0f, 150.0f,
@@ -112,17 +118,14 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             viewMatrix.setColumn(3, vector4)
         }
 
-    private var cameraScale: Vector2f get() = viewMatrix.let {
-        Vector2f(it.m00(), it.m11())
+
+    companion object {
+        private const val TERRAIN_PREPEND = "tilesets/terrain"
     }
 
-        set(value) {
-            viewMatrix.m00(value.x)
-            viewMatrix.m11(value.y)
-            viewMatrix.m22(1f)
-        }
-
-
+    private fun getTerrain(path: String): Int {
+        return textures["$TERRAIN_PREPEND/$path"]!!
+    }
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.gL3
@@ -130,7 +133,15 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 //        drawable.gl = ctx
         //loadTexture(ctx, "wood")
         loadTexture(ctx, "wood")
+        loadTexture(ctx,"$TERRAIN_PREPEND/grass", false)
+        loadTexture(ctx,"$TERRAIN_PREPEND/snow")
         backgroundImage = textures["wood"]!!
+
+//        backgroundImage = getTerrain("grass")
+        loadTexture(ctx,"tilesets/borderblending/mask")
+        terrainMaskTexture = textures["tilesets/borderblending/mask"]!!
+
+
         colorProgram = ColorProgram(
             ctx,
             loadShaderSource("vcolor"),
@@ -141,6 +152,12 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             ctx,
             loadShaderSource("vbackground"),
             loadShaderSource("fbackground")
+        )
+
+        tileMapProgram = TileMapProgram(
+            ctx,
+            loadShaderSource("vtilemap"),
+            loadShaderSource("ftilemap")
         )
 
         projectionMatrix.setOrtho(
@@ -208,23 +225,25 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         ))
         ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
-        //frame test
-        colorProgram.setUpVBO(ctx, ColorProgram.Data(frameTestVertices))
-        colorProgram.setUpVAO(ctx)
-        colorProgram.applyUniform(ctx, ColorProgram.Uniform(
-            frameTestColor,
-            mvpMatrix
+
+        ctx.glUseProgram(tileMapProgram.program)
+        ctx.glBindVertexArray(tileMapProgram.vao)
+        ctx.glBindVBO(tileMapProgram.vbo)
+
+        tileMapProgram.setUpVBO(ctx, tileMapVertices)
+        tileMapProgram.setUpVAO(ctx)
+        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.GRASS)
+        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
+            mvpMatrix,
+            terrainMaskTexture,
+            getTerrain("grass"),
+            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
+            Vector2i(4, 4),
+            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
+            Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f)
         ))
         ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
-        //test red triangle
-        colorProgram.setUpVBO(ctx, ColorProgram.Data(testObjectVertices))
-        colorProgram.setUpVAO(ctx)
-        colorProgram.applyUniform(ctx, ColorProgram.Uniform(
-            Vector4f(1.0f, 0.0f, 0.0f, 1.0f),
-            mvpMatrix
-        ))
-        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
 
 
 
@@ -260,13 +279,10 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
     }
 
     private fun loadShaderSource(path: String): String {
-
-        return loadResource("files/shaders/desktop/${path}.glsl").decodeToString().also {
-            println("Loaded shader:\n${it}")
-        }
+        return loadResource("files/shaders/desktop/${path}.glsl").decodeToString()
     }
 
-    private fun loadTexture(ctx: GL3, key: String) {
+    private fun loadTexture(ctx: GL3, key: String, useNearest: Boolean = true) {
         val image = loadTextureData(key)
         val textureNameArray: IntArray = IntArray(1)
         ctx.glGenTextures(1, textureNameArray, 0)
@@ -292,8 +308,12 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
         ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
 
-        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST_MIPMAP_NEAREST)
-        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        if (useNearest)
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST_MIPMAP_NEAREST)
+        else ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR)
+        if (useNearest)
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        else ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
 
         ctx.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
