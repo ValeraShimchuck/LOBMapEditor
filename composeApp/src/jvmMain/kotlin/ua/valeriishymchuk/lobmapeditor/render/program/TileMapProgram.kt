@@ -61,14 +61,24 @@ class TileMapProgram(
         serializedData.forEach {
             buffer.put(it)
         }
+//        println("Found ${serializedData.filter { it != 0 }.size} of $terrainType")
+        // Found 4 of SNOW out of thousands, thats fine
+        // but everything is set to snow
+        // something fishy is going on with loading the data
         buffer.flip()
 
 
-        ctx.glTexImage2D(GL3.GL_TEXTURE_2D, 0, GL3.GL_R32UI, width, height,
-            0, GL3.GL_RED_INTEGER, GL3.GL_UNSIGNED_INT, null)
-
-        ctx.glTexSubImage2D(GL3.GL_TEXTURE_2D, 0, 0,0, width, height,
-            GL3.GL_RED_INTEGER, GL3.GL_UNSIGNED_INT, buffer)
+        ctx.glTexImage2D(
+            GL3.GL_TEXTURE_2D,
+            0,
+            GL3.GL_R32UI,
+            width,
+            height,
+            0,
+            GL3.GL_RED_INTEGER,
+            GL3.GL_UNSIGNED_INT,
+            buffer // Pass the buffer directly instead of null
+        )
 
 
     }
@@ -94,10 +104,11 @@ class TileMapProgram(
         data: Uniform
     ) {
         ctx.glUseProgram(program)
-        ctx.applyTexture(tileMapLocation, GL3.GL_TEXTURE0, tileMapTexture)
+        ctx.applyTexture(tileMapLocation, 0, tileMapTexture)
+
+        ctx.applyTexture(tileTextureLocation, 1, data.tileTexture)
         if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
-            ctx.applyTexture(maskTextureLocation, GL3.GL_TEXTURE1, data.maskTexture)
-        ctx.applyTexture(tileTextureLocation, GL3.GL_TEXTURE0, data.tileTexture)
+            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
 
         ctx.glUniform2fv(tileUnitLocation, 1, floatArrayOf(data.tileUnit.x, data.tileUnit.y), 0)
         ctx.glUniform2fv(textureScaleLocation, 1, floatArrayOf(data.textureScale.x, data.textureScale.y), 0)
@@ -115,10 +126,10 @@ class TileMapProgram(
 
     }
 
-    private fun GL3.applyTexture(uniformLocation: Int, textureTarget: Int, textureId: Int) {
-        glActiveTexture(textureTarget)
+    private fun GL3.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
+        glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
         glBindTexture(GL3.GL_TEXTURE_2D, textureId)
-        glUniform1i(uniformLocation, textureTarget)
+        glUniform1i(uniformLocation, textureUnit)
     }
 
 

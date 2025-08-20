@@ -20,6 +20,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.OpenGLListener
 import java.awt.Dimension
 
@@ -68,12 +69,15 @@ fun App() {
 fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
     factory = {
         println("Initializing factory")
-        val profile = GLProfile.get(GLProfile.GL4)
+        val profile = GLProfile.get(GLProfile.GL3)
         val capabilities = GLCapabilities(profile)
+//        capabilities.isPBuffer = true
         capabilities.apply {
             doubleBuffered = true
             depthBits = 24
         }
+
+
 
         GLCanvas(capabilities).apply {
             name = "MainGLCanvas"  // For debugging
@@ -87,7 +91,12 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
                 GameScenario.CommonData(
                     "test",
                     "description",
-                    Terrain.ofCells(),
+                    Terrain.ofCells().apply {
+                        terrainMap.set(1, 1, TerrainType.SNOW)
+                        terrainMap.set(1, 2, TerrainType.SNOW)
+                        terrainMap.set(2, 1, TerrainType.SNOW)
+                        terrainMap.set(2, 2, TerrainType.SNOW)
+                    },
                     emptyList(),
                     emptyList()
                 ),

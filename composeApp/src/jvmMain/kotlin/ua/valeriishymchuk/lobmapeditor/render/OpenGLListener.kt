@@ -134,7 +134,7 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         //loadTexture(ctx, "wood")
         loadTexture(ctx, "wood")
         loadTexture(ctx,"$TERRAIN_PREPEND/grass", false)
-        loadTexture(ctx,"$TERRAIN_PREPEND/snow")
+        loadTexture(ctx,"$TERRAIN_PREPEND/snow", false)
         backgroundImage = textures["wood"]!!
 
 //        backgroundImage = getTerrain("grass")
@@ -245,6 +245,21 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
 
+        tileMapProgram.setUpVBO(ctx, tileMapVertices)
+        tileMapProgram.setUpVAO(ctx)
+        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.SNOW)
+        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
+            mvpMatrix,
+            terrainMaskTexture,
+            getTerrain("snow"),
+            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
+            Vector2i(4, 4),
+            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
+            Vector4f(1.0f)
+        ))
+        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+
+
 
 
         ctx.glBindVertexArray(0)
@@ -282,8 +297,8 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         return loadResource("files/shaders/desktop/${path}.glsl").decodeToString()
     }
 
-    private fun loadTexture(ctx: GL3, key: String, useNearest: Boolean = true) {
-        val image = loadTextureData(key)
+    private fun loadTexture(ctx: GL3, key: String, useNearest: Boolean = true) { // useNearest for those textures is set to false
+        val image = loadTextureData(key) // totally fine
         val textureNameArray: IntArray = IntArray(1)
         ctx.glGenTextures(1, textureNameArray, 0)
         val texture: Int = textureNameArray[0]
@@ -302,7 +317,7 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             GL.GL_UNSIGNED_BYTE,
             image.image
         )
-
+//        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAX_LEVEL, 4);
         ctx.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
         ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
