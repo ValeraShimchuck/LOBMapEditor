@@ -65,6 +65,13 @@ kotlin {
                 implementation("io.konform:konform-jvm:0.11.1")
                 implementation("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
                 implementation("org.joml:joml:1.10.8")
+
+
+                val fileKitVersion = "0.10.0"
+                implementation("io.github.vinceglb:filekit-core:${fileKitVersion}")
+                implementation("io.github.vinceglb:filekit-dialogs:${fileKitVersion}")
+                implementation("io.github.vinceglb:filekit-dialogs-compose:${fileKitVersion}")
+                implementation("io.github.vinceglb:filekit-coil:${fileKitVersion}")
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {

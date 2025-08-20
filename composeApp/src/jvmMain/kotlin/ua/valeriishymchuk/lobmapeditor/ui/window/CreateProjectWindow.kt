@@ -5,6 +5,9 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.ui.component.*
 import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
@@ -75,17 +78,10 @@ fun CreateProjectWindow() {
 
         Row (Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             DefaultButton(onClick = { validate() }) { Text("Create") }
-            DefaultButton(onClick = { pickFolderAWT() }) { Text("333") }
+            DefaultButton(onClick = { runBlocking { FileKit.openDirectoryPicker() } }) { Text("333") }
         }
 
 
     }
 }
 
-fun pickFolderAWT(): File? {
-
-    val dialog = FileDialog(null as Frame?, "Choose directory", FileDialog.LOAD)
-    dialog.isVisible = true
-    val file = dialog.file
-    return if (file != null) File(dialog.directory, file) else null
-}
