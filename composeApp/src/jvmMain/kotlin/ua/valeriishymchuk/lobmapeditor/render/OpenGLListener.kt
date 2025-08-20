@@ -18,12 +18,14 @@ import org.joml.Vector3f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.BackgroundProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import java.awt.Graphics2D
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -36,6 +38,7 @@ import java.nio.ByteOrder
 import java.text.DecimalFormat
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
+import kotlin.math.abs
 
 class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenario.Preset>) : GLEventListener {
 
@@ -143,8 +146,11 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 //        drawable.gl = ctx
         //loadTexture(ctx, "wood")
         loadTexture(ctx, "wood")
-        loadTexture(ctx,"$TERRAIN_PREPEND/grass", false)
-        loadTexture(ctx,"$TERRAIN_PREPEND/snow", false)
+//        loadTexture(ctx,"$TERRAIN_PREPEND/grass", false)
+//        loadTexture(ctx,"$TERRAIN_PREPEND/snow", false)
+        TerrainType.MAIN_TERRAIN.forEach { terrain ->
+            loadTexture(ctx,"tilesets/${terrain.textureLocation}", false)
+        }
         backgroundImage = textures["wood"]!!
 
 //        backgroundImage = getTerrain("grass")
@@ -243,36 +249,54 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         ctx.glBindVertexArray(tileMapProgram.vao)
         ctx.glBindVBO(tileMapProgram.vbo)
 
-        tileMapProgram.setUpVBO(ctx, tileMapVertices)
-        tileMapProgram.setUpVAO(ctx)
-        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.GRASS)
-        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
-            mvpMatrix,
-            terrainMaskTexture,
-            getTerrain("grass"),
-            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
-            Vector2i(4, 4),
-            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
-            Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f),
-            Vector2i(width, height)
-        ))
-        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
+        TerrainType.MAIN_TERRAIN.forEach { terrain ->
+            tileMapProgram.setUpVBO(ctx, tileMapVertices)
+            tileMapProgram.setUpVAO(ctx)
+            tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, terrain)
+            tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
+                mvpMatrix,
+                terrainMaskTexture,
+                textures["tilesets/${terrain.textureLocation}"]!!,
+                Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
+                Vector2i(4, 4),
+                Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
+                Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f),
+                Vector2i(width, height)
+            ))
+            ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+        }
 
-        tileMapProgram.setUpVBO(ctx, tileMapVertices)
-        tileMapProgram.setUpVAO(ctx)
-        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.SNOW)
-        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
-            mvpMatrix,
-            terrainMaskTexture,
-            getTerrain("snow"),
-            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
-            Vector2i(4, 4),
-            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
-            Vector4f(1.0f),
-            Vector2i(width, height)
-        ))
-        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+//        tileMapProgram.setUpVBO(ctx, tileMapVertices)
+//        tileMapProgram.setUpVAO(ctx)
+//        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.GRASS)
+//        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
+//            mvpMatrix,
+//            terrainMaskTexture,
+//            getTerrain("grass"),
+//            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
+//            Vector2i(4, 4),
+//            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
+//            Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f),
+//            Vector2i(width, height)
+//        ))
+//        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+//
+//
+//        tileMapProgram.setUpVBO(ctx, tileMapVertices)
+//        tileMapProgram.setUpVAO(ctx)
+//        tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, TerrainType.SNOW)
+//        tileMapProgram.applyUniform(ctx, TileMapProgram.Uniform(
+//            mvpMatrix,
+//            terrainMaskTexture,
+//            getTerrain("snow"),
+//            Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
+//            Vector2i(4, 4),
+//            Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
+//            Vector4f(1.0f),
+//            Vector2i(width, height)
+//        ))
+//        ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
 
 
@@ -511,14 +535,143 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             .mul(model)
     }
 
+    private fun fromScreenToWorldSpace(
+        cursorX: Int,
+        cursorY: Int,
+        viewMatrix: Matrix4f = this@OpenGLListener.viewMatrix,
+        projectionMatrix: Matrix4f = this@OpenGLListener.projectionMatrix
+    ): Vector2f {
+
+        // 100 100 on screen space
+        // turn them into NDC[-1..1]
+        // using invert projection map to camera space
+        // using invert view map to world space
+
+
+        val invertProj = projectionMatrix.invert(Matrix4f())
+        val invertView = viewMatrix.invert(Matrix4f())
+
+        val winX = (cursorX - width.toFloat() / 2) / (width / 2)
+        val winY = (cursorY - height.toFloat() / 2) / (height / 2) * -1
+
+
+        val cords = Vector4f(winX, winY, 0f, 1f)
+
+        val invProfView = invertView.mul(invertProj, Matrix4f())
+        cords.mul(invProfView)
+        return Vector2f(cords.x, cords.y)
+    }
+
+    private fun getTileCordsFromScreen(cursorX: Int, cursorY: Int): Vector2i? {
+        val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
+        val map = commandDispatcher.scenario.map
+        if (worldCoordinates.x > map.widthPixels || worldCoordinates.x < 0) return null
+        if (worldCoordinates.y > map.heightPixels || worldCoordinates.y < 0) return null
+        worldCoordinates.floor()
+        return Vector2i(worldCoordinates.x.toInt(), worldCoordinates.y.toInt()).div(GameConstants.TILE_SIZE)
+    }
+
+
+    private fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
+        val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
+        val map = commandDispatcher.scenario.map
+
+        // Clamp world coordinates to map boundaries
+        val clampedX = worldCoordinates.x.coerceIn(0f, (map.widthPixels - 1).toFloat())
+        val clampedY = worldCoordinates.y.coerceIn(0f, (map.heightPixels - 1).toFloat())
+
+        // Convert to tile coordinates
+        val tileX = (clampedX / GameConstants.TILE_SIZE).toInt()
+        val tileY = (clampedY / GameConstants.TILE_SIZE).toInt()
+
+        return Vector2i(tileX, tileY)
+    }
+
+    private fun trySetTile(tileX: Int, tileY: Int, terrainType: TerrainType): Boolean {
+        return commandDispatcher.scenario.map.terrainMap.set(tileX, tileY, terrainType) != terrainType
+    }
+
+    private fun trySetTileFromScreen(cursorX: Int, cursorY: Int, terrainType: TerrainType): Boolean {
+        val cords = getTileCordsFromScreen(cursorX, cursorY) ?: return false
+        return trySetTile(cords.x, cords.y, terrainType)
+    }
+
+    fun getPointsBetween(start: Vector2i, end: Vector2i): List<Vector2i> {
+        val points = mutableListOf<Vector2i>()
+
+        val x0 = start.x
+        val y0 = start.y
+        val x1 = end.x
+        val y1 = end.y
+
+        val dx = abs(x1 - x0)
+        val dy = -abs(y1 - y0)
+
+        val sx = if (x0 < x1) 1 else -1
+        val sy = if (y0 < y1) 1 else -1
+
+        var error = dx + dy
+        var currentX = x0
+        var currentY = y0
+
+        while (true) {
+            points.add(Vector2i(currentX, currentY))
+            if (currentX == x1 && currentY == y1) break
+            val e2 = 2 * error
+            if (e2 >= dy) {
+                if (currentX == x1) break
+                error += dy
+                currentX += sx
+            }
+            if (e2 <= dx) {
+                if (currentY == y1) break
+                error += dx
+                currentY += sy
+            }
+        }
+
+        return points
+    }
+
     private var lastX = 0
     private var lastY = 0
     private var isDragging = false
 
+    private var leftLastX: Int? = null
+    private var leftLastY: Int? = null
+    private var isLeftDragging = false
+
+    private var currentTerrain: TerrainType = TerrainType.GRASS
+
     inner class MouseMotionListener(private val rerender: () -> Unit) : MouseMotionAdapter() {
 
         override fun mouseDragged(e: MouseEvent) {
-            if (isDragging) {
+            checkMiddleMouse(e)
+            checkLeftMouse(e)
+        }
+
+        private fun checkLeftMouse(e: MouseEvent) {
+            if (!isLeftDragging) return
+            if (leftLastX == null || leftLastY == null) {
+                leftLastX = e.x
+                leftLastY = e.y
+                return
+            }
+            val oldCords = getTileCordsFromScreenClamp(leftLastX ?: return, leftLastY ?: return)
+            leftLastX = e.x
+            leftLastY = e.y
+            val newCords = getTileCordsFromScreenClamp(leftLastX ?: return, leftLastY ?: return)
+
+
+            val shouldRender = getPointsBetween(oldCords, newCords).distinct()
+                .map { trySetTile(it.x, it.y, currentTerrain) }
+                .firstOrNull { it } == true
+            if (shouldRender) rerender()
+        }
+
+
+        private fun checkMiddleMouse(e: MouseEvent) {
+            if (!isDragging) return
                 val dx = e.x - lastX
                 val dy = e.y - lastY
                 lastX = e.x
@@ -528,8 +681,7 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 
                 cameraPosition = cameraPosition.add(dx.toFloat(), dy.toFloat())
                 rerender()
-                //moveCamera(dx, dy)
-            }
+
         }
 
 
@@ -538,43 +690,50 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 
     inner class MouseListener(private val rerender: () -> Unit) : MouseAdapter() {
         override fun mousePressed(e: MouseEvent) {
+            checkMiddlePressed(e)
+            checkLeftPressed(e)
+        }
+
+        private fun checkRightReleased(e: MouseEvent) {
+            if (e.button != MouseEvent.BUTTON3) return
+            val currentTerrainIndex = TerrainType.MAIN_TERRAIN.indexOf(currentTerrain)
+            currentTerrain = TerrainType.MAIN_TERRAIN[(currentTerrainIndex + 1) % TerrainType.MAIN_TERRAIN.size]
+        }
+
+        private fun checkMiddlePressed(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON2) return
             lastX = e.x
             lastY = e.y
             isDragging = true
         }
 
-        override fun mouseReleased(e: MouseEvent) {
+        private fun checkMiddleReleased(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON2) return
+            leftLastX = e.x
+            leftLastX = e.y
             isDragging = false
         }
 
-        private fun fromScreenToWorldSpace(
-            cursorX: Int,
-            cursorY: Int,
-            viewMatrix: Matrix4f = this@OpenGLListener.viewMatrix,
-            projectionMatrix: Matrix4f = this@OpenGLListener.projectionMatrix
-        ): Vector2f {
-
-            // 100 100 on screen space
-            // turn them into NDC[-1..1]
-            // using invert projection map to camera space
-            // using invert view map to world space
-
-
-            val invertProj = projectionMatrix.invert(Matrix4f())
-            val invertView = viewMatrix.invert(Matrix4f())
-
-            val winX = (cursorX - width.toFloat() / 2) / (width / 2)
-            val winY = (cursorY - height.toFloat() / 2) / (height / 2) * -1
-
-
-            val cords = Vector4f(winX, winY, 0f, 1f)
-
-            val invProfView = invertView.mul(invertProj, Matrix4f())
-            cords.mul(invProfView)
-            return Vector2f(cords.x, cords.y)
+        private fun checkLeftPressed(e: MouseEvent) {
+            if (e.button != MouseEvent.BUTTON1) return
+            isLeftDragging = true
+            if (trySetTileFromScreen(e.x, e.y, currentTerrain)) rerender()
         }
+
+        private fun checkLeftReleased(e: MouseEvent) {
+            if (e.button != MouseEvent.BUTTON1) return
+            isLeftDragging = false
+            leftLastX = null
+            leftLastY = null
+        }
+
+        override fun mouseReleased(e: MouseEvent) {
+            checkMiddleReleased(e)
+            checkRightReleased(e)
+            checkLeftReleased(e)
+        }
+
+
 
         override fun mouseWheelMoved(e: MouseWheelEvent) {
             val zoomIntensity = 0.1
