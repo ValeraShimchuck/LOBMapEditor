@@ -107,8 +107,12 @@ class TileMapProgram(
         ctx.applyTexture(tileMapLocation, 0, tileMapTexture)
 
         ctx.applyTexture(tileTextureLocation, 1, data.tileTexture)
-        if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
-            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
+
+        ctx.glActiveTexture(GL.GL_TEXTURE0 + 2)
+        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.maskTexture)
+        ctx.glUniform1i(maskTextureLocation, 2)
+//        if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
+//            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
 
         ctx.glUniform2fv(tileUnitLocation, 1, floatArrayOf(data.tileUnit.x, data.tileUnit.y), 0)
         ctx.glUniform2fv(textureScaleLocation, 1, floatArrayOf(data.textureScale.x, data.textureScale.y), 0)

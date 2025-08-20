@@ -1,6 +1,9 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL
+import com.jogamp.opengl.GL.GL_BLEND
+import com.jogamp.opengl.GL.GL_ONE_MINUS_SRC_ALPHA
+import com.jogamp.opengl.GL.GL_SRC_ALPHA
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
@@ -16,6 +19,7 @@ import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
+import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.BackgroundProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
@@ -27,6 +31,7 @@ import java.awt.event.MouseWheelEvent
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.text.DecimalFormat
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
@@ -129,6 +134,9 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.gL3
+
+        ctx.glEnable(GL_BLEND)
+        ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 //        val ctx = TraceGL3(drawable.gl.gL3, System.out)
 //        drawable.gl = ctx
         //loadTexture(ctx, "wood")
@@ -138,7 +146,10 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         backgroundImage = textures["wood"]!!
 
 //        backgroundImage = getTerrain("grass")
-        loadTexture(ctx,"tilesets/borderblending/mask")
+//        loadTexture(ctx,"tilesets/borderblending/mask", false, useClamp = true)
+        loadAtlas(ctx, "tilesets/borderblending/mask", Vector2i(32, 32), Vector2i(16, 1), ImageFilter(
+            useClamp = true
+        ))
         terrainMaskTexture = textures["tilesets/borderblending/mask"]!!
 
 
@@ -297,7 +308,128 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         return loadResource("files/shaders/desktop/${path}.glsl").decodeToString()
     }
 
-    private fun loadTexture(ctx: GL3, key: String, useNearest: Boolean = true) { // useNearest for those textures is set to false
+    private data class ImageFilter(
+        val useLinear: Boolean = true,
+        val useClamp: Boolean = false,
+        val useMipmaps: Boolean = true,
+    ) {
+
+    }
+
+    private fun loadAtlas(
+        ctx: GL3,
+        key: String,
+        tileSize: Vector2i, // size of a tile
+        tileDimensions: Vector2i, // amount of tiles
+        filter: ImageFilter = ImageFilter()
+    ) {
+        val image = loadTextureData(key)
+
+        // Calculate number of tiles
+        val tiles = tileDimensions.x * tileDimensions.y
+
+        // Create texture array
+        val texturePointer = IntPointer()
+        ctx.glGenTextures(1, texturePointer.array, 0)
+        val textureId = texturePointer.value
+
+        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, textureId)
+
+        // Allocate storage for the texture array
+        ctx.glTexStorage3D(
+            GL3.GL_TEXTURE_2D_ARRAY,
+            1, // Mipmap levels
+            GL3.GL_RGBA8,
+            tileSize.x,
+            tileSize.y,
+            tiles
+        )
+
+        // Extract each tile and upload to the texture array
+        for (y in 0 until tileDimensions.y) {
+            for (x in 0 until tileDimensions.x) {
+                val layer = y * tileDimensions.x + x
+
+                // Allocate buffer for tile data
+                val channel = 4 // Assuming RGBA
+                val buffer = ByteBuffer.allocateDirect(tileSize.x * tileSize.y * channel)
+                buffer.order(ByteOrder.nativeOrder())
+
+                // Extract tile data from atlas
+                for (row in 0 until tileSize.y) {
+                    for (col in 0 until tileSize.x) {
+                        // Calculate position in atlas
+                        val atlasX = x * tileSize.x + col
+                        val atlasY = y * tileSize.y + row
+
+                        // Calculate index in atlas data
+                        val atlasIndex = (atlasY * image.width + atlasX) * channel
+
+                        // Copy pixel data to buffer
+                        if (atlasIndex + 3 < image.image.capacity()) {
+                            buffer.put(image.image.get(atlasIndex))     // R
+                            buffer.put(image.image.get(atlasIndex + 1)) // G
+                            buffer.put(image.image.get(atlasIndex + 2)) // B
+                            buffer.put(image.image.get(atlasIndex + 3)) // A
+                        } else {
+                            // Handle edge cases by adding transparent pixels
+                            buffer.put(0) // R
+                            buffer.put(0) // G
+                            buffer.put(0) // B
+                            buffer.put(0) // A
+                        }
+                    }
+                }
+
+                // Flip buffer for OpenGL
+                buffer.flip()
+
+                // Upload tile to texture array layer
+                ctx.glTexSubImage3D(
+                    GL3.GL_TEXTURE_2D_ARRAY,
+                    0, // Mipmap level
+                    0, 0, layer, // x, y, z offsets
+                    tileSize.x, tileSize.y, 1, // width, height, depth
+                    GL3.GL_RGBA,
+                    GL3.GL_UNSIGNED_BYTE,
+                    buffer
+                )
+            }
+        }
+
+        // Set texture parameters based on filter settings
+        val minFilter = if (filter.useMipmaps) {
+            if (filter.useLinear) GL3.GL_LINEAR_MIPMAP_LINEAR else GL3.GL_NEAREST_MIPMAP_NEAREST
+        } else {
+            if (filter.useLinear) GL3.GL_LINEAR else GL3.GL_NEAREST
+        }
+
+        ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_MIN_FILTER, minFilter)
+        ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_MAG_FILTER,
+            if (filter.useLinear) GL3.GL_LINEAR else GL3.GL_NEAREST)
+
+        if (filter.useClamp) {
+            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
+            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
+        } else {
+            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_S, GL3.GL_REPEAT)
+            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_T, GL3.GL_REPEAT)
+        }
+
+        // Generate mipmaps if requested
+        if (filter.useMipmaps) {
+            ctx.glGenerateMipmap(GL3.GL_TEXTURE_2D_ARRAY)
+        }
+
+        // Unbind texture
+        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, 0)
+
+        textures[key] = texturePointer.value
+
+
+    }
+
+    private fun loadTexture(ctx: GL3, key: String, useNearest: Boolean = true, useClamp: Boolean = false) { // useNearest for those textures is set to false
         val image = loadTextureData(key) // totally fine
         val textureNameArray: IntArray = IntArray(1)
         ctx.glGenTextures(1, textureNameArray, 0)
@@ -320,8 +452,14 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
 //        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAX_LEVEL, 4);
         ctx.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
-        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
-        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
+        if (useClamp) {
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        } else {
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)
+            ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)
+        }
+
 
         if (useNearest)
             ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST_MIPMAP_NEAREST)
