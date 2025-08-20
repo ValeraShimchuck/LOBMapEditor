@@ -58,7 +58,7 @@ fun CreateProjectWindow() {
 
         Spacer(Modifier.height(8.dp))
 
-        errors.forEach { s, s2 ->
+        errors.forEach { (s, s2) ->
             Text("$s: $s2")
         }
 

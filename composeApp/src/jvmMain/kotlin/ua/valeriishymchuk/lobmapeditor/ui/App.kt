@@ -36,9 +36,7 @@ import java.awt.Dimension
 fun App() {
     var canvasRef by remember { mutableStateOf<GLCanvas?>(null) }
 
-    Navigator(HomeScreen) { nav ->
-        CurrentScreen()
-    }
+    CurrentScreen()
 
 }
 

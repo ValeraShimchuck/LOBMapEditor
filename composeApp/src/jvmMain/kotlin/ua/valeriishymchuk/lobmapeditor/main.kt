@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.application
+import cafe.adriel.voyager.navigator.Navigator
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -21,6 +22,7 @@ import org.kodein.di.compose.withDI
 import ua.valeriishymchuk.lobmapeditor.services.servicesModule
 import ua.valeriishymchuk.lobmapeditor.ui.App
 import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
+import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -57,19 +59,21 @@ fun main() {
                             titleBarStyle = TitleBarStyle.dark()
                         ),
             ) {
-                DecoratedWindow(
-                    onCloseRequest = { exitApplication() },
-                    title = "LOBMapEditor",
-                    style = DecoratedWindowStyle.dark(),
-                    content = {
-                        TitleBarView()
-                        Box(modifier = Modifier.background(
-                            JewelTheme.globalColors.panelBackground
-                        ).fillMaxSize()) {
-                            App()
-                        }
-                    },
-                )
+                Navigator(HomeScreen) {
+                    DecoratedWindow(
+                        onCloseRequest = { exitApplication() },
+                        title = "LOBMapEditor",
+                        style = DecoratedWindowStyle.dark(),
+                        content = {
+                            TitleBarView()
+                            Box(modifier = Modifier.background(
+                                JewelTheme.globalColors.panelBackground
+                            ).fillMaxSize()) {
+                                App()
+                            }
+                        },
+                    )
+                }
             }
         }
     }
