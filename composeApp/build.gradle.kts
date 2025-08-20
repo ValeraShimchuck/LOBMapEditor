@@ -27,7 +27,6 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain {
-
             repositories {
                 google()
                 mavenCentral()
@@ -64,6 +63,8 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
                 implementation("io.konform:konform-jvm:0.11.1")
+                implementation("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
+                implementation("org.joml:joml:1.10.8")
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {
@@ -93,7 +94,6 @@ compose.desktop {
     application {
         mainClass = "ua.valeriishymchuk.lobmapeditor.MainKt"
 
-
         jvmArgs += listOf(
             "-Djogamp.gluegen.UseTempJarCache=false",
             "--add-opens=jogl.all/com.jogamp.opengl.util=ALL-UNNAMED",
@@ -107,8 +107,5 @@ compose.desktop {
             packageName = "ua.valeriishymchuk"
             packageVersion = "1.0.0"
         }
-
-        
     }
 }
-
