@@ -29,6 +29,8 @@ class TileMapProgram(
     val textureScaleLocation = ctx.glGetUniformLocation(program, "uTextureScale")
     val mapSizeLocation = ctx.glGetUniformLocation(program, "uMapSize")
     val colorTintLocation = ctx.glGetUniformLocation(program, "uColorTint")
+    val resolutionLocation = ctx.glGetUniformLocation(program, "uResolution")
+
 
     val tileMapTexture: Int = let {
 
@@ -117,6 +119,7 @@ class TileMapProgram(
         ctx.glUniform2fv(tileUnitLocation, 1, floatArrayOf(data.tileUnit.x, data.tileUnit.y), 0)
         ctx.glUniform2fv(textureScaleLocation, 1, floatArrayOf(data.textureScale.x, data.textureScale.y), 0)
         ctx.glUniform2fv(mapSizeLocation, 1, floatArrayOf(data.mapSize.x, data.mapSize.y), 0)
+        ctx.glUniform2fv(resolutionLocation, 1, floatArrayOf(data.resolution.x, data.resolution.y), 0)
 
         ctx.glUniform4fv(colorTintLocation, 1, floatArrayOf(data.colorTint.x, data.colorTint.y, data.colorTint.z, data.colorTint.w), 0)
 
@@ -145,7 +148,8 @@ class TileMapProgram(
         val tileUnit: Vector2f,
         val textureScale: Vector2f,
         val mapSize: Vector2f, // in world units
-        val colorTint: Vector4f
+        val colorTint: Vector4f,
+        val resolution: Vector2f
     ) {
         constructor(
             mvp: Matrix4f,
@@ -154,7 +158,8 @@ class TileMapProgram(
             mapTileSize: Vector2i,
             textureTileSize: Vector2i,
             mapSize: Vector2i, // in world units
-            colorTint: Vector4f
+            colorTint: Vector4f,
+            resolution: Vector2i
         ): this(
             mvp,
             maskTexture,
@@ -162,7 +167,8 @@ class TileMapProgram(
             Vector2f(1f / mapTileSize.x, 1f / mapTileSize.y),
             Vector2f( mapTileSize.x.toFloat() / textureTileSize.x, mapTileSize.y.toFloat() / textureTileSize.y),
             Vector2f(mapSize.x.toFloat(), mapSize.y.toFloat()),
-            colorTint
+            colorTint,
+            Vector2f(resolution)
 
         )
     }

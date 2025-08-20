@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL.GL_BLEND
+import com.jogamp.opengl.GL.GL_ONE
 import com.jogamp.opengl.GL.GL_ONE_MINUS_SRC_ALPHA
 import com.jogamp.opengl.GL.GL_SRC_ALPHA
 import com.jogamp.opengl.GL3
@@ -136,7 +137,8 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         val ctx = drawable.gl.gL3
 
         ctx.glEnable(GL_BLEND)
-        ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+//        ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        ctx.glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 //        val ctx = TraceGL3(drawable.gl.gL3, System.out)
 //        drawable.gl = ctx
         //loadTexture(ctx, "wood")
@@ -251,7 +253,8 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
             Vector2i(4, 4),
             Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
-            Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f)
+            Vector4f(0.95f, 1f, 0.95f, 1f).mul(0.9f),
+            Vector2i(width, height)
         ))
         ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 
@@ -266,7 +269,8 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
             Vector2i(commandDispatcher.scenario.map.widthTiles,commandDispatcher.scenario.map.heightTiles),
             Vector2i(4, 4),
             Vector2i(commandDispatcher.scenario.map.widthPixels,commandDispatcher.scenario.map.heightPixels),
-            Vector4f(1.0f)
+            Vector4f(1.0f),
+            Vector2i(width, height)
         ))
         ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
 

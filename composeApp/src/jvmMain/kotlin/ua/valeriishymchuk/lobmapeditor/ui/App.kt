@@ -23,6 +23,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.OpenGLListener
 import java.awt.Dimension
+import kotlin.random.Random
 
 
 @Composable
@@ -92,10 +93,17 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
                     "test",
                     "description",
                     Terrain.ofCells().apply {
-                        terrainMap.set(1, 1, TerrainType.SNOW)
-                        terrainMap.set(1, 2, TerrainType.SNOW)
-                        terrainMap.set(2, 1, TerrainType.SNOW)
-                        terrainMap.set(2, 2, TerrainType.SNOW)
+//                        terrainMap.set(1, 1, TerrainType.SNOW)
+//                        terrainMap.set(1, 2, TerrainType.SNOW)
+//                        terrainMap.set(2, 1, TerrainType.SNOW)
+//                        terrainMap.set(2, 2, TerrainType.SNOW)
+                        val random = Random(123)
+                        for (x in 0..<widthTiles)
+                            for (y in 0..<heightTiles) {
+                                val terrain: TerrainType = if (random.nextDouble() > 0.3) TerrainType.GRASS
+                                else TerrainType.SNOW
+                                terrainMap.set(x, y, terrain)
+                            }
                     },
                     emptyList(),
                     emptyList()
