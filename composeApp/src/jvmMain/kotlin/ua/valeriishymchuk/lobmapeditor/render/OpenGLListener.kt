@@ -250,7 +250,7 @@ class OpenGLListener(private val commandDispatcher: CommandDispatcher<GameScenar
         ctx.glBindVBO(tileMapProgram.vbo)
 
 
-        TerrainType.MAIN_TERRAIN.forEach { terrain ->
+        TerrainType.MAIN_TERRAIN.reversed().forEach { terrain ->
             tileMapProgram.setUpVBO(ctx, tileMapVertices)
             tileMapProgram.setUpVAO(ctx)
             tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, terrain)
