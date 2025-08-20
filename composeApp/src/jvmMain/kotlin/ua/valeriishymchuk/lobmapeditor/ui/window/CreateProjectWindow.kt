@@ -1,67 +1,91 @@
 package ua.valeriishymchuk.lobmapeditor.ui.window
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import io.konform.validation.Validation
-import io.konform.validation.constraints.minLength
-import io.konform.validation.constraints.pattern
-import org.jetbrains.jewel.foundation.theme.JewelTheme
-import org.jetbrains.jewel.intui.window.styling.dark
-import org.jetbrains.jewel.ui.component.DefaultButton
-import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.component.TextField
-import org.jetbrains.jewel.window.DecoratedWindow
-import org.jetbrains.jewel.window.TitleBar
-import org.jetbrains.jewel.window.newFullscreenControls
-import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
-import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
-import ua.valeriishymchuk.lobmapeditor.ui.composable.WindowScope
+import org.jetbrains.jewel.foundation.ExperimentalJewelApi
+import org.jetbrains.jewel.ui.component.*
+import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
+import java.awt.FileDialog
+import java.awt.Frame
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileSystemView
 
 
+@OptIn(ExperimentalJewelApi::class)
+@Composable
+fun CreateProjectWindow() {
+    var form by remember { mutableStateOf(CreateProjectData()) }
 
-data class LoginForm(val email: String = "", val password: String = "")
+    fun validate() {
 
-val validator = Validation<LoginForm> {
-    LoginForm::email {
-        minLength(5) hint "Email мінімум 5 символів"
-        pattern(".+@.+\\..+") hint "Некоректний email"
     }
-    LoginForm::password {
-        minLength(6) hint "Пароль мінімум 6 символів"
+
+    Column(
+        Modifier.padding(8.dp).fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val nameState = remember { TextFieldState(form.name) }
+        LaunchedEffect(nameState.text) {
+            if (form.name != nameState.text) {
+                form = form.copy(name = nameState.text.toString())
+            }
+        }
+        TextField(
+            state = nameState,
+            placeholder = { Text("Scenario name...") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row {
+            val widthState = remember { TextFieldState(form.widthPx.toString()) }
+            LaunchedEffect(widthState.text) {
+                val newWidth = nameState.text.toString().toIntOrNull()
+                if (newWidth != null && form.widthPx != newWidth) {
+                    form = form.copy(widthPx = newWidth)
+                }
+            }
+            TextField(
+                state = widthState,
+                placeholder = { Text("Width") },
+                modifier = Modifier.weight(1f),
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            val heightState = remember { TextFieldState(form.heightPx.toString()) }
+            LaunchedEffect(heightState.text) {
+                val newHeight = nameState.text.toString().toIntOrNull()
+                if (newHeight != null && form.heightPx != newHeight) {
+                    form = form.copy(heightPx = newHeight)
+                }
+            }
+            TextField(
+                state = heightState,
+                placeholder = { Text("Height") },
+                modifier = Modifier.weight(1f),
+            )
+
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Row (Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            DefaultButton(onClick = { validate() }) { Text("Create") }
+            DefaultButton(onClick = { pickFolderAWT() }) { Text("333") }
+        }
+
+
     }
 }
 
-@Composable
-fun CreateProjectWindow() {
-    var form by remember { mutableStateOf(LoginForm()) }
-    var errors by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+fun pickFolderAWT(): File? {
 
-    fun validate() {
-        val result = validator.validate(form)
-        errors = result.errors.associate { error ->
-            val key = error.dataPath.lastOrNull()?.toString() ?: ""
-            val message = error.message ?: ""
-            key to message // явно Pair<String, String>
-        }
-    }
-
-    Column(Modifier.padding(16.dp)) {
-        TextField(
-            value = TextFieldValue(form.email),
-            onValueChange = { form = form.copy(email = it.text) },
-        )
-
-
-        Spacer(Modifier.height(8.dp))
-
-        errors.forEach { (s, s2) ->
-            Text("$s: $s2")
-        }
-
-        DefaultButton(onClick = { validate() }) { Text("Увійти") }
-    }
+    val dialog = FileDialog(null as Frame?, "Choose directory", FileDialog.LOAD)
+    dialog.isVisible = true
+    val file = dialog.file
+    return if (file != null) File(dialog.directory, file) else null
 }
