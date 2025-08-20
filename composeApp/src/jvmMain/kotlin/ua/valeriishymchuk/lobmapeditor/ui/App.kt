@@ -8,6 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.CurrentScreen
+import cafe.adriel.voyager.navigator.Navigator
 import com.jogamp.opengl.GL
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLCapabilities
@@ -19,6 +21,7 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.HorizontalSplitLayout
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.VerticalSplitLayout
+import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import java.awt.Dimension
 
 
@@ -27,38 +30,9 @@ import java.awt.Dimension
 fun App() {
     var canvasRef by remember { mutableStateOf<GLCanvas?>(null) }
 
-
-    HorizontalSplitLayout(
-        first = {
-            Column(
-                modifier = Modifier.background(
-                    JewelTheme.globalColors.panelBackground
-                ).fillMaxSize()
-            ) {
-                Text("First")
-            }
-        },
-        firstPaneMinWidth = 200.dp,
-        secondPaneMinWidth = 300.dp,
-        second = {
-            VerticalSplitLayout(
-                first = {
-                    JoglCanvas { canvasRef = it }
-                },
-                firstPaneMinWidth = 250.dp,
-                secondPaneMinWidth = 200.dp,
-                second = {
-                    Column(
-                        modifier = Modifier.background(
-                            JewelTheme.globalColors.panelBackground
-                        ).fillMaxSize()
-                    ) {
-                        Text("Second")
-                    }
-                }
-            )
-        }
-    )
+    Navigator(HomeScreen) { nav ->
+        CurrentScreen()
+    }
 
 }
 

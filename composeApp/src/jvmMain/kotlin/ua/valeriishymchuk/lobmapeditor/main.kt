@@ -1,6 +1,10 @@
 package ua.valeriishymchuk.lobmapeditor
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.application
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
@@ -12,6 +16,9 @@ import org.jetbrains.jewel.ui.ComponentStyling
 import org.jetbrains.jewel.window.DecoratedWindow
 import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
 import org.jetbrains.jewel.window.styling.TitleBarStyle
+import org.kodein.di.DI
+import org.kodein.di.compose.withDI
+import ua.valeriishymchuk.lobmapeditor.services.servicesModule
 import ua.valeriishymchuk.lobmapeditor.ui.App
 import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
 import java.io.ByteArrayInputStream
@@ -20,40 +27,59 @@ import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
+val di = DI {
+    import(servicesModule)
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 fun main() {
 //    System.setProperty("jogl.debug", "true")
 //    System.setProperty("nativewindow.debug", "all")
 //    System.setProperty("jogl.verbose", "true")
     loadJogsLibs()
+    setupWorkDir()
     println("Successfully loaded libs")
 
     application {
         val textStyle = JewelTheme.createDefaultTextStyle()
         val editorStyle = JewelTheme.createEditorTextStyle()
 
-        IntUiTheme(
-            theme = JewelTheme.darkThemeDefinition(
-                defaultTextStyle = textStyle,
-                editorTextStyle = editorStyle
-            ),
-            styling =
-                ComponentStyling.default()
-                    .decoratedWindow(
-                        titleBarStyle = TitleBarStyle.dark()
-                    ),
-        ) {
-            DecoratedWindow(
-                onCloseRequest = { exitApplication() },
-                title = "LOBMapEditor",
-                style = DecoratedWindowStyle.dark(),
-                content = {
-                    TitleBarView()
-                    App()
-                },
-            )
+
+        withDI(di) {
+            IntUiTheme(
+                theme = JewelTheme.darkThemeDefinition(
+                    defaultTextStyle = textStyle,
+                    editorTextStyle = editorStyle
+                ),
+                styling =
+                    ComponentStyling.default()
+                        .decoratedWindow(
+                            titleBarStyle = TitleBarStyle.dark()
+                        ),
+            ) {
+                DecoratedWindow(
+                    onCloseRequest = { exitApplication() },
+                    title = "LOBMapEditor",
+                    style = DecoratedWindowStyle.dark(),
+                    content = {
+                        TitleBarView()
+                        Box(modifier = Modifier.background(
+                            JewelTheme.globalColors.panelBackground
+                        ).fillMaxSize()) {
+                            App()
+                        }
+                    },
+                )
+            }
         }
     }
+}
+
+fun setupWorkDir() {
+    val workDir = File(System.getProperty("user.home"), ".lobmapeditor")
+    if (!workDir.exists()) workDir.mkdirs()
+    System.setProperty("user.dir", workDir.absolutePath)
+    println(workDir.absolutePath)
 }
 
 suspend fun unzip(src: String, dst: File) {

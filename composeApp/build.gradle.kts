@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -26,6 +27,7 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain {
+
             repositories {
                 google()
                 mavenCentral()
@@ -51,6 +53,17 @@ kotlin {
                 implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
                 implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
                 implementation("com.google.code.gson:gson:2.13.1")
+
+                val voyagerVersion = "1.1.0-beta03"
+
+                implementation("cafe.adriel.voyager:voyager-navigator:${voyagerVersion}")
+
+                implementation("org.kodein.di:kodein-di:7.26.1")
+                implementation("org.kodein.di:kodein-di-framework-compose:7.26.1")
+
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
+                implementation("io.konform:konform-jvm:0.11.1")
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {
@@ -72,9 +85,14 @@ kotlin {
 }
 
 
+tasks.named<JavaExec>("hotRunJvm") {
+    workingDir = File("run").apply { mkdirs() }
+}
+
 compose.desktop {
     application {
         mainClass = "ua.valeriishymchuk.lobmapeditor.MainKt"
+
 
         jvmArgs += listOf(
             "-Djogamp.gluegen.UseTempJarCache=false",
@@ -89,5 +107,8 @@ compose.desktop {
             packageName = "ua.valeriishymchuk"
             packageVersion = "1.0.0"
         }
+
+        
     }
 }
+
