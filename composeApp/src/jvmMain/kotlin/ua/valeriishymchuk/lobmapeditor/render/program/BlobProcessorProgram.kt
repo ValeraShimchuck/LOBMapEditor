@@ -88,7 +88,10 @@ class BlobProcessorProgram(
         val buffer = Buffers.newDirectIntBuffer(width * height)
 
         val serializedData = terrainMap.map.flatMap { it }.map {
-            if (terrainType == it) 1 else 0
+            if (terrainType == it) return@map 1
+            if (it == TerrainType.BRIDGE && (terrainType == TerrainType.ROAD || terrainType == TerrainType.ROAD_WINTER)) return@map 2
+            if (terrainType == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER)) return@map 2
+            0
         }
 
         serializedData.forEach {

@@ -30,6 +30,7 @@ class TileMapProgram(
     val mapSizeLocation = ctx.glGetUniformLocation(program, "uMapSize")
     val colorTintLocation = ctx.glGetUniformLocation(program, "uColorTint")
     val resolutionLocation = ctx.glGetUniformLocation(program, "uResolution")
+    val overlayLocation = ctx.glGetUniformLocation(program, "uOverlayTexture")
 
 
     val tileMapTexture: Int = let {
@@ -57,7 +58,9 @@ class TileMapProgram(
         val buffer = Buffers.newDirectIntBuffer(width * height)
 
         val serializedData = terrainMap.map.flatMap { it }.map {
-            if (terrainType == it) 1 else 0
+            if (terrainType == it) return@map 1
+            if (it.isFarm) return@map 2
+            0
         }
 
         serializedData.forEach {
@@ -113,6 +116,11 @@ class TileMapProgram(
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 2)
         ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.maskTexture)
         ctx.glUniform1i(maskTextureLocation, 2)
+
+
+        ctx.glActiveTexture(GL.GL_TEXTURE0 + 3)
+        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.overlayTexture)
+        ctx.glUniform1i(overlayLocation, 3)
 //        if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
 //            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
 
@@ -143,7 +151,8 @@ class TileMapProgram(
     data class Uniform(
         val mvp: Matrix4f,
 //        val tileMap: Int, // 2d map of unsigned ints
-        val maskTexture: Int, // temporary unused
+        val maskTexture: Int,
+        val overlayTexture: Int,
         val tileTexture: Int, // texture of the tile,
         val tileUnit: Vector2f,
         val textureScale: Vector2f,
@@ -154,6 +163,7 @@ class TileMapProgram(
         constructor(
             mvp: Matrix4f,
             maskTexture: Int,
+            overlayTexture: Int,
             tileTexture: Int,
             mapTileSize: Vector2i,
             textureTileSize: Vector2i,
@@ -163,6 +173,7 @@ class TileMapProgram(
         ): this(
             mvp,
             maskTexture,
+            overlayTexture,
             tileTexture,
             Vector2f(1f / mapTileSize.x, 1f / mapTileSize.y),
             Vector2f( mapTileSize.x.toFloat() / textureTileSize.x, mapTileSize.y.toFloat() / textureTileSize.y),

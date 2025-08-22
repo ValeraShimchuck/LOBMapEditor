@@ -57,30 +57,19 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
                     "test",
                     "description",
                     Terrain.ofCells().apply {
-                        val random = Random(12313)
-                        for (x in 0..<widthTiles)
-                            for (y in 0..<widthTiles) {
-                                terrainMap.set(x, y, TerrainType.GRASS)
-//                                if (random.nextDouble() > 0.7) terrainMap.set(x, y, TerrainType.ROAD)
-                            }
-
-                        for (x in 10..<20)
-                            for (y in 10..<20)
-                                terrainHeight.set(x, y, 1)
-
-
-                        for (x in 11..<19)
-                            for (y in 11..<19)
-                                terrainHeight.set(x, y, 2)
-
-                        for (x in 12..<18)
-                            for (y in 12..<18)
-                                terrainHeight.set(x, y, 3)
+//                        val random = Random(12313)
+//                        for (x in 0..<widthTiles)
+//                            for (y in 0..<widthTiles) {
+//                                terrainMap.set(x, y, TerrainType.GRASS)
+////                                if (random.nextDouble() > 0.7) terrainMap.set(x, y, TerrainType.ROAD)
+//                            }
+                        terrainMap.set(10, 10, TerrainType.SHALLOW_WATER)
+                        terrainMap.set(10, 11, TerrainType.BRIDGE)
+                        terrainMap.set(9, 11, TerrainType.ROAD)
+                        terrainMap.set(11, 11, TerrainType.ROAD)
+                        terrainMap.set(10, 12, TerrainType.SHALLOW_WATER)
 
 
-                        for (x in 13..<17)
-                            for (y in 13..<17)
-                                terrainHeight.set(x, y, 4)
                     },
                     emptyList(),
                     emptyList()

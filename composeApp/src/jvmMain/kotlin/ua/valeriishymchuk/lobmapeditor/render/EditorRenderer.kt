@@ -96,6 +96,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
 
 
     private var terrainMaskTexture: Int = -1
+    private var farmOverlayTexture: Int = -1;
     private var heightBlobTexture: Int = -1
 
     private val tileMapVertices = floatArrayOf(
@@ -187,7 +188,18 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
 
             )
         )
+
         terrainMaskTexture = textures["tilesets/borderblending/mask"]!!
+
+
+        loadAtlas(
+            ctx, TerrainType.FARM_BORDERS_LOCATION, Vector2i(32, 32), Vector2i(16, 1), ImageFilter(
+                useClamp = true,
+                useLinear = false
+
+            )
+        )
+        farmOverlayTexture = textures[TerrainType.FARM_BORDERS_LOCATION]!!
 
         loadAtlas(
             ctx, "tilesets/blending/height", Vector2i(16), Vector2i(8, 6), ImageFilter(
@@ -308,6 +320,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
                 ctx, TileMapProgram.Uniform(
                     mvpMatrix,
                     terrainMaskTexture,
+                    farmOverlayTexture,
                     textures["tilesets/${terrainToRender.textureLocation}"]!!,
                     Vector2i(commandDispatcher.scenario.map.widthTiles, commandDispatcher.scenario.map.heightTiles),
                     Vector2i(4, 4),
@@ -604,11 +617,6 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
             imageWebp.height,
             BufferedImage.TYPE_4BYTE_ABGR
         )
-//        println("Loading texture data from $path ${imageWebp.type}")
-//        val location2 = "${path}/original3.png"
-//        val file = File(location2)
-//        file.parentFile.mkdirs()
-//        ImageIO.write(imageWebp, "PNG", file)
 
         val g: Graphics2D = imageRgba.createGraphics()
         g.drawImage(imageWebp, 0, 0, null)
@@ -625,13 +633,6 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
             rgbaData[i + 2] = rawPixelData[i + 1]  // B
             rgbaData[i + 3] = rawPixelData[i]      // A (was first byte)
         }
-
-//        val bufferImage2: BufferedImage = BufferedImage(imageWebp.width, imageWebp.height, BufferedImage.TYPE_4BYTE_ABGR)
-//
-//        val location2 = "${path}/original2.png"
-//        val file = File(location2)
-//        file.parentFile.mkdirs()
-//        ImageIO.write(bufferImage2, "PNG", file)
 
         val nioBuffer = ByteBuffer.allocateDirect(rgbaData.size)
         nioBuffer.put(rgbaData)
@@ -651,12 +652,6 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         viewMatrix: Matrix4f = this@EditorRenderer.viewMatrix,
         projectionMatrix: Matrix4f = this@EditorRenderer.projectionMatrix
     ): Vector2f {
-
-        // 100 100 on screen space
-        // turn them into NDC[-1..1]
-        // using invert projection map to camera space
-        // using invert view map to world space
-
 
         val invertProj = projectionMatrix.invert(Matrix4f())
         val invertView = viewMatrix.invert(Matrix4f())
@@ -705,38 +700,6 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         val cords = getTileCordsFromScreen(cursorX, cursorY) ?: return false
         return trySetTile(cords.x, cords.y, terrainType)
     }
-
-    // 0000000
-    // 0111110
-    // 0122210
-    // 0123210
-    // 0122210
-    // 0111110
-    // 0000000
-
-    // 0000000
-    // 0011110
-    // 0112210
-    // 0123210
-    // 0122210
-    // 0111110
-    // 0000000
-
-//    private fun trySetTileHeight(tileX: Int, tileY: Int, height: Int): Boolean {
-//        val heightMap = commandDispatcher.scenario.map.terrainHeight
-//        heightMap.set(tileX, tileY, height) ?: return false
-//        for (xOffset in -1..1)
-//            for (yOffset in -1..1) {
-//                if (xOffset == 0 && yOffset == 0) continue
-//                val neighborValue = heightMap.get(tileX + xOffset, tileY + yOffset) ?: continue
-//                val difference = height - neighborValue
-//                val absoluteDifference = abs(height - neighborValue)
-//                if (absoluteDifference <= 1) continue
-//                val newDifference = if (difference < 0) -1 else 1
-//                trySetTileHeight(tileX + xOffset, tileY + yOffset, neighborValue + newDifference)
-//            }
-//        return true
-//    }
 
     private fun trySetTileHeight(tileX: Int, tileY: Int, height: Int): Boolean {
         val heightMap = commandDispatcher.scenario.map.terrainHeight
@@ -821,8 +784,8 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private var leftLastY: Int? = null
     private var isLeftDragging = false
 
-    private var currentTerrain: TerrainType = TerrainType.GRASS
-    private var setTerrainHeight: Boolean = true
+    private var currentTerrain: TerrainType = TerrainType.FARM
+    private var setTerrainHeight: Boolean = false
     private var currentHeight: Int = 1
     private var isShiftPressed = false
 
@@ -908,7 +871,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
                 val currentTerrainIndex = TerrainType.entries.indexOf(currentTerrain)
                 if (isShiftPressed) {
                     var newIndex = currentTerrainIndex - 1
-                    if (newIndex < 0) newIndex = TerrainType.entries.size - newIndex
+                    if (newIndex < 0) newIndex += TerrainType.entries.size
                     currentTerrain = TerrainType.entries[newIndex]
                 } else {
                     currentTerrain = TerrainType.entries[(currentTerrainIndex + 1) % TerrainType.entries.size]
@@ -917,7 +880,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
             } else {
                 if (isShiftPressed) {
                     var newIndex = currentHeight - 1
-                    if (newIndex < 0) newIndex = 8 - newIndex
+                    if (newIndex < 0) newIndex += 8
                     currentHeight = newIndex
                 } else {
                     currentHeight = (currentHeight + 1) % 8

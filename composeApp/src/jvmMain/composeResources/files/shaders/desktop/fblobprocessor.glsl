@@ -21,7 +21,7 @@ bool withinUnit(vec2 cords) {
 int checkSet(vec2 offsetCords, int bitToSet) {
     bool withinCords = withinUnit(offsetCords);
     if (!withinCords) return 1 << bitToSet;
-    return int(texture(uTileMap, offsetCords).r) << bitToSet;
+    return int(texture(uTileMap, offsetCords).r > 0u) << bitToSet;
 }
 
 bool checkMask(int value, int mask) {
@@ -29,7 +29,9 @@ bool checkMask(int value, int mask) {
 }
 
 vec4 getPixel(vec2 texCord) {
-    bool isSet = texture(uTileMap, texCord).r > 0u;
+    uint tileValue = texture(uTileMap, texCord).r;
+    bool isSet = tileValue == 1u;
+//    bool shouldConnect = tileValue == 2u;
     vec2 tileMapCoordinates = texCord / uTileUnit;
     vec2 tileCoordinates = fract(tileMapCoordinates);// [0..1] within a tile
     vec2 maskCoordinates = vec2(tileCoordinates.x, 1.0 - tileCoordinates.y);
@@ -48,20 +50,10 @@ vec4 getPixel(vec2 texCord) {
     vec2 offTopLeftTexCord = texCord + offTop + offLeft;
     vec2 offBottomRightTexCord = texCord + offBottom + offRight;
     vec2 offBottomLeftTexCord = texCord + offBottom + offLeft;
-//
-//    int mask = checkSet(offTopTexCord, 0) | // Top
-//    checkSet(offRightTexCord, 1) | // Right
-//    checkSet(offBottomTexCord, 2) | // Bottom
-//    checkSet(offLeftTexCord, 3) | // Left
-//    checkSet(offTopRightTexCord, 4) | // Top-Right
-//    checkSet(offTopLeftTexCord, 5) | // Top-Left
-//    checkSet(offBottomRightTexCord, 6) | // Bottom-Right
-//    checkSet(offBottomLeftTexCord, 7); // Bottom-Left
 
     vec4[48] blobTextureValues;
     for (int i = 0; i < 48; i++) {
         blobTextureValues[i] = texture(uBlobTexture, vec3(tileCoordinates, i));
-        //        blobTextureValues[i] = vec4(texture(uBlobTexture, vec3(tileCoordinates, i)).a);
     }
 
     int mask = checkSet(offTopTexCord, 0) | // Top
@@ -73,8 +65,6 @@ vec4 getPixel(vec2 texCord) {
     checkSet(offBottomRightTexCord, 6) | // Bottom-Right
     checkSet(offBottomLeftTexCord, 7); // Bottom-Left
 
-//    float sideColorDebug;
-//    if (mask &)
 
     int cornerMask = (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
     int neighborMask = mask & 15;
