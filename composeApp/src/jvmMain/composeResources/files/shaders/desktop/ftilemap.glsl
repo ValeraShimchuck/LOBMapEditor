@@ -108,8 +108,8 @@ vec4 getPixel(vec2 texCord) {
     bool shouldColor = any(bvec4(shouldColorTopRight, shouldColorTopLeft, shouldColorBottomRight, shouldColorBottomLeft));
 
     vec4 color = sampleTexture();
-    vec4 maskedColor = color * maskValue;
-
+//    vec4 maskedColor = color * maskValue;
+    vec4 maskedColor = vec4(color.rgb, maskValue);
 
     if (isSet) {
         return color;
@@ -122,62 +122,6 @@ vec4 getPixel(vec2 texCord) {
     }
 }
 
-//vec4 blur(vec2 texCoord) {
-//    // Fixed blur parameters
-//    float blurAmount = 2.0;
-//    vec2 texSize = textureSize(uTileTexture, 0);
-//    vec2 texOffset = vec2(1.0, 1.0) / texSize;
-//
-//    // Proper Gaussian weights for 5 samples (sum = ~1.0)
-//    float weight[3] = float[3](0.441, 0.279, 0.079);
-//
-//    // Sample the center pixel
-//    vec4 blurredColor = texture(uTileTexture, texCoord) * weight[0];
-//
-//    // Sample in four directions (horizontal and vertical)
-//    blurredColor += texture(uTileTexture, texCoord + vec2(texOffset.x * blurAmount, 0.0)) * weight[1];
-//    blurredColor += texture(uTileTexture, texCoord - vec2(texOffset.x * blurAmount, 0.0)) * weight[1];
-//    blurredColor += texture(uTileTexture, texCoord + vec2(0.0, texOffset.y * blurAmount)) * weight[1];
-//    blurredColor += texture(uTileTexture, texCoord - vec2(0.0, texOffset.y * blurAmount)) * weight[1];
-//
-//    // Sample diagonally with lower weight
-//    blurredColor += texture(uTileTexture, texCoord + texOffset * blurAmount) * weight[2];
-//    blurredColor += texture(uTileTexture, texCoord - texOffset * blurAmount) * weight[2];
-//    blurredColor += texture(uTileTexture, texCoord + vec2(texOffset.x, -texOffset.y) * blurAmount) * weight[2];
-//    blurredColor += texture(uTileTexture, texCoord + vec2(-texOffset.x, texOffset.y) * blurAmount) * weight[2];
-//
-//    return blurredColor * uColorTint;
-//}
-
-vec4 gaussianBlur3x3(vec2 uv) {
-
-    vec4 color = vec4(0.0);
-
-    // 3x3 Gaussian kernel weights
-    float kernel[9] = float[](
-    0.077847, 0.123317, 0.077847,
-    0.123317, 0.195346, 0.123317,
-    0.077847, 0.123317, 0.077847
-    );
-    //vec2 texSize = textureSize(uTileTexture, 0);
-    vec2 texOffset = 1.0 / uResolution;
-
-    int i = 0;
-    for(int x = -1; x <= 1; x++) {
-        for(int y = -1; y <= 1; y++) {
-            vec2 offset = vec2(x, y) * texOffset;
-            vec4 pixel = getPixel(uv + offset)  * kernel[i];
-//            if (any(lessThan(pixel, vec4(0.0)))) {
-//                if (x == 0 && y == 0) return vec4(-1);
-//                continue;
-//            }
-            color += pixel;
-            i++;
-        }
-    }
-
-    return color;
-}
 
 void main() {
 //    FragColor = gaussianBlur3x3(vTexCord);

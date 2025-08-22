@@ -31,7 +31,7 @@ open class ArrayMap2d<T>(
     fun get(x: Int, y: Int): T? {
         val row = _map.getOrNull(y) ?: return null
         if (x >= row.size ) return null
-        return row[x]
+        return row.getOrNull(x)
     }
 
     open fun clone(): ArrayMap2d<T> {

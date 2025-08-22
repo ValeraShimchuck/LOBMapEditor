@@ -26,11 +26,13 @@ enum class TerrainType(val id: Int, val textureLocation: String, val dominance: 
     REDOUBT(22, "blending/redoubt", dominance = 13, DIRT);
 
     val isTerrain = textureLocation.startsWith("terrain/")
+    val isBlob = textureLocation.startsWith("blending/")
 
     companion object {
         val DEFAULT: TerrainType = GRASS
 
         val MAIN_TERRAIN: List<TerrainType> = TerrainType.entries.filter { it.isTerrain }.sortedByDescending { it.dominance }
+        val BLOB_TERRAIN: List<TerrainType> = TerrainType.entries.filter { it.isBlob }.sortedByDescending { it.dominance }
 
         fun fromId(id: Int): TerrainType {
             return TerrainType.entries.firstOrNull { it.id == id }
