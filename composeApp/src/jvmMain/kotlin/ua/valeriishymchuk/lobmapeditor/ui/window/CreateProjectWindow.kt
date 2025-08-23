@@ -2,34 +2,56 @@ package ua.valeriishymchuk.lobmapeditor.ui.window
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
+import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.*
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.kodein.di.compose.rememberDI
+import org.kodein.di.instance
+import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
-import java.awt.FileDialog
-import java.awt.Frame
-import java.io.File
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileSystemView
+import ua.valeriishymchuk.lobmapeditor.ui.composable.WindowScope
+import ua.valeriishymchuk.lobmapeditor.ui.screen.ProjectScreen
 
 
 @OptIn(ExperimentalJewelApi::class)
 @Composable
-fun CreateProjectWindow() {
+fun WindowScope.CreateProjectWindow() {
+
+    val nav = LocalNavigator.currentOrThrow
+    val projectsService: ProjectsService by rememberDI { instance() }
+
     var form by remember { mutableStateOf(CreateProjectData()) }
+    val uiScope = rememberCoroutineScope()
 
-    fun validate() {
+    var errors: List<String> by remember { mutableStateOf(emptyList()) }
 
+    fun create() {
+        val validate = CreateProjectData.validator.validate(form)
+        if(validate.isValid) {
+            errors = emptyList()
+            uiScope.launch {
+                nav.push(ProjectScreen(projectsService.createProject(form)))
+                delay(300)
+                close()
+            }
+
+        } else {
+            errors = validate.errors.map { it.dataPath.substringAfterLast('.') + ": " + it.message }
+        }
     }
 
     Column(
-        Modifier.padding(8.dp).fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        Modifier.padding(8.dp).fillMaxWidth()
     ) {
         val nameState = remember { TextFieldState(form.name) }
         LaunchedEffect(nameState.text) {
@@ -42,6 +64,9 @@ fun CreateProjectWindow() {
             placeholder = { Text("Scenario name...") },
             modifier = Modifier.fillMaxWidth(),
         )
+
+        Spacer(Modifier.height(8.dp))
+
 
         Row {
             val widthState = remember { TextFieldState(form.widthPx.toString()) }
@@ -74,11 +99,40 @@ fun CreateProjectWindow() {
 
         }
 
+        Spacer(Modifier.height(8.dp))
+
+
+        var folderDirState by remember { mutableStateOf(TextFieldState(form.dir?.absolutePath?.toString() ?: "")) }
+        TextField(
+            state = folderDirState,
+            placeholder = { Text("Project directory") },
+            enabled = false,
+            trailingIcon = {
+                IconActionButton(
+                    AllIconsKeys.Nodes.Folder,
+                    null,
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val pickResult = FileKit.openDirectoryPicker("Pick project folder") ?: return@launch
+                            form = form.copy(dir = pickResult.file)
+                            folderDirState = TextFieldState(form.dir?.absolutePath!!)
+                        }
+                    }
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text("All project files will be saved in this directory", color = JewelTheme.globalColors.text.info)
+
+
         Spacer(Modifier.weight(1f))
 
-        Row (Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            DefaultButton(onClick = { validate() }) { Text("Create") }
-            DefaultButton(onClick = { runBlocking { FileKit.openDirectoryPicker() } }) { Text("333") }
+        errors.forEach {
+            Text(it, color = JewelTheme.globalColors.text.error)
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            DefaultButton(onClick = { create() }) { Text("Create") }
         }
 
 

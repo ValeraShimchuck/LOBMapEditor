@@ -24,6 +24,7 @@ import ua.valeriishymchuk.lobmapeditor.render.program.BlobProcessorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
+import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import java.awt.Graphics2D
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -785,8 +786,20 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private var isLeftDragging = false
 
     private var currentTerrain: TerrainType = TerrainType.FARM
+        set(value) {
+            BaleriiDebugShitInformation.currentTerrain.value = value
+            field = value
+        }
     private var setTerrainHeight: Boolean = false
+        set(value) {
+            BaleriiDebugShitInformation.setTerrainHeight.value = value
+            field = value
+        }
     private var currentHeight: Int = 1
+        set(value) {
+            BaleriiDebugShitInformation.currentHeight.value = value
+            field = value
+        }
     private var isShiftPressed = false
 
 //    private enum class DrawType {

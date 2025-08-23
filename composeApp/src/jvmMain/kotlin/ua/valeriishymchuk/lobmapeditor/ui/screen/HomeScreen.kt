@@ -1,14 +1,26 @@
 package ua.valeriishymchuk.lobmapeditor.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberWindowState
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import kotlinx.coroutines.delay
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -35,7 +47,7 @@ object HomeScreen : Screen {
 
         val projectsService: ProjectsService by rememberDI { instance() }
 
-        val data by produceState<Map<ProjectRef, ProjectData>?>(null) {
+        val projects by produceState<Map<ProjectRef, ProjectData>?>(null) {
             while (true) {
                 value = projectsService.loadProjects()
                 delay(5000)
@@ -44,7 +56,7 @@ object HomeScreen : Screen {
 
         val createProjectWindow = rememberWindowController(
             "Create project", rememberWindowState(
-                width = 400.dp,
+                width = 600.dp,
                 height = 500.dp,
             )
         ) {
@@ -75,9 +87,8 @@ object HomeScreen : Screen {
                 ImportMapButton()
 
 
-
             }
-            if (data == null) {
+            if (projects == null) {
                 Column(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,7 +98,7 @@ object HomeScreen : Screen {
                         modifier = Modifier.size(32.dp)
                     )
                 }
-            } else if (data!!.isEmpty()) {
+            } else if (projects!!.isEmpty()) {
                 Column(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -104,13 +115,12 @@ object HomeScreen : Screen {
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical =  8.dp)
                     ) {
-                        for (i in 1..50) { // багато елементів для прокрутки
-//                        Text("Item #$i", modifier = Modifier.padding(4.dp))
+                        projects!!.forEach { (ref, data) ->
                             ProjectCard(
-                                "Project #$i",
-                                "path/to/project#$i",
+                                name = data.name,
+                                ref = ref,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -159,12 +169,42 @@ object HomeScreen : Screen {
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    private fun ProjectCard(name: String, path: String, modifier: Modifier = Modifier) {
-        Column(modifier) {
-            Text(name)
-            Spacer(Modifier.height(4.dp))
-            Text(path, color = JewelTheme.globalColors.text.info)
+    private fun ProjectCard(name: String, ref: ProjectRef, modifier: Modifier = Modifier) {
+        val nav = LocalNavigator.currentOrThrow
+        val projectsService: ProjectsService by rememberDI { instance() }
+
+
+        Row(
+            Modifier.onClick {
+                nav.push(ProjectScreen(ref))
+            }
+        ) {
+            Column(
+                Modifier.size(32.dp).padding(4.dp).background(
+                    brush = Brush.horizontalGradient(
+                        colors = List(2) {
+                            Color.hsl(
+                                (0..360).random().toFloat(),
+                                0.67f,
+                                0.40f
+                            )
+                        },
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+                ),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(name.take(2))
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(modifier) {
+                Text(name)
+                Spacer(Modifier.height(4.dp))
+                Text(ref.path, color = JewelTheme.globalColors.text.info)
+            }
         }
     }
 

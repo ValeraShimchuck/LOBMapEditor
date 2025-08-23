@@ -9,6 +9,7 @@ import cafe.adriel.voyager.navigator.CurrentScreen
 import com.jogamp.opengl.GLCapabilities
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
@@ -28,6 +29,12 @@ fun App() {
 
     CurrentScreen()
 
+}
+
+object BaleriiDebugShitInformation {
+    var currentTerrain = MutableStateFlow(TerrainType.FARM)
+    var currentHeight = MutableStateFlow(1)
+    var setTerrainHeight = MutableStateFlow(false)
 }
 
 @Composable
@@ -80,6 +87,8 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
                     Player(PlayerTeam.BLUE)
                 )
             )))
+            
+            
 
             addGLEventListener(glListener)
             addMouseMotionListener(glListener.MouseMotionListener(this::repaint))

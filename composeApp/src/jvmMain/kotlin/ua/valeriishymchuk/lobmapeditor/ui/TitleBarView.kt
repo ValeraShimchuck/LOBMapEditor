@@ -16,7 +16,6 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.jetbrains.jewel.window.DecoratedWindowScope
 import org.jetbrains.jewel.window.TitleBar
 import org.jetbrains.jewel.window.newFullscreenControls
-import ua.valeriishymchuk.lobmapeditor.ui.screen.CanvasScreen
 
 @OptIn(ExperimentalFoundationApi::class)
 @ExperimentalLayoutApi
@@ -40,7 +39,7 @@ internal fun DecoratedWindowScope.TitleBarView() {
                     Icon(AllIconsKeys.General.ProjectStructure, "")
                 }
             }
-            Tooltip(tooltip = {
+            /*Tooltip(tooltip = {
                 Text("Canvas test")
             }) {
                 IconButton({
@@ -48,7 +47,7 @@ internal fun DecoratedWindowScope.TitleBarView() {
                 }) {
                     Icon(AllIconsKeys.Actions.StartDebugger, "")
                 }
-            }
+            }*/
         }
         Text(title)
     }
