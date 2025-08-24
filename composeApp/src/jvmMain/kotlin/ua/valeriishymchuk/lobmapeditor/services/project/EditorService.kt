@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.services
+package ua.valeriishymchuk.lobmapeditor.services.project
 
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand

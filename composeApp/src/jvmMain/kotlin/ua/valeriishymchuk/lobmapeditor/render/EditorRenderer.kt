@@ -13,9 +13,10 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
 import org.joml.Vector4f
+import org.kodein.di.DI
+import org.kodein.di.DIAware
 import org.kodein.di.instance
-import ua.valeriishymchuk.lobmapeditor.services.EditorService
-import ua.valeriishymchuk.lobmapeditor.di
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
@@ -25,9 +26,9 @@ import ua.valeriishymchuk.lobmapeditor.render.program.BlobProcessorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.OverlayTileProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
-import ua.valeriishymchuk.lobmapeditor.services.ToolService
-import ua.valeriishymchuk.lobmapeditor.services.dto.tools.HeightTool
-import ua.valeriishymchuk.lobmapeditor.services.dto.tools.TerrainTool
+import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import java.awt.Graphics2D
@@ -45,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 import kotlin.math.abs
 
-class EditorRenderer() : GLEventListener {
+class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
     private val toolService: ToolService by di.instance()
@@ -777,13 +778,13 @@ class EditorRenderer() : GLEventListener {
     private var leftLastY: Int? = null
     private var isLeftDragging = false
 
-    private var currentTerrain: TerrainType get() = toolService.terrain
+    private var currentTerrain: TerrainType get() = toolService.terrain.value
         set(value) {
             BaleriiDebugShitInformation.currentTerrain.value = value
-            toolService.terrain = value
+            toolService.terrain.value = value
         }
     private var setTerrainHeight: Boolean get() {
-        return toolService.currentTool == HeightTool
+        return toolService.currentTool.value == HeightTool
     }
         set(value) {
             BaleriiDebugShitInformation.setTerrainHeight.value = value
@@ -792,11 +793,11 @@ class EditorRenderer() : GLEventListener {
             } else toolService.setTool(TerrainTool)
         }
     private var currentHeight: Int get() {
-        return toolService.height
+        return toolService.height.value
     }
         set(value) {
             BaleriiDebugShitInformation.currentHeight.value = value
-            toolService.height = value
+            toolService.height.value = value
         }
     private var isShiftPressed = false
     private var isCtrlPressed = false
@@ -878,7 +879,7 @@ class EditorRenderer() : GLEventListener {
 
         private fun checkRightReleased(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON3) return
-            when (toolService.currentTool) {
+            when (toolService.currentTool.value) {
                 is TerrainTool -> {
                     val currentTerrainIndex = TerrainType.entries.indexOf(currentTerrain)
                     if (isShiftPressed) {

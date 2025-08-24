@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.services.dto.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 

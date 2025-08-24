@@ -5,18 +5,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.component.VerticalSplitLayout
-import org.jetbrains.jewel.window.DecoratedWindow
-import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
+import org.jetbrains.jewel.ui.component.*
 import org.kodein.di.*
-import org.kodein.di.compose.rememberDI
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.player.Player
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
+import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModule
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
@@ -30,30 +33,29 @@ class ProjectScreen(
     override fun Content() {
 
         org.kodein.di.compose.subDI(diBuilder = {
-            bindInstance<ProjectRef> { ref }
-            bindEagerSingleton<ProjectData> {
-                runBlocking { directDI.instance<ProjectsService>().loadProject(ref) }
-            }
+            import(setupProjectScopeDiModule(ref))
         }, content = {
             val terrain by BaleriiDebugShitInformation.currentTerrain.collectAsState()
             val height by BaleriiDebugShitInformation.currentHeight.collectAsState()
             val mode by BaleriiDebugShitInformation.setTerrainHeight.collectAsState()
 
-            VerticalSplitLayout(
-                first = { JoglCanvas {  } },
-                second = {
-                    Column {
-                        Text("TERRAIN $terrain")
-                        Text("HEIGHT $height")
-                        Text("MODE: ${if(mode) "HEIGHT" else "TERRAIN"}")
-                    }
+            HorizontalSplitLayout(
+                first = {
+                    EditorPanel()
                 },
+                second = { JoglCanvas {  } },
                 modifier = Modifier.fillMaxSize(),
-                firstPaneMinWidth = 800.dp,
-                secondPaneMinWidth = 300.dp,
+                firstPaneMinWidth = 400.dp,
+                secondPaneMinWidth = 800.dp,
+                state = rememberSplitLayoutState(0.25f)
             )
         })
     }
 
+    @Composable
+    private fun EditorPanel() {
+        Column {
 
+        }
+    }
 }

@@ -11,6 +11,7 @@ import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.kodein.di.compose.localDI
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import java.awt.Dimension
@@ -32,44 +33,48 @@ object BaleriiDebugShitInformation {
 }
 
 @Composable
-fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) = SwingPanel(
-    factory = {
-        println("Initializing factory")
-        val profile = GLProfile.get(GLProfile.GL3)
-        val capabilities = GLCapabilities(profile)
+fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) {
+    val di = localDI()
+
+    SwingPanel(
+        factory = {
+            println("Initializing factory")
+            val profile = GLProfile.get(GLProfile.GL3)
+            val capabilities = GLCapabilities(profile)
 //        capabilities.isPBuffer = true
-        capabilities.apply {
-            doubleBuffered = true
-            depthBits = 24
-        }
+            capabilities.apply {
+                doubleBuffered = true
+                depthBits = 24
+            }
 
 
 
-        GLCanvas(capabilities).apply {
-            name = "MainGLCanvas"  // For debugging
-            setSize(800, 600)
-            preferredSize = Dimension(800, 600)
-            GLProfile.initSingleton()
-            println("Initializing GLProfile singleton")
+            GLCanvas(capabilities).apply {
+                name = "MainGLCanvas"  // For debugging
+                setSize(800, 600)
+                preferredSize = Dimension(800, 600)
+                GLProfile.initSingleton()
+                println("Initializing GLProfile singleton")
 
 
-            val glListener = EditorRenderer()
-            
-            
-
-            addGLEventListener(glListener)
-            addMouseMotionListener(glListener.MouseMotionListener(this::repaint))
-            val mouseListener = glListener.MouseListener(this::repaint)
-            addMouseListener(mouseListener)
-            addMouseWheelListener(mouseListener)
-            addKeyListener(glListener.KeyPressListener(this::repaint))
-
-            isVisible = true
-            canvasRefSet(this)
+                val glListener = EditorRenderer(di)
 
 
-        }
-    },
-    modifier = Modifier.fillMaxSize()
 
-)
+                addGLEventListener(glListener)
+                addMouseMotionListener(glListener.MouseMotionListener(this::repaint))
+                val mouseListener = glListener.MouseListener(this::repaint)
+                addMouseListener(mouseListener)
+                addMouseWheelListener(mouseListener)
+                addKeyListener(glListener.KeyPressListener(this::repaint))
+
+                isVisible = true
+                canvasRefSet(this)
+
+
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+
+    )
+}

@@ -1,6 +1,6 @@
-package ua.valeriishymchuk.lobmapeditor.services.dto.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
-import ua.valeriishymchuk.lobmapeditor.services.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 
 abstract class Tool<T : GameScenario<T>> {
