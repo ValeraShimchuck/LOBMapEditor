@@ -2,7 +2,6 @@ package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL.GL_BLEND
-import com.jogamp.opengl.GL.GL_ONE
 import com.jogamp.opengl.GL.GL_ONE_MINUS_SRC_ALPHA
 import com.jogamp.opengl.GL.GL_SRC_ALPHA
 import com.jogamp.opengl.GL3
@@ -14,7 +13,9 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
 import org.joml.Vector4f
-import ua.valeriishymchuk.lobmapeditor.command.CommandDispatcher
+import org.kodein.di.instance
+import ua.valeriishymchuk.lobmapeditor.services.EditorService
+import ua.valeriishymchuk.lobmapeditor.di
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
@@ -22,29 +23,33 @@ import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.BackgroundProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.BlobProcessorProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
+import ua.valeriishymchuk.lobmapeditor.render.program.OverlayTileProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
+import ua.valeriishymchuk.lobmapeditor.services.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.dto.tools.HeightTool
+import ua.valeriishymchuk.lobmapeditor.services.dto.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import java.awt.Graphics2D
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import java.awt.event.KeyListener
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
 import java.awt.event.MouseWheelEvent
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
-import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 import kotlin.math.abs
 
-class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenario.Preset>) : GLEventListener {
+class EditorRenderer() : GLEventListener {
 
+    private val editorService: EditorService<GameScenario.Preset> by di.instance()
+    private val toolService: ToolService by di.instance()
+    
     private val projectionMatrix = Matrix4f()
     private val viewMatrix = Matrix4f().identity()
     private val textures: MutableMap<String, Int> = ConcurrentHashMap()
@@ -52,6 +57,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private lateinit var backgroundProgram: BackgroundProgram
     private lateinit var tileMapProgram: TileMapProgram
     private lateinit var blobProcessorProgram: BlobProcessorProgram
+    private lateinit var overlayTileProgram: OverlayTileProgram
 
     private var backgroundImage: Int = -1
 
@@ -62,17 +68,17 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private val frame1Color = Vector4f(33f, 19f, 10f, 255f).div(255f)
     private val frame1Vertices = floatArrayOf(
         -frame1BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame1BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.map.widthPixels + frame1BorderOffset,
         -frame1BorderOffset,
         -frame1BorderOffset,
         -frame1BorderOffset,
 
         -frame1BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame1BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame1BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame1BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.map.widthPixels + frame1BorderOffset,
         -frame1BorderOffset,
     )
 
@@ -81,17 +87,17 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private val frame2Color = Vector4f(162f, 157f, 131f, 255f).div(255f)
     private val frame2Vertices = floatArrayOf(
         -frame2BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame2BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.map.widthPixels + frame2BorderOffset,
         -frame2BorderOffset,
         -frame2BorderOffset,
         -frame2BorderOffset,
 
         -frame2BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame2BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame2BorderOffset,
-        commandDispatcher.scenario.map.heightPixels + frame2BorderOffset,
-        commandDispatcher.scenario.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.map.widthPixels + frame2BorderOffset,
         -frame2BorderOffset,
     )
 
@@ -101,13 +107,13 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private var heightBlobTexture: Int = -1
 
     private val tileMapVertices = floatArrayOf(
-        0f, commandDispatcher.scenario.map.heightPixels.toFloat(),
-        commandDispatcher.scenario.map.widthPixels.toFloat(), 0f,
+        0f, editorService.scenario.map.heightPixels.toFloat(),
+        editorService.scenario.map.widthPixels.toFloat(), 0f,
         0f, 0f,
 
-        0f, commandDispatcher.scenario.map.heightPixels.toFloat(),
-        commandDispatcher.scenario.map.widthPixels.toFloat(), commandDispatcher.scenario.map.heightPixels.toFloat(),
-        commandDispatcher.scenario.map.widthPixels.toFloat(), 0f,
+        0f, editorService.scenario.map.heightPixels.toFloat(),
+        editorService.scenario.map.widthPixels.toFloat(), editorService.scenario.map.heightPixels.toFloat(),
+        editorService.scenario.map.widthPixels.toFloat(), 0f,
     )
 
 
@@ -178,6 +184,13 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
                 )
             )
         }
+
+        TerrainType.entries.filterNot { it.isSprite }.mapNotNull { it.overlay }.distinct().forEach {
+            println("Loading overlay: $it")
+            loadAtlas(ctx,"tilesets/${it}", Vector2i(32), Vector2i(4), ImageFilter(
+                useClamp = true
+            ))
+        }
         backgroundImage = textures["wood"]!!
 
 //        backgroundImage = getTerrain("grass")
@@ -234,6 +247,11 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
             loadShaderSource("vblobprocessor"),
             loadShaderSource("fblobprocessor")
         )
+        overlayTileProgram = OverlayTileProgram(
+            ctx,
+            loadShaderSource("voverlaytile"),
+            loadShaderSource("foverlaytile")
+        )
 
         projectionMatrix.setOrtho(
             0f,
@@ -252,6 +270,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         backgroundProgram.setUpVAO(ctx)
 
         println("GL initialized")
+        println("Loaded textures: ${textures.keys.joinToString(separator = "\n")}")
 
     }
 
@@ -315,7 +334,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         TerrainType.entries.sortedBy { it.dominance }.forEach { terrain ->
             tileMapProgram.setUpVBO(ctx, tileMapVertices)
             tileMapProgram.setUpVAO(ctx)
-            tileMapProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, terrain)
+            tileMapProgram.loadMap(ctx, editorService.scenario.map.terrainMap, terrain)
             val terrainToRender = terrain.mainTerrain ?: terrain
             tileMapProgram.applyUniform(
                 ctx, TileMapProgram.Uniform(
@@ -323,9 +342,9 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
                     terrainMaskTexture,
                     farmOverlayTexture,
                     textures["tilesets/${terrainToRender.textureLocation}"]!!,
-                    Vector2i(commandDispatcher.scenario.map.widthTiles, commandDispatcher.scenario.map.heightTiles),
+                    Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
                     Vector2i(4, 4),
-                    Vector2i(commandDispatcher.scenario.map.widthPixels, commandDispatcher.scenario.map.heightPixels),
+                    Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
                     Vector4f(1f),
                     Vector2i(width, height)
                 )
@@ -340,13 +359,13 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         TerrainType.BLOB_TERRAIN.reversed().forEach { terrain ->
             blobProcessorProgram.setUpVBO(ctx, tileMapVertices)
             blobProcessorProgram.setUpVAO(ctx)
-            blobProcessorProgram.loadMap(ctx, commandDispatcher.scenario.map.terrainMap, terrain)
+            blobProcessorProgram.loadMap(ctx, editorService.scenario.map.terrainMap, terrain)
             blobProcessorProgram.applyUniform(
                 ctx, BlobProcessorProgram.Uniform(
                     mvpMatrix,
                     textures["tilesets/${terrain.textureLocation}"]!!,
-                    Vector2i(commandDispatcher.scenario.map.widthTiles, commandDispatcher.scenario.map.heightTiles),
-                    Vector2i(commandDispatcher.scenario.map.widthPixels, commandDispatcher.scenario.map.heightPixels),
+                    Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
+                    Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
                     Vector4f(1f),
                 )
             )
@@ -354,20 +373,20 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         }
 
 
-        val heightMap = commandDispatcher.scenario.map.terrainHeight
+        val heightMap = editorService.scenario.map.terrainHeight
         val maxTerrain: Int = heightMap.map.flatMap { it }.distinct().max()
         val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min() + 1
 
         for (heightTile in minTerrain..maxTerrain) {
             blobProcessorProgram.setUpVBO(ctx, tileMapVertices)
             blobProcessorProgram.setUpVAO(ctx)
-            blobProcessorProgram.loadHeight(ctx, commandDispatcher.scenario.map.terrainHeight, heightTile)
+            blobProcessorProgram.loadHeight(ctx, editorService.scenario.map.terrainHeight, heightTile)
             blobProcessorProgram.applyUniform(
                 ctx, BlobProcessorProgram.Uniform(
                     mvpMatrix,
                     heightBlobTexture,
-                    Vector2i(commandDispatcher.scenario.map.widthTiles, commandDispatcher.scenario.map.heightTiles),
-                    Vector2i(commandDispatcher.scenario.map.widthPixels, commandDispatcher.scenario.map.heightPixels),
+                    Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
+                    Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
                     Vector4f(1f),
                 )
             )
@@ -375,7 +394,26 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         }
 
 
+        ctx.glUseProgram(overlayTileProgram.program)
+        ctx.glBindVertexArray(overlayTileProgram.vao)
+        ctx.glBindVBO(overlayTileProgram.vbo)
 
+        TerrainType.entries.filter { it.overlay != null && !it.isSprite }.forEach { terrain ->
+            val overlay = terrain.overlay!!
+            overlayTileProgram.setUpVBO(ctx, tileMapVertices)
+            overlayTileProgram.setUpVAO(ctx)
+            overlayTileProgram.loadMap(ctx, editorService.scenario.map.terrainMap, terrain)
+            overlayTileProgram.applyUniform(
+                ctx, OverlayTileProgram.Uniform(
+                    mvpMatrix,
+                    textures["tilesets/${overlay}"] ?: throw IllegalStateException("Can't find tilesets/${overlay}"),
+                    Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
+                    Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
+                    Vector4f(1f),
+                )
+            )
+            ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+        }
 
 
 
@@ -501,11 +539,11 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
                         }
                     }
                 }
-                val location = "${key}/${layer}.png"
-                val file = File(location)
-                file.parentFile.mkdirs()
-                ImageIO.write(bufferImage, "PNG", file)
-                println("Storing image at ${file.absolutePath} ${bufferImage.width}x${bufferImage.height}")
+//                val location = "${key}/${layer}.png"
+//                val file = File(location)
+//                file.parentFile.mkdirs()
+//                ImageIO.write(bufferImage, "PNG", file)
+//                println("Storing image at ${file.absolutePath} ${bufferImage.width}x${bufferImage.height}")
                 // Flip buffer for OpenGL
                 buffer.flip()
 
@@ -670,7 +708,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
 
     private fun getTileCordsFromScreen(cursorX: Int, cursorY: Int): Vector2i? {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
-        val map = commandDispatcher.scenario.map
+        val map = editorService.scenario.map
         if (worldCoordinates.x > map.widthPixels || worldCoordinates.x < 0) return null
         if (worldCoordinates.y > map.heightPixels || worldCoordinates.y < 0) return null
         worldCoordinates.floor()
@@ -680,7 +718,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
 
     private fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
-        val map = commandDispatcher.scenario.map
+        val map = editorService.scenario.map
 
         // Clamp world coordinates to map boundaries
         val clampedX = worldCoordinates.x.coerceIn(0f, (map.widthPixels - 1).toFloat())
@@ -693,52 +731,6 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         return Vector2i(tileX, tileY)
     }
 
-    private fun trySetTile(tileX: Int, tileY: Int, terrainType: TerrainType): Boolean {
-        return commandDispatcher.scenario.map.terrainMap.set(tileX, tileY, terrainType) != terrainType
-    }
-
-    private fun trySetTileFromScreen(cursorX: Int, cursorY: Int, terrainType: TerrainType): Boolean {
-        val cords = getTileCordsFromScreen(cursorX, cursorY) ?: return false
-        return trySetTile(cords.x, cords.y, terrainType)
-    }
-
-    private fun trySetTileHeight(tileX: Int, tileY: Int, height: Int): Boolean {
-        val heightMap = commandDispatcher.scenario.map.terrainHeight
-        if (heightMap.set(tileX, tileY, height) == null) return false
-
-        val queue = LinkedList<Pair<Int, Int>>()
-        queue.add(tileX to tileY)
-
-        while (queue.isNotEmpty()) {
-            val (x, y) = queue.poll()
-            val currentHeight = heightMap.get(x, y) ?: continue
-
-            for (dx in -1..1) {
-                for (dy in -1..1) {
-                    if (dx == 0 && dy == 0) continue
-                    val nx = x + dx
-                    val ny = y + dy
-                    // Protect original tile from being modified
-                    if (nx == tileX && ny == tileY) continue
-
-                    val neighborHeight = heightMap.get(nx, ny) ?: continue
-                    val diff = currentHeight - neighborHeight
-                    if (abs(diff) <= 1) continue
-
-                    val newHeight = if (diff > 0) currentHeight - 1 else currentHeight + 1
-                    if (heightMap.set(nx, ny, newHeight) != null) {
-                        queue.add(nx to ny)
-                    }
-                }
-            }
-        }
-        return true
-    }
-
-    private fun trySetTileHeightFromScreen(cursorX: Int, cursorY: Int, height: Int): Boolean {
-        val cords = getTileCordsFromScreen(cursorX, cursorY) ?: return false
-        return trySetTileHeight(cords.x, cords.y, height)
-    }
 
     fun getPointsBetween(start: Vector2i, end: Vector2i): List<Vector2i> {
         val points = mutableListOf<Vector2i>()
@@ -785,40 +777,52 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
     private var leftLastY: Int? = null
     private var isLeftDragging = false
 
-    private var currentTerrain: TerrainType = TerrainType.FARM
+    private var currentTerrain: TerrainType get() = toolService.terrain
         set(value) {
             BaleriiDebugShitInformation.currentTerrain.value = value
-            field = value
+            toolService.terrain = value
         }
-    private var setTerrainHeight: Boolean = false
+    private var setTerrainHeight: Boolean get() {
+        return toolService.currentTool == HeightTool
+    }
         set(value) {
             BaleriiDebugShitInformation.setTerrainHeight.value = value
-            field = value
+            if (value) {
+                toolService.setTool(HeightTool)
+            } else toolService.setTool(TerrainTool)
         }
-    private var currentHeight: Int = 1
+    private var currentHeight: Int get() {
+        return toolService.height
+    }
         set(value) {
             BaleriiDebugShitInformation.currentHeight.value = value
-            field = value
+            toolService.height = value
         }
     private var isShiftPressed = false
+    private var isCtrlPressed = false
 
-//    private enum class DrawType {
-//        TERRAIN,
-//        HEIGHT
-//    }
 
-    inner class KeyPressListener : KeyAdapter() {
+    inner class KeyPressListener(private val rerender: () -> Unit) : KeyAdapter() {
 
         override fun keyPressed(e: KeyEvent) {
             when (e.keyCode) {
                 KeyEvent.VK_SHIFT -> isShiftPressed = true
+                KeyEvent.VK_CONTROL -> isCtrlPressed = true
             }
         }
 
         override fun keyReleased(e: KeyEvent) {
             when (e.keyCode) {
                 KeyEvent.VK_F -> setTerrainHeight = !setTerrainHeight
+                KeyEvent.VK_Z -> {
+                    if (!isCtrlPressed) return
+                    if (isShiftPressed) {
+                        editorService.redo()
+                    } else editorService.undo()
+                    rerender()
+                }
                 KeyEvent.VK_SHIFT -> isShiftPressed = false
+                KeyEvent.VK_CONTROL -> isCtrlPressed = false
             }
         }
     }
@@ -843,12 +847,7 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
             val newCords = getTileCordsFromScreenClamp(leftLastX ?: return, leftLastY ?: return)
 
 
-            val shouldRender = getPointsBetween(oldCords, newCords).distinct()
-                .map {
-                    if (setTerrainHeight) return@map trySetTileHeight(it.x, it.y, currentHeight)
-                    trySetTile(it.x, it.y, currentTerrain)
-                }
-                .firstOrNull { it } == true
+            val shouldRender = toolService.useToolManyTimes(getPointsBetween(oldCords, newCords).distinct(), false)
             if (shouldRender) rerender()
         }
 
@@ -879,27 +878,29 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
 
         private fun checkRightReleased(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON3) return
-            if (!setTerrainHeight) {
-
-                val currentTerrainIndex = TerrainType.entries.indexOf(currentTerrain)
-                if (isShiftPressed) {
-                    var newIndex = currentTerrainIndex - 1
-                    if (newIndex < 0) newIndex += TerrainType.entries.size
-                    currentTerrain = TerrainType.entries[newIndex]
-                } else {
-                    currentTerrain = TerrainType.entries[(currentTerrainIndex + 1) % TerrainType.entries.size]
+            when (toolService.currentTool) {
+                is TerrainTool -> {
+                    val currentTerrainIndex = TerrainType.entries.indexOf(currentTerrain)
+                    if (isShiftPressed) {
+                        var newIndex = currentTerrainIndex - 1
+                        if (newIndex < 0) newIndex += TerrainType.entries.size
+                        currentTerrain = TerrainType.entries[newIndex]
+                    } else {
+                        currentTerrain = TerrainType.entries[(currentTerrainIndex + 1) % TerrainType.entries.size]
+                    }
                 }
-                println("Switched terrain to $currentTerrain")
-            } else {
-                if (isShiftPressed) {
-                    var newIndex = currentHeight - 1
-                    if (newIndex < 0) newIndex += 8
-                    currentHeight = newIndex
-                } else {
-                    currentHeight = (currentHeight + 1) % 8
+                is HeightTool -> {
+                    if (isShiftPressed) {
+                        var newIndex = currentHeight - 1
+                        if (newIndex < 0) newIndex += 8
+                        currentHeight = newIndex
+                    } else {
+                        currentHeight = (currentHeight + 1) % 8
+                    }
                 }
-
-                println("Switched height to $currentHeight")
+                else -> {
+                    println("Can't find handler for ${toolService.currentTool}")
+                }
             }
         }
 
@@ -920,13 +921,16 @@ class EditorRenderer(private val commandDispatcher: CommandDispatcher<GameScenar
         private fun checkLeftPressed(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON1) return
             isLeftDragging = true
-            if (!setTerrainHeight && trySetTileFromScreen(e.x, e.y, currentTerrain)) rerender()
-            if (setTerrainHeight && trySetTileHeightFromScreen(e.x, e.y, currentHeight)) rerender()
+//            if (!setTerrainHeight && trySetTileFromScreen(e.x, e.y, currentTerrain)) rerender()
+//            if (setTerrainHeight && trySetTileHeightFromScreen(e.x, e.y, currentHeight)) rerender()
+            val tile = getTileCordsFromScreen(e.x, e.y) ?: return
+            if (toolService.useTool(tile.x, tile.y)) rerender()
         }
 
         private fun checkLeftReleased(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON1) return
             isLeftDragging = false
+            toolService.flushCompoundCommands()
             leftLastX = null
             leftLastY = null
         }

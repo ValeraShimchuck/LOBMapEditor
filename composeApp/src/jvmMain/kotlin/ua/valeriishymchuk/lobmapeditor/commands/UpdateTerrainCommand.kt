@@ -1,7 +1,6 @@
-package ua.valeriishymchuk.lobmapeditor.command
+package ua.valeriishymchuk.lobmapeditor.commands
 
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 
 data class UpdateTerrainCommand(
@@ -14,18 +13,18 @@ data class UpdateTerrainCommand(
 
 ): Command.CommonData {
     override fun execute(input: GameScenario.CommonData): GameScenario.CommonData {
-        val terrain = input.map.terrainMap.clone()
-        val heightMap = input.map.terrainHeight.clone()
+        val terrain = input.map.terrainMap
+        val heightMap = input.map.terrainHeight
         terrain.set(x, y, newTerrain)
         heightMap.set(x, y, newHeight)
-        return input.copy(map = input.map.copy(terrainMap = terrain, heightMap))
+        return input
     }
 
     override fun undo(input: GameScenario.CommonData): GameScenario.CommonData {
-        val terrain = input.map.terrainMap.clone()
-        val heightMap = input.map.terrainHeight.clone()
+        val terrain = input.map.terrainMap
+        val heightMap = input.map.terrainHeight
         terrain.set(x, y, oldTerrain)
         heightMap.set(x, y, oldHeight)
-        return input.copy(map = input.map.copy(terrainMap = terrain, heightMap))
+        return input
     }
 }

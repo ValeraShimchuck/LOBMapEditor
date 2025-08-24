@@ -24,6 +24,7 @@ open class ArrayMap2d<T>(
         val row = _map.getOrNull(y) ?: return null
         if (x >= row.size ) return null
         val prevValue = row[x]
+        if (prevValue == value) return null
         row[x] = value
         return prevValue
     }

@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.command
+package ua.valeriishymchuk.lobmapeditor.commands
 
 data class ComposedCommand<T>(
     val commands: List<Command<T>>

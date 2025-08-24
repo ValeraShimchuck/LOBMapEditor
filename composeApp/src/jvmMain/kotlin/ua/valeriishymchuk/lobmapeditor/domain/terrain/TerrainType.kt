@@ -6,7 +6,9 @@ enum class TerrainType(
     val dominance: Int,
     val mainTerrain: TerrainType? = null,
     val additionalLocation: String? = null,
-    val isFarm: Boolean = false) {
+    val isFarm: Boolean = false,
+    val isSprite: Boolean = false
+) {
     GRASS(0, "terrain/grass", dominance = 21),
     FOREST(1, "terrain/forest-ground", dominance = 19, additionalLocation = "trees"),
     BUILDING(2, "terrain/city1", dominance = 15, additionalLocation = "buildings"),
@@ -19,8 +21,8 @@ enum class TerrainType(
     DIRT(9, "terrain/dirt", dominance = 17),
     SAND(10, "terrain/sand", dominance = 14),
     FARM(11, "terrain/farm", dominance = 6, isFarm = true),
-    CITY(12, "city", dominance = 16, mainTerrain = BUILDING),
-    FOREST_WINTER(13, "tree-winter", dominance = 18, mainTerrain = FOREST),
+    CITY(12, "city", dominance = 16, mainTerrain = BUILDING, isSprite = true),
+    FOREST_WINTER(13, "terrain/dirt", dominance = 18, additionalLocation = "tree-winter"),
     CLIFF_WINTER(14, "blending/cliff-winter", dominance = 0, SNOW),
     ROAD_WINTER(15, "blending/road-winter", dominance = 9, SNOW),
     ICE(16, "terrain/ice", dominance = 2),
@@ -33,6 +35,8 @@ enum class TerrainType(
 
     val isTerrain = textureLocation.startsWith("terrain/")
     val isBlob = textureLocation.startsWith("blending/")
+
+    val overlay: String? = if (isBlob) null else additionalLocation ?: mainTerrain?.let { textureLocation }
 
     companion object {
         val DEFAULT: TerrainType = GRASS

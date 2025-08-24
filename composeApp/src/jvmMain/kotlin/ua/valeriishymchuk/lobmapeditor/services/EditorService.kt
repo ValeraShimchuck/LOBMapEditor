@@ -1,11 +1,18 @@
-package ua.valeriishymchuk.lobmapeditor.command
+package ua.valeriishymchuk.lobmapeditor.services
 
+import ua.valeriishymchuk.lobmapeditor.commands.Command
+import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import kotlin.collections.ArrayDeque
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
-class CommandDispatcher<T : GameScenario<T>>(
+class EditorService<T : GameScenario<T>>(
     scenario: T
 ) {
+
+    private val lock = ReentrantLock()
+
+    private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
     var scenario: T = scenario
     private set
@@ -28,6 +35,42 @@ class CommandDispatcher<T : GameScenario<T>>(
 
     private val undoStack = ArrayDeque<CommandWrapper<*>>()
     private val redoStack = ArrayDeque<CommandWrapper<*>>()
+
+    fun executeCompound(command: Command<T>) {
+        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
+        lock.withLock {
+            composedCommands.add(wrapper)
+            wrapper.execute()
+        }
+    }
+
+    fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
+        val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
+        lock.withLock {
+            composedCommands.add(wrapper)
+            wrapper.execute()
+        }
+    }
+
+    fun flushCompound() {
+        lock.withLock {
+            if (composedCommands.isEmpty()) return@withLock
+            val command = ComposedCommand(composedCommands.map { it.command })
+            composedCommands.clear()
+            undoStack.addLast(CommandWrapper(scenarioGetter, scenarioSetter, command as Command<T>))
+            redoStack.clear()
+        }
+    }
+
+    fun flushCompoundCommon() {
+        lock.withLock {
+            if (composedCommands.isEmpty()) return@withLock
+            val command = ComposedCommand(composedCommands.map { it.command })
+            composedCommands.clear()
+            undoStack.addLast(CommandWrapper(commonDataGetter, commonDataSetter, command as Command<GameScenario.CommonData>))
+            redoStack.clear()
+        }
+    }
 
     fun execute(command: Command<T>) {
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)

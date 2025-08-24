@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.command
+package ua.valeriishymchuk.lobmapeditor.commands
 
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 
