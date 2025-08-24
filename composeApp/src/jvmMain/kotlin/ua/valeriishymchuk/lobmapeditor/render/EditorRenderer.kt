@@ -21,10 +21,7 @@ import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.*
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
-import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import java.awt.Graphics2D
 import java.awt.event.*
 import java.awt.image.BufferedImage
@@ -769,26 +766,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private var leftLastY: Int? = null
     private var isLeftDragging = false
 
-    private var currentTerrain: TerrainType
-        get() = TerrainTool.terrain.value
-        set(value) {
-            BaleriiDebugShitInformation.currentTerrain.value = value
-            TerrainTool.terrain.value = value
-        }
-    private var setTerrainHeight: Boolean
-        get() = toolService.currentTool.value == HeightTool
-        set(value) {
-            BaleriiDebugShitInformation.setTerrainHeight.value = value
-            if (value) {
-                toolService.setTool(HeightTool)
-            } else toolService.setTool(TerrainTool)
-        }
-    private var currentHeight: Int
-        get() = HeightTool.height.value
-        set(value) {
-            BaleriiDebugShitInformation.currentHeight.value = value
-            HeightTool.height.value = value
-        }
     private var isShiftPressed = false
     private var isCtrlPressed = false
 
@@ -804,7 +781,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         override fun keyReleased(e: KeyEvent) {
             when (e.keyCode) {
-                KeyEvent.VK_F -> setTerrainHeight = !setTerrainHeight
+//                KeyEvent.VK_F -> setTerrainHeight = !setTerrainHeight
                 KeyEvent.VK_Z -> {
                     if (!isCtrlPressed) return
                     if (isShiftPressed) {
@@ -869,33 +846,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         }
 
         private fun checkRightReleased(e: MouseEvent) {
-            if (e.button != MouseEvent.BUTTON3) return
-            when (toolService.currentTool.value) {
-                is TerrainTool -> {
-                    val currentTerrainIndex = TerrainType.entries.indexOf(currentTerrain)
-                    if (isShiftPressed) {
-                        var newIndex = currentTerrainIndex - 1
-                        if (newIndex < 0) newIndex += TerrainType.entries.size
-                        currentTerrain = TerrainType.entries[newIndex]
-                    } else {
-                        currentTerrain = TerrainType.entries[(currentTerrainIndex + 1) % TerrainType.entries.size]
-                    }
-                }
 
-                is HeightTool -> {
-                    if (isShiftPressed) {
-                        var newIndex = currentHeight - 1
-                        if (newIndex < 0) newIndex += 8
-                        currentHeight = newIndex
-                    } else {
-                        currentHeight = (currentHeight + 1) % 8
-                    }
-                }
-
-                else -> {
-                    println("Can't find handler for ${toolService.currentTool}")
-                }
-            }
+            // TODO may be used later
         }
 
         private fun checkMiddlePressed(e: MouseEvent) {
@@ -915,8 +867,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         private fun checkLeftPressed(e: MouseEvent) {
             if (e.button != MouseEvent.BUTTON1) return
             isLeftDragging = true
-//            if (!setTerrainHeight && trySetTileFromScreen(e.x, e.y, currentTerrain)) rerender()
-//            if (setTerrainHeight && trySetTileHeightFromScreen(e.x, e.y, currentHeight)) rerender()
             val tile = getTileCordsFromScreen(e.x, e.y) ?: return
             if (toolService.useTool(tile.x, tile.y)) rerender()
         }
