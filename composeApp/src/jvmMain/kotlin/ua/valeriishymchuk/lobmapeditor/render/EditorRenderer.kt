@@ -1,9 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL.GL_BLEND
-import com.jogamp.opengl.GL.GL_ONE_MINUS_SRC_ALPHA
-import com.jogamp.opengl.GL.GL_SRC_ALPHA
+import com.jogamp.opengl.GL.*
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
@@ -16,28 +14,19 @@ import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
-import ua.valeriishymchuk.lobmapeditor.render.program.BackgroundProgram
-import ua.valeriishymchuk.lobmapeditor.render.program.BlobProcessorProgram
-import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
-import ua.valeriishymchuk.lobmapeditor.render.program.OverlayTileProgram
-import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
+import ua.valeriishymchuk.lobmapeditor.render.program.*
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import java.awt.Graphics2D
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
-import java.awt.event.MouseMotionAdapter
-import java.awt.event.MouseWheelEvent
+import java.awt.event.*
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
 import java.nio.ByteBuffer
@@ -50,7 +39,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
     private val toolService: ToolService by di.instance()
-    
+
     private val projectionMatrix = Matrix4f()
     private val viewMatrix = Matrix4f().identity()
     private val textures: MutableMap<String, Int> = ConcurrentHashMap()
@@ -188,9 +177,11 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         TerrainType.entries.filterNot { it.isSprite }.mapNotNull { it.overlay }.distinct().forEach {
             println("Loading overlay: $it")
-            loadAtlas(ctx,"tilesets/${it}", Vector2i(32), Vector2i(4), ImageFilter(
-                useClamp = true
-            ))
+            loadAtlas(
+                ctx, "tilesets/${it}", Vector2i(32), Vector2i(4), ImageFilter(
+                    useClamp = true
+                )
+            )
         }
         backgroundImage = textures["wood"]!!
 
@@ -467,7 +458,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         key: String,
         tileSize: Vector2i, // size of a tile
         tileDimensions: Vector2i, // amount of tiles
-        filter: ImageFilter = ImageFilter()
+        filter: ImageFilter = ImageFilter(),
     ) {
         val image = loadTextureData(key)
 
@@ -604,7 +595,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         ctx: GL3,
         key: String,
         useNearest: Boolean = true,
-        useClamp: Boolean = false
+        useClamp: Boolean = false,
     ) { // useNearest for those textures is set to false
         val image = loadTextureData(key) // totally fine
         val textureNameArray: IntArray = IntArray(1)
@@ -668,7 +659,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
 
         for (i in 0..<rawPixelData.size step 4) {
-            rgbaData[i]     = rawPixelData[i + 3]  // R (was last byte)
+            rgbaData[i] = rawPixelData[i + 3]  // R (was last byte)
             rgbaData[i + 1] = rawPixelData[i + 2]  // G
             rgbaData[i + 2] = rawPixelData[i + 1]  // B
             rgbaData[i + 3] = rawPixelData[i]      // A (was first byte)
@@ -690,7 +681,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         cursorX: Int,
         cursorY: Int,
         viewMatrix: Matrix4f = this@EditorRenderer.viewMatrix,
-        projectionMatrix: Matrix4f = this@EditorRenderer.projectionMatrix
+        projectionMatrix: Matrix4f = this@EditorRenderer.projectionMatrix,
     ): Vector2f {
 
         val invertProj = projectionMatrix.invert(Matrix4f())
@@ -778,26 +769,25 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private var leftLastY: Int? = null
     private var isLeftDragging = false
 
-    private var currentTerrain: TerrainType get() = toolService.terrain.value
+    private var currentTerrain: TerrainType
+        get() = TerrainTool.terrain.value
         set(value) {
             BaleriiDebugShitInformation.currentTerrain.value = value
-            toolService.terrain.value = value
+            TerrainTool.terrain.value = value
         }
-    private var setTerrainHeight: Boolean get() {
-        return toolService.currentTool.value == HeightTool
-    }
+    private var setTerrainHeight: Boolean
+        get() = toolService.currentTool.value == HeightTool
         set(value) {
             BaleriiDebugShitInformation.setTerrainHeight.value = value
             if (value) {
                 toolService.setTool(HeightTool)
             } else toolService.setTool(TerrainTool)
         }
-    private var currentHeight: Int get() {
-        return toolService.height.value
-    }
+    private var currentHeight: Int
+        get() = HeightTool.height.value
         set(value) {
             BaleriiDebugShitInformation.currentHeight.value = value
-            toolService.height.value = value
+            HeightTool.height.value = value
         }
     private var isShiftPressed = false
     private var isCtrlPressed = false
@@ -822,6 +812,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                     } else editorService.undo()
                     rerender()
                 }
+
                 KeyEvent.VK_SHIFT -> isShiftPressed = false
                 KeyEvent.VK_CONTROL -> isCtrlPressed = false
             }
@@ -890,6 +881,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                         currentTerrain = TerrainType.entries[(currentTerrainIndex + 1) % TerrainType.entries.size]
                     }
                 }
+
                 is HeightTool -> {
                     if (isShiftPressed) {
                         var newIndex = currentHeight - 1
@@ -899,6 +891,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                         currentHeight = (currentHeight + 1) % 8
                     }
                 }
+
                 else -> {
                     println("Can't find handler for ${toolService.currentTool}")
                 }

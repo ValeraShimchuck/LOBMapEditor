@@ -1,21 +1,32 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 import java.util.LinkedList
 import kotlin.math.abs
 
 object HeightTool : PresetTool() {
 
+    val height = MutableStateFlow(1)
+
+    override val uiInfo: ToolUiInfo = ToolUiInfo(
+        AllIconsKeys.Actions.Commit,
+        "Height",
+        "Height: change height of terrain"
+    )
+
     override fun editTile(
         editorService: EditorService<GameScenario.Preset>,
         x: Int,
         y: Int,
-        ctx: ToolContext,
         flushCompoundCommands: Boolean
     ): Boolean {
-        return trySetTileHeight(x, y, ctx.height, editorService, flushCompoundCommands)
+        return trySetTileHeight(x, y, height.value, editorService, flushCompoundCommands)
     }
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
