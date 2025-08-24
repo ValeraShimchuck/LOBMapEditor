@@ -46,22 +46,26 @@ private fun TerrainToolConfig() {
         labelText = currentTerrain.name,
         popupManager = popupManager,
         popupContent = {
-            Column {
-                TerrainType.entries.forEach { item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(2.dp)
-                            .onClick {
-                                TerrainTool.terrain.value = item
-                                popupManager.setPopupVisible(false)
-                            }
-                    ) {
-                        Text(
-                            text = item.name,
-                        )
-                    }
+            VerticallyScrollableContainer {
+                Column {
+                    TerrainType.entries.sortedByDescending {
+                        it.dominance
+                    }.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(2.dp)
+                                .onClick {
+                                    TerrainTool.terrain.value = item
+                                    popupManager.setPopupVisible(false)
+                                }
+                        ) {
+                            Text(
+                                text = item.name,
+                            )
+                        }
 
+                    }
                 }
             }
         }
