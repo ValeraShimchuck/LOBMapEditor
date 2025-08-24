@@ -26,11 +26,6 @@ fun App() {
 
 }
 
-object BaleriiDebugShitInformation {
-    var currentTerrain = MutableStateFlow(TerrainType.FARM)
-    var currentHeight = MutableStateFlow(1)
-    var setTerrainHeight = MutableStateFlow(false)
-}
 
 @Composable
 fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit ) {

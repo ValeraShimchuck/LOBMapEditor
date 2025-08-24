@@ -24,7 +24,6 @@ import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModule
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
-import ua.valeriishymchuk.lobmapeditor.ui.BaleriiDebugShitInformation
 import ua.valeriishymchuk.lobmapeditor.ui.JoglCanvas
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolBar
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolConfig
@@ -39,9 +38,6 @@ class ProjectScreen(
         org.kodein.di.compose.subDI(diBuilder = {
             import(setupProjectScopeDiModule(ref))
         }, content = {
-            val terrain by BaleriiDebugShitInformation.currentTerrain.collectAsState()
-            val height by BaleriiDebugShitInformation.currentHeight.collectAsState()
-            val mode by BaleriiDebugShitInformation.setTerrainHeight.collectAsState()
 
             HorizontalSplitLayout(
                 first = {
