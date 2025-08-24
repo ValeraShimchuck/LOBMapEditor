@@ -14,6 +14,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 fun setupProjectScopeDiModule(ref: ProjectRef) = DI.Module("project scope module") {
     bindEagerSingleton {
         EditorService(
+            di,
             GameScenario.Preset(
                 GameScenario.CommonData(
                     "test",

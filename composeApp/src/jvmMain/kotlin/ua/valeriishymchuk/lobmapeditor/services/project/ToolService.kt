@@ -8,6 +8,7 @@ import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PresetTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 
 class ToolService(override val di: DI) : DIAware {
@@ -15,7 +16,8 @@ class ToolService(override val di: DI) : DIAware {
     private val editorService: EditorService<GameScenario.Preset> by instance()
     val tools = listOf(
         HeightTool,
-        TerrainTool
+        TerrainTool,
+        TerrainPickTool,
     )
 
 
