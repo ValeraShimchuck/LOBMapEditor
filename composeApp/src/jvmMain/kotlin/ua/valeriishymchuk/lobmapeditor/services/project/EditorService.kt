@@ -1,5 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.services.project
 
+import org.kodein.di.DI
+import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
@@ -7,8 +9,9 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class EditorService<T : GameScenario<T>>(
-    scenario: T
-) {
+    override val di: DI,
+    scenario: T,
+): DIAware {
 
     private val lock = ReentrantLock()
 

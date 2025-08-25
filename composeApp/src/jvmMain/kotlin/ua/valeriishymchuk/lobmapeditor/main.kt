@@ -39,7 +39,6 @@ fun main() {
 //    System.setProperty("nativewindow.debug", "all")
 //    System.setProperty("jogl.verbose", "true")
     loadJogsLibs()
-    setupWorkDir()
     println("Successfully loaded libs")
 
     application {
@@ -79,12 +78,6 @@ fun main() {
     }
 }
 
-fun setupWorkDir() {
-    val workDir = File(System.getProperty("user.home"), ".lobmapeditor")
-    if (!workDir.exists()) workDir.mkdirs()
-    System.setProperty("user.dir", workDir.absolutePath)
-    println(workDir.absolutePath)
-}
 
 suspend fun unzip(src: String, dst: File) {
     val bais = ByteArrayInputStream(Res.readBytes(src))
