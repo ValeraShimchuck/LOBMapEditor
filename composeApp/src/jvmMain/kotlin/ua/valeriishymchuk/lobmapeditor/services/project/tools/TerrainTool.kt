@@ -15,7 +15,7 @@ object TerrainTool : PresetTool() {
     override val uiInfo: ToolUiInfo = ToolUiInfo(
         AllIconsKeys.Actions.Edit,
         "Terrain",
-        "Height: change height of terrain"
+        "Terrain: change type of terrain"
     )
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
