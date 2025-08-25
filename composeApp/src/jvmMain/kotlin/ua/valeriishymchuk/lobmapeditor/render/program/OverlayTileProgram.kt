@@ -27,6 +27,10 @@ class OverlayTileProgram(
     val mapSizeLocation = ctx.glGetUniformLocation(program, "uMapSize")
     val colorTintLocation = ctx.glGetUniformLocation(program, "uColorTint")
     val overlayLocation = ctx.glGetUniformLocation(program, "uOverlayTexture")
+    val randomRangeLocation = ctx.glGetUniformLocation(program, "uRandomRange")
+    val overlayAmountLocation = ctx.glGetUniformLocation(program, "uOverlayAmount")
+    val scaleLocation = ctx.glGetUniformLocation(program, "uScale")
+    val offsetLocation = ctx.glGetUniformLocation(program, "uOffset")
 
 
     val tileMapTexture: Int = let {
@@ -115,6 +119,11 @@ class OverlayTileProgram(
 
         ctx.glUniform4fv(colorTintLocation, 1, floatArrayOf(data.colorTint.x, data.colorTint.y, data.colorTint.z, data.colorTint.w), 0)
 
+        ctx.glUniform1f(randomRangeLocation, data.overlayInfo.randomRange)
+        ctx.glUniform1ui(overlayAmountLocation, data.overlayInfo.overlayAmount)
+        ctx.glUniform1f(scaleLocation, data.overlayInfo.scale)
+        ctx.glUniform1f(offsetLocation, data.overlayInfo.offset)
+
         val matrixBuffer = BufferHelper.allocateDirectFloatBuffer(4 * 4)
         data.mvp.get(matrixBuffer)
         matrixBuffer.flip()
@@ -138,6 +147,7 @@ class OverlayTileProgram(
         val tileUnit: Vector2f,
         val mapSize: Vector2f, // in world units
         val colorTint: Vector4f,
+        val overlayInfo: TerrainType.OverlayInfo
     ) {
         constructor(
             mvp: Matrix4f,
@@ -145,12 +155,14 @@ class OverlayTileProgram(
             mapTileSize: Vector2i,
             mapSize: Vector2i, // in world units
             colorTint: Vector4f,
+            overlayInfo: TerrainType.OverlayInfo
         ): this(
             mvp,
             overlayTexture,
             Vector2f(1f / mapTileSize.x, 1f / mapTileSize.y),
             Vector2f(mapSize.x.toFloat(), mapSize.y.toFloat()),
             colorTint,
+            overlayInfo,
         )
     }
 

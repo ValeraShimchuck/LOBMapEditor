@@ -172,11 +172,12 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             )
         }
 
-        TerrainType.entries.filterNot { it.isSprite }.mapNotNull { it.overlay }.distinct().forEach {
+        TerrainType.entries.mapNotNull { it.overlay }.distinct().forEach {
             println("Loading overlay: $it")
             loadAtlas(
-                ctx, "tilesets/${it}", Vector2i(32), Vector2i(4), ImageFilter(
-                    useClamp = true
+                ctx, "tilesets/${it.textureLocation}", it.elementSize, Vector2i(4), ImageFilter(
+                    useClamp = true,
+                    useLinear = false
                 )
             )
         }
@@ -387,7 +388,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         ctx.glBindVertexArray(overlayTileProgram.vao)
         ctx.glBindVBO(overlayTileProgram.vbo)
 
-        TerrainType.entries.filter { it.overlay != null && !it.isSprite }.forEach { terrain ->
+        TerrainType.entries.sortedBy { it.dominance }.filter { it.overlay != null }.forEach { terrain ->
             val overlay = terrain.overlay!!
             overlayTileProgram.setUpVBO(ctx, tileMapVertices)
             overlayTileProgram.setUpVAO(ctx)
@@ -395,10 +396,11 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             overlayTileProgram.applyUniform(
                 ctx, OverlayTileProgram.Uniform(
                     mvpMatrix,
-                    textures["tilesets/${overlay}"] ?: throw IllegalStateException("Can't find tilesets/${overlay}"),
+                    textures["tilesets/${overlay.textureLocation}"] ?: throw IllegalStateException("Can't find tilesets/${overlay.textureLocation}"),
                     Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
                     Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
                     Vector4f(1f),
+                    overlay
                 )
             )
             ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)

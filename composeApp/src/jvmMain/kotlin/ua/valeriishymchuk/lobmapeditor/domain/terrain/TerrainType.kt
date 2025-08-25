@@ -1,17 +1,25 @@
 package ua.valeriishymchuk.lobmapeditor.domain.terrain
 
+import org.joml.Vector2i
+
+
 enum class TerrainType(
     val id: Int,
     val textureLocation: String,
     val dominance: Int,
     val mainTerrain: TerrainType? = null,
-    val additionalLocation: String? = null,
+    val overlay: OverlayInfo? = null,
     val isFarm: Boolean = false,
-    val isSprite: Boolean = false
 ) {
     GRASS(0, "terrain/grass", dominance = 21),
-    FOREST(1, "terrain/forest-ground", dominance = 19, additionalLocation = "trees"),
-    BUILDING(2, "terrain/city1", dominance = 15, additionalLocation = "buildings"),
+    FOREST(1, "terrain/forest-ground", dominance = 19, overlay = OverlayInfo(
+        "trees",
+        randomRange = 0.4f,
+        2
+    ),),
+    BUILDING(2, "terrain/city1", dominance = 15, overlay = OverlayInfo(
+        "buildings",
+    )),
     ROAD(3, "blending/road", dominance = 10, GRASS),
     SHALLOW_WATER(4, "terrain/shallow-water", dominance = 4),
     DEEP_WATER(5, "terrain/deep-water", dominance = 5),
@@ -21,8 +29,17 @@ enum class TerrainType(
     DIRT(9, "terrain/dirt", dominance = 17),
     SAND(10, "terrain/sand", dominance = 14),
     FARM(11, "terrain/farm", dominance = 6, isFarm = true),
-    CITY(12, "city", dominance = 16, mainTerrain = BUILDING, isSprite = true),
-    FOREST_WINTER(13, "terrain/dirt", dominance = 18, additionalLocation = "tree-winter"),
+    CITY(12, BUILDING.textureLocation, dominance = 16, overlay = OverlayInfo(
+        "city",
+        scale = 1.31f,
+        offset = -0.15f,
+        elementSize = Vector2i(42)
+    )),
+    FOREST_WINTER(13, "terrain/dirt", dominance = 18,overlay = OverlayInfo(
+        "tree-winter",
+        randomRange = 0.4f,
+        2
+    )),
     CLIFF_WINTER(14, "blending/cliff-winter", dominance = 0, SNOW),
     ROAD_WINTER(15, "blending/road-winter", dominance = 9, SNOW),
     ICE(16, "terrain/ice", dominance = 2),
@@ -36,7 +53,17 @@ enum class TerrainType(
     val isTerrain = textureLocation.startsWith("terrain/")
     val isBlob = textureLocation.startsWith("blending/")
 
-    val overlay: String? = if (isBlob) null else additionalLocation ?: mainTerrain?.let { textureLocation }
+//    val overlay: String? = if (isBlob) null else additionalLocation ?: mainTerrain?.let { textureLocation }
+
+
+    data class OverlayInfo(
+        val textureLocation: String,
+        val randomRange: Float = 0f, // maximum allowed offset
+        val overlayAmount: Int = 1, // how much overlays will be rendered per tile
+        val scale: Float = 1f, // 1 - is 1 tile fit
+        val offset: Float = 0f,
+        val elementSize: Vector2i = Vector2i(32)
+    )
 
     companion object {
         val DEFAULT: TerrainType = GRASS

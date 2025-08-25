@@ -25,11 +25,7 @@ fun setupProjectScopeDiModule(ref: ProjectRef) = DI.Module("project scope module
 //                                terrainMap.set(x, y, TerrainType.GRASS)
 ////                                if (random.nextDouble() > 0.7) terrainMap.set(x, y, TerrainType.ROAD)
 //                            }
-                        terrainMap.set(10, 10, TerrainType.SHALLOW_WATER)
-                        terrainMap.set(10, 11, TerrainType.BRIDGE)
-                        terrainMap.set(9, 11, TerrainType.ROAD)
-                        terrainMap.set(11, 11, TerrainType.ROAD)
-                        terrainMap.set(10, 12, TerrainType.SHALLOW_WATER)
+                        terrainMap.set(10, 10, TerrainType.FOREST)
 
 
                     },
