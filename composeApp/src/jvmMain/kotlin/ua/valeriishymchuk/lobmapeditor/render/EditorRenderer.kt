@@ -536,7 +536,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
 
         val objectiveScale = max((2.5f / viewMatrix.getScale(Vector3f()).x), 1f)
-        println("Current objective scale: $objectiveScale")
 
 
         val objectiveDimensions = Vector2f(
