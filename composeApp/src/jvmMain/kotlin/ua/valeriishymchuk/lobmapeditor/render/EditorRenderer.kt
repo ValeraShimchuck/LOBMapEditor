@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
+import androidx.compose.ui.graphics.Color
 import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL.*
 import com.jogamp.opengl.GL3
@@ -10,12 +11,17 @@ import lobmapeditor.composeapp.generated.resources.Res
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
+import org.joml.Vector3f
 import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.*
@@ -28,9 +34,12 @@ import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
+import kotlin.math.max
 
 class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
@@ -45,6 +54,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private lateinit var tileMapProgram: TileMapProgram
     private lateinit var blobProcessorProgram: BlobProcessorProgram
     private lateinit var overlayTileProgram: OverlayTileProgram
+    private lateinit var spriteProgram: SpriteProgram
 
     private var backgroundImage: Int = -1
 
@@ -92,6 +102,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private var terrainMaskTexture: Int = -1
     private var farmOverlayTexture: Int = -1;
     private var heightBlobTexture: Int = -1
+    private var objectiveMaskTexture: Int = -1
+    private var objectiveOverlayTexture: Int = -1
 
     private val tileMapVertices = floatArrayOf(
         0f, editorService.scenario.map.heightPixels.toFloat(),
@@ -101,16 +113,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         0f, editorService.scenario.map.heightPixels.toFloat(),
         editorService.scenario.map.widthPixels.toFloat(), editorService.scenario.map.heightPixels.toFloat(),
         editorService.scenario.map.widthPixels.toFloat(), 0f,
-    )
-
-
-    val testObjectVertices = floatArrayOf(
-        150.0f, 150.0f,
-        100.0f, 150.0f,
-        125.0f, 125.0f,
-//        -0.5f, -0.5f,
-//        0.5f, -0.5f,
-//        0.0f, 0.5f,
     )
 
     val backgroundVertices = floatArrayOf(
@@ -149,6 +151,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.gL3
+//        val debugCtx = TraceGL3(ctx, System.out)
+        val debugCtx = ctx
+
 
         ctx.glEnable(GL_BLEND)
         ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -171,6 +176,18 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 )
             )
         }
+
+        GameUnitType.entries.forEach { unitType ->
+            loadTexture(ctx, unitType.maskTexture)
+            unitType.overlayTexture?.let { loadTexture(ctx, it) }
+        }
+
+        loadTexture(ctx, "objectives/default", useNearest = false, useClamp = true)
+        loadTexture(ctx, "objectives/default1", useNearest = false, useClamp = true)
+
+        objectiveMaskTexture = textures["objectives/default"]!!
+        objectiveOverlayTexture = textures["objectives/default1"]!!
+
 
         TerrainType.entries.mapNotNull { it.overlay }.distinct().forEach {
             println("Loading overlay: $it")
@@ -243,6 +260,12 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             loadShaderSource("foverlaytile")
         )
 
+        spriteProgram = SpriteProgram(
+            debugCtx,
+            loadShaderSource("vsprite"),
+            loadShaderSource("fsprite")
+        )
+
         projectionMatrix.setOrtho(
             0f,
             drawable.surfaceWidth.toFloat(),
@@ -260,7 +283,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         backgroundProgram.setUpVAO(ctx)
 
         println("GL initialized")
-        println("Loaded textures: ${textures.keys.joinToString(separator = "\n")}")
+//        println("Loaded textures: ${textures.keys.joinToString(separator = "\n")}")
 
     }
 
@@ -396,7 +419,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             overlayTileProgram.applyUniform(
                 ctx, OverlayTileProgram.Uniform(
                     mvpMatrix,
-                    textures["tilesets/${overlay.textureLocation}"] ?: throw IllegalStateException("Can't find tilesets/${overlay.textureLocation}"),
+                    textures["tilesets/${overlay.textureLocation}"]
+                        ?: throw IllegalStateException("Can't find tilesets/${overlay.textureLocation}"),
                     Vector2i(editorService.scenario.map.widthTiles, editorService.scenario.map.heightTiles),
                     Vector2i(editorService.scenario.map.widthPixels, editorService.scenario.map.heightPixels),
                     Vector4f(1f),
@@ -406,7 +430,188 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
         }
 
+        val debugCtx = ctx
+//        val debugCtx = TraceGL3(ctx, System.out)
 
+
+        debugCtx.glUseProgram(spriteProgram.program)
+        debugCtx.glBindVertexArray(spriteProgram.vao)
+        debugCtx.glBindVBO(spriteProgram.vbo)
+        val unitDimensions = Vector2f(1f, 2f).mul(16f).mul(0.75f)
+
+
+        val unitsToRender = editorService.scenario.units
+            .groupBy { it.owner.getValue(editorService.scenario.players::get).team }
+            .mapValues { (_, value) ->
+                value.groupBy { it.type }
+            }
+
+        val unitShadowsToRender: MutableMap<String, MutableList<GameUnit>> = mutableMapOf()
+        val preparedUnitsToRender: MutableMap<Pair<PlayerTeam, GameUnitType>, MutableList<GameUnit>> = mutableMapOf()
+
+
+        unitsToRender.forEach { (team, units) ->
+            units.forEach { (unitType, unitInfo) ->
+                unitShadowsToRender.computeIfAbsent(unitType.maskTexture) { mutableListOf() }.addAll(unitInfo)
+                preparedUnitsToRender.computeIfAbsent(team to unitType) { mutableListOf() }.addAll(unitInfo)
+            }
+        }
+
+        unitShadowsToRender.forEach {
+            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.applyUniform(
+                debugCtx, SpriteProgram.Uniform(
+                    projectionMatrix,
+                    viewMatrix,
+                    true,
+                    false,
+                    Vector4f(0f, 0f, 0f, 0.6f),
+                    textures[it.key]!!,
+                    -1
+                )
+            )
+            val vbo = it.value.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setTranslation(Vector3f(unit.position.x + 2, unit.position.y + 2, 0f))
+                SpriteProgram.BufferData(
+                    SpriteProgram.RectanglePoints.fromPoints(
+                        unitDimensions.div(-2f, Vector2f()),
+                        unitDimensions.div(2f, Vector2f()),
+                    ),
+                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+            spriteProgram.setUpVBO(debugCtx, vbo)
+
+            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+
+
+        }
+
+        preparedUnitsToRender.forEach { (teamUnitType, units) ->
+            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.applyUniform(
+                debugCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                true,
+                teamUnitType.second.overlayTexture != null,
+                Vector4f(
+                    teamUnitType.first.color.red,
+                    teamUnitType.first.color.green,
+                    teamUnitType.first.color.blue,
+                    1f
+                ),
+                textures[teamUnitType.second.maskTexture]!!,
+                teamUnitType.second.overlayTexture?.let { textures[it]!! } ?: -1
+            ))
+
+            val vboInput = units.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
+                SpriteProgram.BufferData(
+                    SpriteProgram.RectanglePoints.fromPoints(
+                        unitDimensions.div(-2f, Vector2f()),
+                        unitDimensions.div(2f, Vector2f()),
+                    ),
+                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+
+            spriteProgram.setUpVBO(debugCtx, vboInput)
+
+            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+        }
+
+        val objectiveShadowsToRender: List<Objective> = editorService.scenario.objectives
+        val objectivesToRender: Map<Optional<PlayerTeam>, List<Objective>> = objectiveShadowsToRender.groupBy {
+            Optional.ofNullable(it.owner?.getValue(editorService.scenario.players::get)?.team)
+        }
+
+
+        val objectiveScale = max((2.5f / viewMatrix.getScale(Vector3f()).x), 1f)
+        println("Current objective scale: $objectiveScale")
+
+
+        val objectiveDimensions = Vector2f(
+            GameConstants.TILE_SIZE.toFloat()
+        ).mul(1.3f)
+
+        spriteProgram.setUpVAO(debugCtx)
+        spriteProgram.applyUniform(
+            debugCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                true,
+                false,
+                Vector4f(0f, 0f, 0f, 0.6f),
+                objectiveMaskTexture,
+                -1
+            ))
+
+        val objectiveShadowsVbo = objectiveShadowsToRender.map { unit ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setTranslation(Vector3f(unit.position.x + 1, unit.position.y + 1, 0f))
+            positionMatrix.scale(objectiveScale)
+            SpriteProgram.BufferData(
+                SpriteProgram.RectanglePoints.fromPoints(
+                    objectiveDimensions.div(-2f, Vector2f()),
+                    objectiveDimensions.div(2f, Vector2f()),
+                ),
+                SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                positionMatrix
+            )
+        }
+
+
+        spriteProgram.setUpVBO(debugCtx, objectiveShadowsVbo)
+
+        debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * objectiveShadowsVbo.size)
+
+        objectivesToRender.forEach { (teamOpt, objectives) ->
+            val color = teamOpt.getOrNull()?.color ?: Color(0.6f, 0.6f, 0.6f, 1f)
+            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.applyUniform(
+                debugCtx, SpriteProgram.Uniform(
+                    projectionMatrix,
+                    viewMatrix,
+                    true,
+                    true,
+                    Vector4f(
+                        color.red,
+                        color.green,
+                        color.blue,
+                        color.alpha
+                    ),
+                    objectiveMaskTexture,
+                    objectiveOverlayTexture
+                ))
+
+            val vbo = objectives.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
+                positionMatrix.scale(objectiveScale)
+                SpriteProgram.BufferData(
+                    SpriteProgram.RectanglePoints.fromPoints(
+                        objectiveDimensions.div(-2f, Vector2f()),
+                        objectiveDimensions.div(2f, Vector2f()),
+                    ),
+                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+
+            spriteProgram.setUpVBO(debugCtx, vbo)
+
+            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+        }
 
 
         ctx.glBindVertexArray(0)
@@ -697,16 +902,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         return Vector2f(cords.x, cords.y)
     }
 
-    private fun getTileCordsFromScreen(cursorX: Int, cursorY: Int): Vector2i? {
-        val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
-        val map = editorService.scenario.map
-        if (worldCoordinates.x > map.widthPixels || worldCoordinates.x < 0) return null
-        if (worldCoordinates.y > map.heightPixels || worldCoordinates.y < 0) return null
-        worldCoordinates.floor()
-        return Vector2i(worldCoordinates.x.toInt(), worldCoordinates.y.toInt()).div(GameConstants.TILE_SIZE)
-    }
-
-
     private fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
         val map = editorService.scenario.map
@@ -766,7 +961,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     private var leftLastX: Int? = null
     private var leftLastY: Int? = null
-    private var isLeftDragging = false
+    private var isToolDragging = false
 
     private var isShiftPressed = false
     private var isCtrlPressed = false
@@ -802,23 +997,31 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         override fun mouseDragged(e: MouseEvent) {
             checkMiddleMouse(e)
-            checkLeftMouse(e)
+            checkTilePainting(e)
         }
 
-        private fun checkLeftMouse(e: MouseEvent) {
-            if (!isLeftDragging) return
+        private fun checkTilePainting(e: MouseEvent) {
+            if (!isToolDragging) return
             if (leftLastX == null || leftLastY == null) {
                 leftLastX = e.x
                 leftLastY = e.y
                 return
             }
             val oldCords = getTileCordsFromScreenClamp(leftLastX ?: return, leftLastY ?: return)
+                .mul(GameConstants.TILE_SIZE)
             leftLastX = e.x
             leftLastY = e.y
             val newCords = getTileCordsFromScreenClamp(leftLastX ?: return, leftLastY ?: return)
+                .mul(GameConstants.TILE_SIZE)
 
 
-            val shouldRender = toolService.useToolManyTimes(getPointsBetween(oldCords, newCords).distinct(), false)
+            val shouldRender = toolService.useToolManyTimes(
+                getPointsBetween(oldCords, newCords)
+                    .distinct()
+                    .map {
+                        Vector2f(it)
+                    }, false
+            )
             if (shouldRender) rerender()
         }
 
@@ -844,7 +1047,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     inner class MouseListener(private val rerender: () -> Unit) : MouseAdapter() {
         override fun mousePressed(e: MouseEvent) {
             checkMiddlePressed(e)
-            checkLeftPressed(e)
+            checkToolUsage(e)
         }
 
         private fun checkRightReleased(e: MouseEvent) {
@@ -866,16 +1069,18 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             isDragging = false
         }
 
-        private fun checkLeftPressed(e: MouseEvent) {
-            if (e.button != MouseEvent.BUTTON1) return
-            isLeftDragging = true
-            val tile = getTileCordsFromScreen(e.x, e.y) ?: return
-            if (toolService.useTool(tile.x, tile.y)) rerender()
+        private fun checkToolUsage(e: MouseEvent) {
+            if (e.button != MouseEvent.BUTTON3) return
+            isToolDragging = true
+            val worldCoordinates = fromScreenToWorldSpace(e.x, e.y)
+            if (worldCoordinates.x < 0 || worldCoordinates.y < 0) return
+            if (worldCoordinates.x > editorService.scenario.map.widthPixels || worldCoordinates.y > editorService.scenario.map.heightPixels) return
+            if (toolService.useTool(worldCoordinates.x , worldCoordinates.y)) rerender()
         }
 
-        private fun checkLeftReleased(e: MouseEvent) {
-            if (e.button != MouseEvent.BUTTON1) return
-            isLeftDragging = false
+        private fun checkEndOfToolUsage(e: MouseEvent) {
+            if (e.button != MouseEvent.BUTTON3) return
+            isToolDragging = false
             toolService.flushCompoundCommands()
             leftLastX = null
             leftLastY = null
@@ -884,7 +1089,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         override fun mouseReleased(e: MouseEvent) {
             checkMiddleReleased(e)
             checkRightReleased(e)
-            checkLeftReleased(e)
+            checkEndOfToolUsage(e)
         }
 
 

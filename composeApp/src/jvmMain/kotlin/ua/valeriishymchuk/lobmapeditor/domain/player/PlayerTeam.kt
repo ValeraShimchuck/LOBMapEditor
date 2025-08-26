@@ -6,8 +6,8 @@ enum class PlayerTeam(
     val id: Int,
     val color: Color
 ) {
-    BLUE(1, Color(0, 0, 255)),
-    RED(2, Color(255, 0, 0));
+    BLUE(1, Color(0, 0, 245)),
+    RED(2, Color(230, 0, 0));
 
     companion object {
         fun fromId(id: Int): PlayerTeam {

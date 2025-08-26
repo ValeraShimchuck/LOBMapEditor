@@ -6,6 +6,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 
 object TerrainTool : PresetTool() {
@@ -22,18 +23,20 @@ object TerrainTool : PresetTool() {
         editorService.flushCompoundCommon()
     }
 
-    override fun editTile(
+    override fun useToolAt(
         editorService: EditorService<GameScenario.Preset>,
-        x: Int,
-        y: Int,
+        x: Float,
+        y: Float,
         flushCompoundCommands: Boolean
     ): Boolean {
-        val oldTerrain = editorService.scenario.map.terrainMap.get(x, y,) ?: return false
-        val height = editorService.scenario.map.terrainHeight.get(x, y) ?: return false
+        val tileX = x.toInt() / GameConstants.TILE_SIZE
+        val tileY = y.toInt() / GameConstants.TILE_SIZE
+        val oldTerrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return false
+        val height = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return false
         if (oldTerrain == terrain.value) return false
         val command = UpdateTerrainCommand(
-            x,
-            y,
+            tileX,
+            tileY,
             height,
             oldTerrain,
             terrain.value,

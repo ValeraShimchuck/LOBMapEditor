@@ -4,36 +4,40 @@ import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 
 enum class GameUnitType(
     val category: GameUnitCategory,
-    val id: Int
+    val id: Int,
+    maskTexture: String,
+    overlayTexture: String? = null
 ) {
     // Infantry
-    LINE_INFANTRY(GameUnitCategory.INFANTRY, 1),
-    GUARDS_INFANTRY(GameUnitCategory.INFANTRY, 4),
-    LIGHT_INFANTRY(GameUnitCategory.INFANTRY, 7),
-    MILITIA(GameUnitCategory.INFANTRY, 10),
-    GRENADIERS(GameUnitCategory.INFANTRY, 14),
+    LINE_INFANTRY(GameUnitCategory.INFANTRY, 1, "infantry", "infantry1"),
+    GUARDS_INFANTRY(GameUnitCategory.INFANTRY, 4, "infantry", "guards"),
+    LIGHT_INFANTRY(GameUnitCategory.INFANTRY, 7, "infantry", "chasseurs"),
+    MILITIA(GameUnitCategory.INFANTRY, 10, "militia", "militia1"),
+    GRENADIERS(GameUnitCategory.INFANTRY, 14, "infantry", "grenadiers"),
 
     // Cavalry
-    DRAGOONS(GameUnitCategory.CAVALRY, 2),
-    LANCERS(GameUnitCategory.CAVALRY, 5),
-    CUIRASSIERS(GameUnitCategory.CAVALRY, 8),
-    HUSSARS(GameUnitCategory.CAVALRY, 11),
-    HORSE_ARCHERS(GameUnitCategory.CAVALRY, 13),
+    DRAGOONS(GameUnitCategory.CAVALRY, 2, "cavalry", "dragoons"),
+    LANCERS(GameUnitCategory.CAVALRY, 5, "cavalry", "lancers"),
+    CUIRASSIERS(GameUnitCategory.CAVALRY, 8, "cavalry", "cuirassiers"),
+    HUSSARS(GameUnitCategory.CAVALRY, 11, "cavalry", "cavalry1"),
+    HORSE_ARCHERS(GameUnitCategory.CAVALRY, 13, "cavalry", "horse-archers"),
 
     // Artillery
 
-    EIGHT_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 3),
-    SIX_LB_HORSE_ARTILLERY(GameUnitCategory.ARTILLERY, 6),
-    SIX_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 18),
-    SIX_IN_HOWITZER(GameUnitCategory.ARTILLERY, 9),
-    TWELVE_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 12),
-    FOUR_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 15),
-    ROCKETS(GameUnitCategory.ARTILLERY, 19),
+    EIGHT_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 3, "artillery"),
+    SIX_LB_HORSE_ARTILLERY(GameUnitCategory.ARTILLERY, 6, "horse-artillery", "horse-artillery1"),
+    SIX_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 18, "6lb-artillery"),
+    SIX_IN_HOWITZER(GameUnitCategory.ARTILLERY, 9, "howitzers"),
+    TWELVE_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 12, "heavy-artillery"),
+    FOUR_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 15, "4lb-artillery"),
+    ROCKETS(GameUnitCategory.ARTILLERY, 19, "rockets", "rockets1"),
 
     // Skirmishers
-    SKIRMISHERS(GameUnitCategory.SKIRMISHERS, 16),
-    RIFLES(GameUnitCategory.SKIRMISHERS, 17);
+    SKIRMISHERS(GameUnitCategory.SKIRMISHERS, 16, "skirmishers", "skirmishers1"),
+    RIFLES(GameUnitCategory.SKIRMISHERS, 17, "skirmishers", "rifles");
 
+    val maskTexture: String = "units/$maskTexture"
+    val overlayTexture: String? = overlayTexture?.let { textureLoc -> "units/$textureLoc" }
 
     companion object {
 

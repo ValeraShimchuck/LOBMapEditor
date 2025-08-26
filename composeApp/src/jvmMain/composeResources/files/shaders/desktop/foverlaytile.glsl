@@ -59,8 +59,8 @@ vec4 getPixel(vec2 texCord) {
 
     int overlayAtlasSize = textureSize(uOverlayTexture, 0).z;
 
-//    if (withinBounds(tileCoordinates, vec2(0), vec2(0.05, 1.0))) return vec4(1.0, 0.0, 0.0, 1.0);
-//    if (withinBounds(tileCoordinates, vec2(0), vec2(1.0, 0.05))) return vec4(1.0, 0.0, 0.0, 1.0);
+//    if (withinBounds(tileCoordinates, vec2(0), vec2(0.02, 1.0))) return vec4(1.0, 0.0, 0.0, 1.0);
+//    if (withinBounds(tileCoordinates, vec2(0), vec2(1.0, 0.02))) return vec4(1.0, 0.0, 0.0, 1.0);
 //    if (withinBounds(tileCoordinates, vec2(0.8, 0), vec2(1.0, 1.0))) return vec4(1.0, 0.0, 0.0, 1.0);
 //    if (withinBounds(tileCoordinates, vec2(0, 0.2), vec2(1.0, 1.0))) return vec4(1.0, 0.0, 0.0, 1.0);
 

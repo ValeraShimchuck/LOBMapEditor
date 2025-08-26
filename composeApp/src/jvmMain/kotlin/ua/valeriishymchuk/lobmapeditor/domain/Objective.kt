@@ -6,9 +6,9 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 
 data class Objective(
-    private val owner: Reference<Int, Player>?,
-    private val name: String?,
-    private val position: Position
+    val owner: Reference<Int, Player>?,
+    val name: String?,
+    val position: Position
 ) {
     fun serialize(): JsonObject {
         return JsonObject().apply {

@@ -5,7 +5,7 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 import java.util.LinkedList
 import kotlin.math.abs
@@ -20,13 +20,19 @@ object HeightTool : PresetTool() {
         "Height: change height of terrain"
     )
 
-    override fun editTile(
+    override fun useToolAt(
         editorService: EditorService<GameScenario.Preset>,
-        x: Int,
-        y: Int,
+        x: Float,
+        y: Float,
         flushCompoundCommands: Boolean
     ): Boolean {
-        return trySetTileHeight(x, y, height.value, editorService, flushCompoundCommands)
+        return trySetTileHeight(
+            x.toInt() / GameConstants.TILE_SIZE,
+            y.toInt() / GameConstants.TILE_SIZE,
+            height.value,
+            editorService,
+            flushCompoundCommands
+        )
     }
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {

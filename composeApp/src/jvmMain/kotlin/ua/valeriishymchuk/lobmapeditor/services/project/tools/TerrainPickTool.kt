@@ -1,11 +1,11 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
-import org.kodein.di.direct
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 
 object TerrainPickTool : PresetTool() {
@@ -19,16 +19,16 @@ object TerrainPickTool : PresetTool() {
         "Terrain Pick: pick terrain from map"
     )
 
-    override fun editTile(
+    override fun useToolAt(
         editorService: EditorService<GameScenario.Preset>,
-        x: Int,
-        y: Int,
+        x: Float,
+        y: Float,
         flushCompoundCommands: Boolean,
     ): Boolean {
 
         val toolService by editorService.di.instance<ToolService>()
 
-        editorService.scenario.map.terrainMap.get(x, y)?.let {
+        editorService.scenario.map.terrainMap.get(x.toInt() / GameConstants.TILE_SIZE, y.toInt() / GameConstants.TILE_SIZE)?.let {
             TerrainTool.terrain.value = it
             toolService.setTool(TerrainTool)
         }

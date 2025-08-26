@@ -11,6 +11,13 @@ object BufferHelper {
             .asFloatBuffer()
     }
 
+    fun setupFloatBuffer(size: Int, handler: FloatBuffer.() -> Unit): FloatBuffer {
+        val buffer = allocateDirectFloatBuffer(size)
+        buffer.handler()
+        buffer.flip()
+        return buffer
+    }
+
     fun wrapDirect(floatArray: FloatArray): FloatBuffer {
         val buffer = allocateDirectFloatBuffer(floatArray.size)
         buffer.put(floatArray)
