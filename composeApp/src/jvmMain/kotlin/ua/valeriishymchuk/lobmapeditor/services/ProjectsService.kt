@@ -7,6 +7,8 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.player.Player
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
@@ -57,8 +59,11 @@ class ProjectsService(override val di: DI) : DIAware {
                     objectives = emptyList(),
                     triggers = emptyList()
                 ),
-                emptyList(),
-                emptyList(),
+                units = emptyList(),
+                players = listOf(
+                    Player(PlayerTeam.RED),
+                    Player(PlayerTeam.BLUE),
+                ),
             ),
             File(dir, "map.json")
         )

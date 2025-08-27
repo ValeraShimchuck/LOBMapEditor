@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
@@ -13,12 +14,12 @@ import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 
 object PlaceObjectiveTool : PresetTool() {
-    var currentObjective: Objective = Objective(
+    var currentObjective = MutableStateFlow(Objective(
 //        Reference(0),
         null,
         null,
         Position(0f, 0f)
-    )
+    ))
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
         editorService.flushCompoundCommon()
@@ -40,7 +41,7 @@ object PlaceObjectiveTool : PresetTool() {
         editorService.executeCommon(UpdateObjectiveListCommand(
             editorService.scenario.objectives,
             editorService.scenario.objectives.toMutableList().apply {
-                add(currentObjective.copy(
+                add(currentObjective.value.copy(
                     position = Position(x, y)
                 ))
             }

@@ -3,17 +3,25 @@ package ua.valeriishymchuk.lobmapeditor.ui.component.project
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
+import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.math.roundToInt
 
 @Composable
@@ -21,15 +29,35 @@ fun ToolConfig(modifier: Modifier = Modifier) {
     val toolService by rememberInstance<ToolService>()
     val currentTool by toolService.currentTool.collectAsState()
 
-    Column(modifier) {
-        GroupHeader(
-            "Configuration for tool: ${currentTool.uiInfo.name}",
-            startComponent = { Icon(AllIconsKeys.General.Settings, null) }
-        )
-        Spacer(Modifier.height(8.dp))
-        when (currentTool) {
-            is TerrainTool -> TerrainToolConfig()
-            is HeightTool -> HeightToolConfig()
+
+    val content: @Composable (() -> Unit)? = when (currentTool) {
+        is TerrainTool -> {
+            { TerrainToolConfig() }
+        }
+
+        is HeightTool -> {
+            { HeightToolConfig() }
+        }
+
+        is PlaceUnitTool -> {
+            { PlaceUnitToolConfig() }
+        }
+
+        is PlaceObjectiveTool -> {
+            { PlaceObjectToolConfig() }
+        }
+
+        else -> null
+    }
+
+    if (content != null) {
+        Column {
+            GroupHeader(
+                "Configuration for tool: ${currentTool.uiInfo.name}",
+                startComponent = { Icon(AllIconsKeys.General.Settings, null) }
+            )
+            Spacer(Modifier.height(4.dp))
+            content()
         }
     }
 }
@@ -94,4 +122,100 @@ private fun HeightToolConfig() {
         steps = 0, // без кроків
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalJewelApi::class)
+@Composable
+fun PlaceUnitToolConfig() {
+    val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
+
+    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val scenario = editorService.scenario
+
+
+    val playerIndex = currentUnit.owner.key
+    val popupManager = remember { PopupManager() }
+
+
+
+    ComboBox(
+        labelText = "$playerIndex ${scenario.players[playerIndex].team}",
+        popupManager = popupManager,
+        popupContent = {
+            VerticallyScrollableContainer {
+                Column {
+                    scenario.players.withIndex().sortedByDescending {
+                        it.index
+                    }.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(2.dp)
+                                .onClick {
+
+                                    PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                                        owner = Reference(item.index)
+                                    )
+                                    popupManager.setPopupVisible(false)
+                                }
+                        ) {
+                            Text(
+                                text = "${item.index} ${item.value.team}",
+                            )
+                        }
+
+                    }
+                }
+            }
+        }
+    )
+
+
+    val nameFieldState by remember { mutableStateOf(TextFieldState(currentUnit.name ?: "")) }
+    LaunchedEffect(nameFieldState) {
+        PlaceUnitTool.currentUnit.value = currentUnit.copy(
+            name = nameFieldState.text.toString().takeIf { it.isNotBlank() }
+        )
+    }
+
+
+    Spacer(Modifier.height(4.dp))
+
+    TextField(
+        nameFieldState,
+        Modifier.fillMaxWidth(),
+        placeholder = { Text("Unit name... (Blank - default name)")}
+    )
+
+    var angle by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(angle) {
+        PlaceUnitTool.currentUnit.value = currentUnit.copy(
+            rotationRadians = angle
+        )
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        AngleDial(
+            angle,
+            color = scenario.players[playerIndex].team.color,
+            modifier = Modifier.size(200.dp)
+        )
+
+        Slider(
+            value = angle,
+            onValueChange = { angle = it },
+            valueRange = 0f..(2 * Math.PI).toFloat(),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+}
+
+@Composable
+fun PlaceObjectToolConfig() {
+
 }

@@ -37,7 +37,9 @@ import java.io.File
 
 class ProjectScreen(
     private val ref: ProjectRef,
-): Screen {
+): TitleBarScreen {
+
+
 
     @Composable
     override fun Content() {
