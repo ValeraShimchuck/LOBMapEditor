@@ -35,7 +35,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
             return JsonObject().apply {
                 add("name", JsonPrimitive(name))
                 add("description", JsonPrimitive(description))
-                add("type", JsonPrimitive(description))
+                add("type", JsonPrimitive(scenarioTypeKey))
                 add("players", JsonArray().apply {
                     players.forEachIndexed { index, player ->
                         add(JsonObject().apply {

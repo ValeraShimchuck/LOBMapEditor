@@ -16,6 +16,7 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.jetbrains.jewel.window.DecoratedWindowScope
 import org.jetbrains.jewel.window.TitleBar
 import org.jetbrains.jewel.window.newFullscreenControls
+import ua.valeriishymchuk.lobmapeditor.ui.screen.TitleBarScreen
 
 @OptIn(ExperimentalFoundationApi::class)
 @ExperimentalLayoutApi
@@ -24,31 +25,11 @@ internal fun DecoratedWindowScope.TitleBarView() {
     val nav = LocalNavigator.currentOrThrow
 
     TitleBar(Modifier.newFullscreenControls()) {
-        Row(Modifier.align(Alignment.Start).padding(horizontal = 8.dp)) {
-            Tooltip(tooltip = {
-                Text("Settings")
-            }) {
-                IconButton({}) {
-                    Icon(AllIconsKeys.General.Settings, "")
-                }
-            }
-            Tooltip(tooltip = {
-                Text("Project settings")
-            }) {
-                IconButton({}) {
-                    Icon(AllIconsKeys.General.ProjectStructure, "")
-                }
-            }
-            /*Tooltip(tooltip = {
-                Text("Canvas test")
-            }) {
-                IconButton({
-                    nav.push(CanvasScreen)
-                }) {
-                    Icon(AllIconsKeys.Actions.StartDebugger, "")
-                }
-            }*/
+        val lastItem = nav.lastItem
+        if(lastItem is TitleBarScreen) {
+            lastItem.TitleBar()
+        } else {
+            Text(title)
         }
-        Text(title)
     }
 }

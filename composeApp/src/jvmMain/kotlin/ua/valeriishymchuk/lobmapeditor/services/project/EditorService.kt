@@ -1,5 +1,8 @@
 package ua.valeriishymchuk.lobmapeditor.services.project
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
@@ -10,15 +13,13 @@ import kotlin.concurrent.withLock
 
 class EditorService<T : GameScenario<T>>(
     override val di: DI,
-    scenario: T,
 ): DIAware {
 
     private val lock = ReentrantLock()
 
     private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
-    var scenario: T = scenario
-    private set
+    lateinit var scenario: T
 
     private val scenarioSetter: (T) -> Unit = {
         this.scenario = it

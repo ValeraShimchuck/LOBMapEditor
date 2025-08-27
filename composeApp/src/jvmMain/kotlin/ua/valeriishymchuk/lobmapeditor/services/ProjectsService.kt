@@ -5,12 +5,18 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.kodein.di.instance
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import java.io.File
 
 class ProjectsService(override val di: DI) : DIAware {
+
+    private val scenarioIO: ScenarioIOService by instance()
 
     suspend fun loadProjects(): Map<ProjectRef, ProjectData> = withContext(Dispatchers.IO) {
         runCatching {
@@ -41,6 +47,21 @@ class ProjectsService(override val di: DI) : DIAware {
 
         val projectJson = Json.encodeToString(ProjectData(dto.name))
         File(dir, PROJECT_FILE_NAME).writeText(projectJson)
+
+        scenarioIO.save(
+            GameScenario.Preset(
+                GameScenario.CommonData(
+                    name = dto.name,
+                    description = "Map created by LobMapEditor",
+                    map = Terrain.ofCells(dto.widthPx / GameConstants.TILE_SIZE, dto.heightPx / GameConstants.TILE_SIZE),
+                    objectives = emptyList(),
+                    triggers = emptyList()
+                ),
+                emptyList(),
+                emptyList(),
+            ),
+            File(dir, "map.json")
+        )
 
         addExistingProject(ref)
         return@withContext ref

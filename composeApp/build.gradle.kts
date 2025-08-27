@@ -27,6 +27,11 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain {
+
+            compilerOptions {
+                freeCompilerArgs.add("-Xcontext-receivers")
+            }
+
             repositories {
                 google()
                 mavenCentral()
