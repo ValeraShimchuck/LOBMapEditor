@@ -6,6 +6,7 @@ import com.jogamp.opengl.GL.*
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
+import com.jogamp.opengl.TraceGL3
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import org.joml.Matrix4f
@@ -22,6 +23,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.program.*
@@ -39,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.max
 
 class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
@@ -50,11 +53,15 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private val viewMatrix = Matrix4f().identity()
     private val textures: MutableMap<String, Int> = ConcurrentHashMap()
     private lateinit var colorProgram: ColorProgram
+    private lateinit var selectionProgram: SelectionProgram
     private lateinit var backgroundProgram: BackgroundProgram
     private lateinit var tileMapProgram: TileMapProgram
     private lateinit var blobProcessorProgram: BlobProcessorProgram
     private lateinit var overlayTileProgram: OverlayTileProgram
     private lateinit var spriteProgram: SpriteProgram
+    private var selectionStart: Vector2f = Vector2f()
+    private var selectionEnd: Vector2f = Vector2f()
+    private var selectionEnabled: Boolean = false
 
     private var backgroundImage: Int = -1
 
@@ -244,6 +251,17 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             loadShaderSource("fbackground")
         )
 
+        selectionProgram = SelectionProgram(
+            ctx,
+            loadShaderSource("vselection"),
+            loadShaderSource("fselection")
+        )
+
+        // TODO continue work on selection. add click handler
+        selectionEnabled = false
+        selectionStart = Vector2f(-0.5f, 0.5f)
+        selectionEnd = Vector2f(0.5f, -0.5f)
+
         tileMapProgram = TileMapProgram(
             ctx,
             loadShaderSource("vtilemap"),
@@ -430,13 +448,12 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             ctx.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
         }
 
-        val debugCtx = ctx
 //        val debugCtx = TraceGL3(ctx, System.out)
 
 
-        debugCtx.glUseProgram(spriteProgram.program)
-        debugCtx.glBindVertexArray(spriteProgram.vao)
-        debugCtx.glBindVBO(spriteProgram.vbo)
+        ctx.glUseProgram(spriteProgram.program)
+        ctx.glBindVertexArray(spriteProgram.vao)
+        ctx.glBindVBO(spriteProgram.vbo)
         val unitDimensions = Vector2f(1f, 2f).mul(16f).mul(0.75f)
 
 
@@ -458,9 +475,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         }
 
         unitShadowsToRender.forEach {
-            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.setUpVAO(ctx)
             spriteProgram.applyUniform(
-                debugCtx, SpriteProgram.Uniform(
+                ctx, SpriteProgram.Uniform(
                     projectionMatrix,
                     viewMatrix,
                     true,
@@ -475,26 +492,26 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
                 positionMatrix.setTranslation(Vector3f(unit.position.x + 2, unit.position.y + 2, 0f))
                 SpriteProgram.BufferData(
-                    SpriteProgram.RectanglePoints.fromPoints(
+                    RectanglePoints.fromPoints(
                         unitDimensions.div(-2f, Vector2f()),
                         unitDimensions.div(2f, Vector2f()),
                     ),
-                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    RectanglePoints.TEXTURE_CORDS,
                     positionMatrix
                 )
             }
 
-            spriteProgram.setUpVBO(debugCtx, vbo)
+            spriteProgram.setUpVBO(ctx, vbo)
 
-            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+            ctx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
 
 
         }
 
         preparedUnitsToRender.forEach { (teamUnitType, units) ->
-            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.setUpVAO(ctx)
             spriteProgram.applyUniform(
-                debugCtx, SpriteProgram.Uniform(
+                ctx, SpriteProgram.Uniform(
                 projectionMatrix,
                 viewMatrix,
                 true,
@@ -514,19 +531,19 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 SpriteProgram.BufferData(
-                    SpriteProgram.RectanglePoints.fromPoints(
+                    RectanglePoints.fromPoints(
                         unitDimensions.div(-2f, Vector2f()),
                         unitDimensions.div(2f, Vector2f()),
                     ),
-                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    RectanglePoints.TEXTURE_CORDS,
                     positionMatrix
                 )
             }
 
 
-            spriteProgram.setUpVBO(debugCtx, vboInput)
+            spriteProgram.setUpVBO(ctx, vboInput)
 
-            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+            ctx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
         }
 
         val objectiveShadowsToRender: List<Objective> = editorService.scenario.objectives
@@ -542,9 +559,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             GameConstants.TILE_SIZE.toFloat()
         ).mul(1.3f)
 
-        spriteProgram.setUpVAO(debugCtx)
+        spriteProgram.setUpVAO(ctx)
         spriteProgram.applyUniform(
-            debugCtx, SpriteProgram.Uniform(
+            ctx, SpriteProgram.Uniform(
                 projectionMatrix,
                 viewMatrix,
                 true,
@@ -559,25 +576,25 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             positionMatrix.setTranslation(Vector3f(unit.position.x + 1, unit.position.y + 1, 0f))
             positionMatrix.scale(objectiveScale)
             SpriteProgram.BufferData(
-                SpriteProgram.RectanglePoints.fromPoints(
+                RectanglePoints.fromPoints(
                     objectiveDimensions.div(-2f, Vector2f()),
                     objectiveDimensions.div(2f, Vector2f()),
                 ),
-                SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                RectanglePoints.TEXTURE_CORDS,
                 positionMatrix
             )
         }
 
 
-        spriteProgram.setUpVBO(debugCtx, objectiveShadowsVbo)
+        spriteProgram.setUpVBO(ctx, objectiveShadowsVbo)
 
-        debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * objectiveShadowsVbo.size)
+        ctx.glDrawArrays(GL_TRIANGLES, 0, 6 * objectiveShadowsVbo.size)
 
         objectivesToRender.forEach { (teamOpt, objectives) ->
             val color = teamOpt.getOrNull()?.color ?: Color(0.6f, 0.6f, 0.6f, 1f)
-            spriteProgram.setUpVAO(debugCtx)
+            spriteProgram.setUpVAO(ctx)
             spriteProgram.applyUniform(
-                debugCtx, SpriteProgram.Uniform(
+                ctx, SpriteProgram.Uniform(
                     projectionMatrix,
                     viewMatrix,
                     true,
@@ -597,20 +614,81 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 positionMatrix.scale(objectiveScale)
                 SpriteProgram.BufferData(
-                    SpriteProgram.RectanglePoints.fromPoints(
+                    RectanglePoints.fromPoints(
                         objectiveDimensions.div(-2f, Vector2f()),
                         objectiveDimensions.div(2f, Vector2f()),
                     ),
-                    SpriteProgram.RectanglePoints.TEXTURE_CORDS,
+                    RectanglePoints.TEXTURE_CORDS,
                     positionMatrix
                 )
             }
 
 
-            spriteProgram.setUpVBO(debugCtx, vbo)
+            spriteProgram.setUpVBO(ctx, vbo)
 
-            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+            ctx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
         }
+
+        val debugCtx = TraceGL3(ctx, System.out)
+//        val debugCtx = ctx
+
+
+        if (selectionEnabled) {
+            debugCtx.glUseProgram(selectionProgram.program)
+            debugCtx.glBindVertexArray(selectionProgram.vao)
+            debugCtx.glBindVBO(selectionProgram.vbo)
+
+            val min =  selectionStart.min(selectionEnd, Vector2f())
+            val max = selectionStart.max(selectionEnd, Vector2f())
+
+
+//            selectionProgram.setUpVBO(ctx, RectanglePoints.fromPoints(
+//                Vector2f(min.x, max.y),
+//                Vector2f(max.x, min.y))
+//            )
+            selectionProgram.setUpVBO(debugCtx, floatArrayOf(
+                min.x, max.y,
+                min.x, min.y,
+                max.x, max.y,
+
+                min.x, min.y,
+                max.x, max.y,
+                max.x, min.y,
+            ))
+
+
+//            selectionProgram.setUpVBO(debugCtx, floatArrayOf(
+//                -0.5f, 0.5f,
+//                -0.5f, -0.5f,
+//                0.5f, 0.5f,
+//
+//                -0.5f, -0.5f,
+//                0.5f, 0.5f,
+//                0.5f, -0.5f,
+//
+//            ))
+            selectionProgram.setUpVAO(debugCtx)
+
+            selectionProgram.applyUniform(debugCtx, SelectionProgram.Uniform(
+                Vector4f(0f, 1f, 0f, 1f),
+                min,
+                max,
+                0.54f
+            ))
+
+            debugCtx.glDrawArrays(GL_TRIANGLES, 0, 6 )
+//            debugCtx.glDrawArrays(GL_LINE_LOOP, 0, 6 )
+            val error = debugCtx.glGetError()
+            if (error != GL_NO_ERROR) {
+                println("OpenGL error: $error")
+            }
+
+        }
+
+
+
+
+
 
 
         ctx.glBindVertexArray(0)
