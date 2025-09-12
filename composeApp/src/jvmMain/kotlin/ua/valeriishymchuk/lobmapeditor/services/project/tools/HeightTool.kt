@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
@@ -10,7 +11,7 @@ import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 import java.util.LinkedList
 import kotlin.math.abs
 
-object HeightTool : PresetTool() {
+object HeightTool : BrushTool() {
 
     val height = MutableStateFlow(1)
 
@@ -24,16 +25,26 @@ object HeightTool : PresetTool() {
         editorService: EditorService<GameScenario.Preset>,
         x: Float,
         y: Float,
-        flushCompoundCommands: Boolean
-    ): Boolean {
-        return trySetTileHeight(
+        flushCompoundCommands: Boolean,
+    ): Boolean = calcBrush(
+        Vector2i(
             x.toInt() / GameConstants.TILE_SIZE,
-            y.toInt() / GameConstants.TILE_SIZE,
-            height.value,
-            editorService,
-            flushCompoundCommands
+            y.toInt() / GameConstants.TILE_SIZE
         )
-    }
+    )
+        .map { pos ->
+            trySetTileHeight(
+                pos.x,
+                pos.y,
+                height.value,
+                editorService,
+                false
+            )
+        }
+        .also {
+            if (flushCompoundCommands) editorService.flushCompoundCommon()
+        }
+        .any { it }
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
         editorService.flushCompoundCommon()
@@ -43,7 +54,7 @@ object HeightTool : PresetTool() {
         tileX: Int,
         tileY: Int,
         height: Int,
-        editorService: EditorService<GameScenario.Preset>
+        editorService: EditorService<GameScenario.Preset>,
     ): Boolean {
         val terrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return false
         val oldValue = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return false
@@ -66,7 +77,7 @@ object HeightTool : PresetTool() {
         tileY: Int,
         height: Int,
         editorService: EditorService<GameScenario.Preset>,
-        flushCompoundCommands: Boolean
+        flushCompoundCommands: Boolean,
     ): Boolean {
         val heightMap = editorService.scenario.map.terrainHeight
         if (!set(tileX, tileY, height, editorService)) return false

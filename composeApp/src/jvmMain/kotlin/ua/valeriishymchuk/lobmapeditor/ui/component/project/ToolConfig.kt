@@ -71,6 +71,8 @@ private fun TerrainToolConfig() {
 
     val popupManager = remember { PopupManager() }
 
+    BrushToolConfig(TerrainTool)
+
     ComboBox(
         labelText = currentTerrain.name,
         popupManager = popupManager,
@@ -112,6 +114,8 @@ private fun HeightToolConfig() {
         HeightTool.height.value = value.roundToInt()
     }
 
+
+    BrushToolConfig(HeightTool)
 
     Text("Height: $currentHeight")
     Slider(

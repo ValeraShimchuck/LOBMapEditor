@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
@@ -9,7 +10,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
 
-object TerrainTool : PresetTool() {
+object TerrainTool : BrushTool() {
 
     val terrain = MutableStateFlow(TerrainType.GRASS)
 
@@ -27,25 +28,35 @@ object TerrainTool : PresetTool() {
         editorService: EditorService<GameScenario.Preset>,
         x: Float,
         y: Float,
-        flushCompoundCommands: Boolean
-    ): Boolean {
-        val tileX = x.toInt() / GameConstants.TILE_SIZE
-        val tileY = y.toInt() / GameConstants.TILE_SIZE
-        val oldTerrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return false
-        val height = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return false
-        if (oldTerrain == terrain.value) return false
-        val command = UpdateTerrainCommand(
-            tileX,
-            tileY,
-            height,
-            oldTerrain,
-            terrain.value,
-            height
+        flushCompoundCommands: Boolean,
+    ): Boolean =
+        calcBrush(
+            Vector2i(
+                x.toInt() / GameConstants.TILE_SIZE,
+                y.toInt() / GameConstants.TILE_SIZE
+            )
         )
-        if (flushCompoundCommands) editorService.executeCommon(command)
-        else editorService.executeCompoundCommon(command)
-        return true
-    }
+            .map { pos ->
+                val tileX = pos.x
+                val tileY = pos.y
+                val oldTerrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return@map false
+                val height = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return@map false
+                if (oldTerrain == terrain.value) return@map false
+                val command = UpdateTerrainCommand(
+                    tileX,
+                    tileY,
+                    height,
+                    oldTerrain,
+                    terrain.value,
+                    height
+                )
+                editorService.executeCompoundCommon(command)
+                true
+            }
+            .also {
+                if (flushCompoundCommands) editorService.flushCompoundCommon()
+            }
+            .any { it }
 
 
 }
