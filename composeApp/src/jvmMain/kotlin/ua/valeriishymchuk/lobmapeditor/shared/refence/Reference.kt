@@ -1,6 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.shared.refence
 
-class Reference<K,V>(
+data class Reference<K,V>(
     val key: K
 ) {
 

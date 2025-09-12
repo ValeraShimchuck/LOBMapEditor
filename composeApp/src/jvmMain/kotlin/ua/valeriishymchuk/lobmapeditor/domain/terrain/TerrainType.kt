@@ -1,6 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.domain.terrain
 
 import org.joml.Vector2i
+import org.joml.Vector4f
 
 
 enum class TerrainType(
@@ -10,8 +11,12 @@ enum class TerrainType(
     val mainTerrain: TerrainType? = null,
     val overlay: OverlayInfo? = null,
     val isFarm: Boolean = false,
+    val colorTint: Vector4f = Vector4f(1f),
 ) {
-    GRASS(0, "terrain/grass", dominance = 21),
+    GRASS(
+        0, "terrain/grass",
+        dominance = 21, colorTint = Vector4f(0.8f, 0.85f, 0.8f, 1f)
+    ),
     FOREST(1, "terrain/forest-ground", dominance = 19, overlay = OverlayInfo(
         "trees",
         randomRange = 0.4f,
@@ -35,11 +40,12 @@ enum class TerrainType(
         offset = -0.15f,
         elementSize = Vector2i(42)
     )),
-    FOREST_WINTER(13, "terrain/dirt", dominance = 18,overlay = OverlayInfo(
+    FOREST_WINTER(13, "terrain/dirt-winter", dominance = 18,overlay = OverlayInfo(
         "tree-winter",
         randomRange = 0.4f,
-        2
-    )),
+        2,
+    ), colorTint = Vector4f(1.35f, 1.2f, 1.2f, 1f)
+    ),
     CLIFF_WINTER(14, "blending/cliff-winter", dominance = 0, SNOW),
     ROAD_WINTER(15, "blending/road-winter", dominance = 9, SNOW),
     ICE(16, "terrain/ice", dominance = 2),

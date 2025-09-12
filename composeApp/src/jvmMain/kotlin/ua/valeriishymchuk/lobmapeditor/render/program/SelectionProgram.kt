@@ -4,7 +4,6 @@ import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL3
 import org.joml.Vector2f
 import org.joml.Vector4f
-import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.BufferHelper
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenBuffer
@@ -23,7 +22,8 @@ class SelectionProgram(
     val colorLocation: Int = ctx.glGetUniformLocation(program, "uColor")
     val selectionMinLocation: Int = ctx.glGetUniformLocation(program, "uSelectionMin")
     val selectionMaxLocation: Int = ctx.glGetUniformLocation(program, "uSelectionMax")
-    val thicknessLocation: Int = ctx.glGetUniformLocation(program, "uThickness")
+    val verticalThicknessLocation: Int = ctx.glGetUniformLocation(program, "uVerticalThickness")
+    val horizontalThicknessLocation: Int = ctx.glGetUniformLocation(program, "uHorizontalThickness")
 
 
 
@@ -68,7 +68,8 @@ class SelectionProgram(
         buffer.flip()
         ctx.glUniform2fv(selectionMaxLocation, 1, buffer)
 
-        ctx.glUniform1f(thicknessLocation, data.thickness)
+        ctx.glUniform1f(verticalThicknessLocation, data.verticalThickness)
+        ctx.glUniform1f(horizontalThicknessLocation, data.horizontalThickness)
 
     }
 
@@ -76,7 +77,8 @@ class SelectionProgram(
         val color: Vector4f,
         val selectionMin: Vector2f,
         val selectionMax: Vector2f,
-        val thickness: Float
+        val verticalThickness: Float,
+        val horizontalThickness: Float
     )
 
 }

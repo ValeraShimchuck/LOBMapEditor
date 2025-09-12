@@ -6,17 +6,19 @@ out vec4 FragColor;
 uniform vec4 uColor;
 uniform vec2 uSelectionMin;
 uniform vec2 uSelectionMax;
-uniform float uThickness;
+uniform float uVerticalThickness;
+uniform float uHorizontalThickness;
 
 bool withinBounds(vec2 toCheck, vec2 minBounds, vec2 maxBounds) {
     return toCheck.x >= minBounds.x && toCheck.x < maxBounds.x && toCheck.y >= minBounds.y && toCheck.y < maxBounds.y;
 }
 
 void main() {
-//    FragColor = uColor;
+    FragColor = uColor;
     // Use the uniforms in a way that doesn't affect the output
-    if (length(uSelectionMin) + length(uSelectionMax) + uThickness < -1.0) {
-        FragColor = vec4(0.0, 1.0, 0.0, 1.0); // This will never happen, but prevents optimization
-    } else FragColor = uColor;
-//    if (withinBounds(vPosition, uSelectionMin + uThickness, uSelectionMax - uThickness)) discard;
+//    if (length(uSelectionMin) + length(uSelectionMax) + uThickness < -1.0) {
+//        FragColor = vec4(0.0, 1.0, 0.0, 1.0); // This will never happen, but prevents optimization
+//    } else FragColor = uColor;
+    vec2 thickness = vec2(uHorizontalThickness, uVerticalThickness);
+    if (withinBounds(vPosition, uSelectionMin + thickness, uSelectionMax - thickness)) discard;
 }

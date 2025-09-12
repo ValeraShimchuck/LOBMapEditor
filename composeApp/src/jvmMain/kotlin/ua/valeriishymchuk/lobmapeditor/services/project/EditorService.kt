@@ -8,6 +8,9 @@ import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -20,6 +23,7 @@ class EditorService<T : GameScenario<T>>(
     private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
     lateinit var scenario: T
+    val selectedUnits: MutableSet<Reference<Int, GameUnit>> = ConcurrentHashMap.newKeySet()
 
     private val scenarioSetter: (T) -> Unit = {
         this.scenario = it
