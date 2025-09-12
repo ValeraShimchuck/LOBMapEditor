@@ -21,6 +21,7 @@ import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
 import org.kodein.di.compose.withDI
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
+import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.servicesModule
 import ua.valeriishymchuk.lobmapeditor.ui.App
 import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
@@ -32,7 +33,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
 val di = DI {
-    bindEagerSingleton { ErrorService(di) }
     import(servicesModule)
 }
 

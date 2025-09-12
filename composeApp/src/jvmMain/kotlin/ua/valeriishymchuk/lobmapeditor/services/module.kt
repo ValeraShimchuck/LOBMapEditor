@@ -15,4 +15,7 @@ val servicesModule by DI.Module {
     bindSingleton { ProjectsService(di) }
     bindInstance { Gson() }
     bindEagerSingleton { ScenarioIOService(di) }
+
+    bindEagerSingleton { ErrorService(di) }
+    bindEagerSingleton { ToastService(di) }
 }

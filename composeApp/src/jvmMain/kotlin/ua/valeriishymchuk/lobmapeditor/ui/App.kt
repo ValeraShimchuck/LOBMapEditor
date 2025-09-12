@@ -31,6 +31,7 @@ import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
+import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import java.awt.Dimension
 
 
@@ -39,9 +40,21 @@ import java.awt.Dimension
 fun App() {
     val errorService by rememberInstance<ErrorService>()
     val currentError by errorService.error.collectAsState()
+    val toastService by rememberInstance<ToastService>()
+    val toasts by toastService.toasts.collectAsState()
 
     Box {
         CurrentScreen()
+
+        Column(
+            modifier = Modifier.align(Alignment.BottomEnd)
+                .widthIn(min = 100.dp, max = 200.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            toasts.forEach {
+                it()
+            }
+        }
 
         if (currentError != null) {
             Box(

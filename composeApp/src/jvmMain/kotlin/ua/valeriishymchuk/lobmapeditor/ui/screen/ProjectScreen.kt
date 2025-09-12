@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -10,11 +11,16 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import io.github.vinceglb.filekit.FileKit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.Orientation
 import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.jetbrains.jewel.window.TitleBarScope
 import org.kodein.di.*
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
@@ -26,6 +32,7 @@ import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
+import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModule
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
@@ -33,6 +40,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.JoglCanvas
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolBar
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolConfig
+import java.awt.Desktop
 import java.io.File
 
 class ProjectScreen(
@@ -40,6 +48,45 @@ class ProjectScreen(
 ): TitleBarScreen {
 
 
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    context(TitleBarScope) override fun TitleBar() {
+        val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+        val scenarioIO by rememberInstance<ScenarioIOService>()
+        val toastService by rememberInstance<ToastService>()
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ){
+            Tooltip(
+                { Text("Save map") }
+            ) {
+                IconActionButton(
+                    AllIconsKeys.Actions.MenuSaveall,
+                    null,
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            scenarioIO.save(editorService.scenario, ref.mapFile)
+                            toastService.toast() {
+                                SuccessInlineBanner(
+                                    "Map saved at: ${ref.mapFile.absoluteFile}",
+                                    actions = {
+                                        OutlinedButton(onClick = {
+                                            Desktop.getDesktop().open(ref.dirFile)
+                                        }) {
+                                            Text("Open project folder")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        super.TitleBar()
+    }
 
     @Composable
     override fun Content() {

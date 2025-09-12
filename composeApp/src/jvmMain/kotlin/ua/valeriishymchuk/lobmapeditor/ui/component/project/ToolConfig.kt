@@ -14,6 +14,7 @@ import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
@@ -134,13 +135,14 @@ fun PlaceUnitToolConfig() {
 
 
     val playerIndex = currentUnit.owner.key
-    val popupManager = remember { PopupManager() }
+    val teamPopupManager = remember { PopupManager() }
+    val unitPopupManager = remember { PopupManager() }
 
 
 
     ComboBox(
         labelText = "$playerIndex ${scenario.players[playerIndex].team}",
-        popupManager = popupManager,
+        popupManager = teamPopupManager,
         popupContent = {
             VerticallyScrollableContainer {
                 Column {
@@ -156,7 +158,7 @@ fun PlaceUnitToolConfig() {
                                     PlaceUnitTool.currentUnit.value = currentUnit.copy(
                                         owner = Reference(item.index)
                                     )
-                                    popupManager.setPopupVisible(false)
+                                    teamPopupManager.setPopupVisible(false)
                                 }
                         ) {
                             Text(
@@ -185,6 +187,37 @@ fun PlaceUnitToolConfig() {
         nameFieldState,
         Modifier.fillMaxWidth(),
         placeholder = { Text("Unit name... (Blank - default name)")}
+    )
+
+    ComboBox(
+        labelText = currentUnit.type.name,
+        popupManager = unitPopupManager,
+        popupContent = {
+            VerticallyScrollableContainer {
+                Column {
+                    GameUnitType.entries.sortedByDescending {
+                        it.ordinal
+                    }.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(2.dp)
+                                .onClick {
+                                    PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
+                                        type = item
+                                    )
+                                    unitPopupManager.setPopupVisible(false)
+                                }
+                        ) {
+                            Text(
+                                text = item.name,
+                            )
+                        }
+
+                    }
+                }
+            }
+        }
     )
 
     var angle by remember { mutableStateOf(0f) }
