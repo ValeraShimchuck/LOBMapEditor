@@ -49,17 +49,7 @@ class SpriteStage(
 
         // rendering selection
         val selectionsToRender = selectedUnits.toList()
-//            .mapNotNull { reference ->
-//            reference.getValueOrNull(scenario.units::getOrNull)?.position.also { position ->
-//                if (position == null) {
-//                    editorService.selectedUnits.remove(reference)
-//                    println("Deleted invalid reference")
-//                }
-//            }
-//        }
-//        unitsToRender.entries
-//            .flatMap { units -> units.value.values.flatten() }
-//            .map { it.position }
+
 
         also {
             spriteProgram.setUpVAO(glCtx)
@@ -76,7 +66,6 @@ class SpriteStage(
             )
             val vbo = selectionsToRender.map { unit ->
                 val positionMatrix = Matrix4f()
-//                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 val selectionDimensions = Vector2f(
                     32f
@@ -97,7 +86,6 @@ class SpriteStage(
             glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
         }
 
-//        if (true) return
 
         val unitShadowsToRender: MutableMap<String, MutableList<GameUnit>> = mutableMapOf()
         val preparedUnitsToRender: MutableMap<Pair<PlayerTeam, GameUnitType>, MutableList<GameUnit>> = mutableMapOf()
