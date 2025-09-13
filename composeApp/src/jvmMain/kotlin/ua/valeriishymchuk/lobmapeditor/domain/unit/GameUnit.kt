@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.domain.unit
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import org.joml.Vector2f
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -26,6 +27,9 @@ data class GameUnit(
     }
 
     companion object {
+
+        val UNIT_DIMENSIONS = Vector2f(1f, 2f).mul(16f).mul(0.75f)
+
         fun deserialize(json: JsonObject): GameUnit {
             val name = json.getAsJsonPrimitive("name")?.asString
             val playerKey = json.getAsJsonPrimitive("player").asInt

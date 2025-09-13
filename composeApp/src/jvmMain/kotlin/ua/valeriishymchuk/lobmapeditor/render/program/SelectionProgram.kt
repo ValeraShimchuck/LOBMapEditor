@@ -35,7 +35,6 @@ class SelectionProgram(
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
 
-        println(data.joinToString())
         val buffer = BufferHelper.wrapDirect(data)
         ctx.glVBOData(buffer.capacity() * 4,buffer)
     }

@@ -45,7 +45,7 @@ vec4 blendPixels(vec4 src, vec4 dst) {
 vec4 getPixel(vec2 texCord) {
     // 0 - nothing
     // 1 - current tile to be drawn
-    // 2 - draw overlay
+    // 2 - draw0 overlay
     uint tileValue = texture(uTileMap, texCord).r;
     bool isSet = tileValue == 1u;
     bool drawOverlay = tileValue == 2u;

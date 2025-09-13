@@ -30,6 +30,7 @@ import org.jetbrains.jewel.ui.theme.popupContainerStyle
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
+import ua.valeriishymchuk.lobmapeditor.render.InputListener
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import java.awt.Dimension
@@ -156,11 +157,11 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
 
 
                 addGLEventListener(glListener)
-                addMouseMotionListener(glListener.MouseMotionListener(this::repaint))
-                val mouseListener = glListener.MouseListener(this::repaint)
-                addMouseListener(mouseListener)
-                addMouseWheelListener(mouseListener)
-                addKeyListener(glListener.KeyPressListener(this::repaint))
+                val inputListener = InputListener(this::repaint, di)
+                addMouseMotionListener(inputListener)
+                addMouseListener(inputListener)
+                addMouseWheelListener(inputListener)
+                addKeyListener(inputListener)
 
                 isVisible = true
                 canvasRefSet(this)
