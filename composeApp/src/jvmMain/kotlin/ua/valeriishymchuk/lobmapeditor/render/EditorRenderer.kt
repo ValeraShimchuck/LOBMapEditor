@@ -17,6 +17,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMEN
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.stage.BackgroundStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.BlobTileStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
@@ -105,6 +106,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             TerrainMapStage(ctx, tileMapVertices),
             BlobTileStage(ctx, tileMapVertices),
             OverlayTileStage(ctx, tileMapVertices),
+            ColorClosestPointStage(ctx, tileMapVertices),
             SpriteStage(ctx),
             SelectionStage(ctx)
 
