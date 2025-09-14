@@ -85,8 +85,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     )
 
 
-
-
     // Order matters
     private lateinit var renderStages: List<RenderStage>
 
@@ -142,6 +140,11 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             editorService.scenario,
             editorService.selectedUnits
                 .mapNotNull { reference -> reference.getValueOrNull(editorService.scenario.units::getOrNull) },
+            editorService.selectedObjectives?.let {
+                listOf(it).mapNotNull { reference ->
+                    reference.getValueOrNull(editorService.scenario.objectives::getOrNull)
+                }
+            } ?: emptyList(),
             RenderContext.SelectionContext(
                 editorService.selectionEnabled,
                 editorService.selectionStart,

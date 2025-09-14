@@ -23,6 +23,7 @@ import java.awt.event.MouseMotionListener
 import java.awt.event.MouseWheelEvent
 import kotlin.getValue
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.ranges.contains
 
 class InputListener(
@@ -196,9 +197,37 @@ class InputListener(
         if (!editorService.selectionEnabled) {
 //                if (!isShiftPressed) editorService.selectedUnits.clear()
             val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
+
+            val objectiveDimensions = Vector2f(
+                GameConstants.TILE_SIZE.toFloat()
+            ).mul(1.3f)
+
+            val objectiveDimensionMin = objectiveDimensions.div(-2f, Vector2f())
+            val objectiveDimensionMax = objectiveDimensions.div(2f, Vector2f())
+            // checking selection for objectives
+            val objectiveScale = max((2.5f / editorService.viewMatrix.getScale(Vector3f()).x), 1f)
+
+            val objective = editorService.scenario.objectives.firstOrNull { objective ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
+                positionMatrix.scale(objectiveScale)
+                val inversePositionMatrix = positionMatrix.invert(Matrix4f())
+                val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
+                    .mul(inversePositionMatrix, Vector4f())
+                val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
+                objectiveDimensionMin.x < localPoint.x && localPoint.x < objectiveDimensionMax.x &&
+                        objectiveDimensionMin.y < localPoint.y && localPoint.y < objectiveDimensionMax.y
+            }
+
+            if (objective != null) {
+                editorService.selectedUnits.clear()
+                editorService.selectedObjectives = Reference(editorService.scenario.objectives.indexOf(objective))
+                rerender()
+                return
+            }
+
             val unitDimensionsMin = UNIT_DIMENSIONS.div(-2f, Vector2f())
             val unitDimensionsMax = UNIT_DIMENSIONS.div(2f, Vector2f())
-
             val selectedUnits = editorService.scenario.units.filter { unit ->
                 val positionMatrix = Matrix4f()
                 positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
@@ -213,10 +242,14 @@ class InputListener(
 
 
 
+
             val newSelectedUnits = selectedUnits.map { unit ->
                 Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
             }
-            if (!isShiftPressed && !isCtrlPressed) editorService.selectedUnits.clear()
+            editorService.selectedObjectives = null
+            if (!isShiftPressed && !isCtrlPressed) {
+                editorService.selectedUnits.clear()
+            }
             if (!isCtrlPressed) editorService.selectedUnits.addAll(newSelectedUnits)
             else editorService.selectedUnits.removeAll(newSelectedUnits.toSet())
             rerender()
@@ -236,6 +269,7 @@ class InputListener(
         val newSelectedUnits = selectedUnits.map { unit ->
             Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
         }
+        if (newSelectedUnits.isNotEmpty()) editorService.selectedObjectives = null
         if (!isShiftPressed && !isCtrlPressed) editorService.selectedUnits.clear()
         if (!isCtrlPressed) editorService.selectedUnits.addAll(newSelectedUnits)
         else editorService.selectedUnits.removeAll(newSelectedUnits.toSet())

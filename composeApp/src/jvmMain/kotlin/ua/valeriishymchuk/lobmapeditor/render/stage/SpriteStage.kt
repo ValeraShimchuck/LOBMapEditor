@@ -48,10 +48,10 @@ class SpriteStage(
             }
 
         // rendering selection
-        val selectionsToRender = selectedUnits.toList()
 
 
         also {
+            val selectionsToRender = selectedUnits.toList()
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
                 glCtx, SpriteProgram.Uniform(
@@ -182,6 +182,44 @@ class SpriteStage(
         val objectiveDimensions = Vector2f(
             GameConstants.TILE_SIZE.toFloat()
         ).mul(1.3f)
+
+
+        also {
+            val selectionsToRender = selectedObjectives.toList()
+            spriteProgram.setUpVAO(glCtx)
+            spriteProgram.applyUniform(
+                glCtx, SpriteProgram.Uniform(
+                    projectionMatrix,
+                    viewMatrix,
+                    false,
+                    true,
+                    Vector4f(0f, 0f, 0f, 0.6f),
+                    -1,
+                    textureStorage.selectionTexture
+                )
+            )
+            val vbo = selectionsToRender.map { objective ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
+                positionMatrix.scale(objectiveScale)
+                val selectionDimensions = Vector2f(
+                    32f
+                )
+                SpriteProgram.BufferData(
+                    RectanglePoints.fromPoints(
+                        selectionDimensions.div(-2f, Vector2f()),
+                        selectionDimensions.div(2f, Vector2f()),
+                    ),
+                    RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+            spriteProgram.setUpVBO(glCtx, vbo)
+
+
+            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+        }
 
         spriteProgram.setUpVAO(glCtx)
         spriteProgram.applyUniform(

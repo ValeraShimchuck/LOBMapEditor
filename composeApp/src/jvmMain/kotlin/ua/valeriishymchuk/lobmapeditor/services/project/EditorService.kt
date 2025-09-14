@@ -9,6 +9,7 @@ import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -26,6 +27,7 @@ class EditorService<T : GameScenario<T>>(
 
     lateinit var scenario: T
     val selectedUnits: MutableSet<Reference<Int, GameUnit>> = ConcurrentHashMap.newKeySet()
+    var selectedObjectives: Reference<Int, Objective>? = null
 
     private val scenarioSetter: (T) -> Unit = {
         this.scenario = it

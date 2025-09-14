@@ -5,6 +5,7 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 
@@ -16,6 +17,7 @@ data class RenderContext(
     val projectionMatrix: Matrix4f,
     val scenario: GameScenario.Preset,
     val selectedUnits: List<GameUnit>,
+    val selectedObjectives: List<Objective>,
     val selection: SelectionContext
 ) {
     fun getMvp(model: Matrix4f): Matrix4f {
