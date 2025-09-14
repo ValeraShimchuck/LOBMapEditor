@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,7 @@ fun ToolConfig(modifier: Modifier = Modifier) {
         }
 
         is PlaceObjectiveTool -> {
-            { PlaceObjectToolConfig() }
+            { PlaceObjectiveToolConfig() }
         }
 
         else -> null
@@ -55,8 +56,7 @@ fun ToolConfig(modifier: Modifier = Modifier) {
         Column {
             GroupHeader(
                 "Configuration for tool: ${currentTool.uiInfo.name}",
-                startComponent = { Icon(AllIconsKeys.General.Settings, null) }
-            )
+                startComponent = { Icon(AllIconsKeys.General.Settings, null) })
             Spacer(Modifier.height(4.dp))
             content()
         }
@@ -74,23 +74,17 @@ private fun TerrainToolConfig() {
     BrushToolConfig(TerrainTool)
 
     ComboBox(
-        labelText = currentTerrain.name,
-        popupManager = popupManager,
-        popupContent = {
+        labelText = currentTerrain.name, popupManager = popupManager, popupContent = {
             VerticallyScrollableContainer {
                 Column {
                     TerrainType.entries.sortedByDescending {
                         it.dominance
                     }.forEach { item ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp)
-                                .onClick {
-                                    TerrainTool.terrain.value = item
-                                    popupManager.setPopupVisible(false)
-                                }
-                        ) {
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                TerrainTool.terrain.value = item
+                                popupManager.setPopupVisible(false)
+                            }) {
                             Text(
                                 text = item.name,
                             )
@@ -99,8 +93,7 @@ private fun TerrainToolConfig() {
                     }
                 }
             }
-        }
-    )
+        })
 
 }
 
@@ -122,8 +115,7 @@ private fun HeightToolConfig() {
         value = value, // Float
         onValueChange = { newValue ->
             value = newValue // просто оновлюємо
-        },
-        valueRange = 0f..10f, // будь-яке значення між 1 та 10
+        }, valueRange = 0f..10f, // будь-яке значення між 1 та 10
         steps = 0, // без кроків
         modifier = Modifier.fillMaxWidth()
     )
@@ -131,7 +123,7 @@ private fun HeightToolConfig() {
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalJewelApi::class)
 @Composable
-fun PlaceUnitToolConfig() {
+private fun PlaceUnitToolConfig() {
     val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
 
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
@@ -154,17 +146,13 @@ fun PlaceUnitToolConfig() {
                         it.index
                     }.forEach { item ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp)
-                                .onClick {
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
 
-                                    PlaceUnitTool.currentUnit.value = currentUnit.copy(
-                                        owner = Reference(item.index)
-                                    )
-                                    teamPopupManager.setPopupVisible(false)
-                                }
-                        ) {
+                                PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                                    owner = Reference(item.index)
+                                )
+                                teamPopupManager.setPopupVisible(false)
+                            }) {
                             Text(
                                 text = "${item.index} ${item.value.team}",
                             )
@@ -173,46 +161,35 @@ fun PlaceUnitToolConfig() {
                     }
                 }
             }
-        }
-    )
+        })
 
 
     val nameFieldState by remember { mutableStateOf(TextFieldState(currentUnit.name ?: "")) }
     LaunchedEffect(nameFieldState) {
         PlaceUnitTool.currentUnit.value = currentUnit.copy(
-            name = nameFieldState.text.toString().takeIf { it.isNotBlank() }
-        )
+            name = nameFieldState.text.toString().takeIf { it.isNotBlank() })
     }
 
 
     Spacer(Modifier.height(4.dp))
 
     TextField(
-        nameFieldState,
-        Modifier.fillMaxWidth(),
-        placeholder = { Text("Unit name... (Blank - default name)")}
-    )
+        nameFieldState, Modifier.fillMaxWidth(), placeholder = { Text("Unit name... (Blank - default name)") })
 
     ComboBox(
-        labelText = currentUnit.type.name,
-        popupManager = unitPopupManager,
-        popupContent = {
+        labelText = currentUnit.type.name, popupManager = unitPopupManager, popupContent = {
             VerticallyScrollableContainer {
                 Column {
                     GameUnitType.entries.sortedByDescending {
                         it.ordinal
                     }.forEach { item ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp)
-                                .onClick {
-                                    PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
-                                        type = item
-                                    )
-                                    unitPopupManager.setPopupVisible(false)
-                                }
-                        ) {
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
+                                    type = item
+                                )
+                                unitPopupManager.setPopupVisible(false)
+                            }) {
                             Text(
                                 text = item.name,
                             )
@@ -221,8 +198,7 @@ fun PlaceUnitToolConfig() {
                     }
                 }
             }
-        }
-    )
+        })
 
     var angle by remember { mutableStateOf(0f) }
 
@@ -237,9 +213,7 @@ fun PlaceUnitToolConfig() {
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         AngleDial(
-            angle,
-            color = scenario.players[playerIndex].team.color,
-            modifier = Modifier.size(200.dp)
+            angle, color = scenario.players[playerIndex].team.color, modifier = Modifier.size(200.dp)
         )
 
         Slider(
@@ -252,7 +226,74 @@ fun PlaceUnitToolConfig() {
 
 }
 
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun PlaceObjectToolConfig() {
+private fun PlaceObjectiveToolConfig() {
+    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+
+
+    val currentObjective by PlaceObjectiveTool.currentObjective.collectAsState()
+    val playerIndex = currentObjective.owner?.key
+    val scenario = editorService.scenario
+
+    val playerTeamPopupManager = remember { PopupManager() }
+
+    val objectiveNameTextFieldState = rememberTextFieldState("")
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        ComboBox(labelText = playerIndex?.let { "$playerIndex ${scenario.players[playerIndex].team}" } ?: "No one",
+            popupManager = playerTeamPopupManager,
+            popupContent = {
+                VerticallyScrollableContainer {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                                    owner = null
+                                )
+                                playerTeamPopupManager.setPopupVisible(false)
+                            }) {
+                            Text(
+                                text = "No one",
+                            )
+                        }
+
+                        scenario.players.withIndex().sortedByDescending {
+                            it.index
+                        }.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+
+                                    PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                                        owner = Reference(item.index)
+                                    )
+                                    playerTeamPopupManager.setPopupVisible(false)
+                                }) {
+                                Text(
+                                    text = "${item.index} ${item.value.team}",
+                                )
+                            }
+
+                        }
+                    }
+                }
+            })
+
+
+        TextField(
+            objectiveNameTextFieldState,
+            Modifier.fillMaxWidth(),
+            placeholder = { Text("Objective name... (Blank - default name)") }
+        )
+    }
+
+    LaunchedEffect(objectiveNameTextFieldState) {
+        PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+            name = objectiveNameTextFieldState.takeIf { it.text.isNotBlank() }?.text?.toString()
+        )
+    }
+
 
 }
