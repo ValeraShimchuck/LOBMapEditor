@@ -8,7 +8,11 @@ import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -42,6 +46,8 @@ class InputListener(
     private var isShiftPressed = false
     private var isCtrlPressed = false
     private var isSelectionDragging: Boolean = false
+    private var shouldDragSelectedObjects: Boolean = false
+    private var lastDragPosition: Vector2f = Vector2f()
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
     private val toolService: ToolService by di.instance()
@@ -111,7 +117,10 @@ class InputListener(
     override fun mouseDragged(e: MouseEvent) {
 
         val shouldRender = listOf(
-            checkMiddleMouse(e), checkTilePainting(e), checkSelectionDrag(e)
+            checkMiddleMouse(e),
+            checkTilePainting(e),
+            checkSelectionDrag(e),
+            checkSelectedObjectsDrag(e)
         ).any { it }
         if (shouldRender) rerender()
     }
@@ -172,6 +181,52 @@ class InputListener(
         return editorService.selectionEnabled
     }
 
+    private fun checkSelectedObjectsDrag(e: MouseEvent): Boolean {
+        if (!shouldDragSelectedObjects) return false
+        val oldPos = Vector2f(lastDragPosition)
+        val newPos = editorService.fromScreenToWorldSpace(e.x, e.y)
+        lastDragPosition = newPos
+        val change = newPos.sub(oldPos, Vector2f())
+        if (editorService.selectedUnits.isNotEmpty()) {
+            val unitList = editorService.scenario.units.toMutableList()
+            editorService.selectedUnits.forEach { reference ->
+                val oldUnit = reference.getValue(editorService.scenario.units::get)
+                val newUnitPos = Vector2f(oldUnit.position.x, oldUnit.position.y).add(change)
+                val newUnit = oldUnit.copy(
+                    position = Position(
+                        newUnitPos.x.coerceIn(0f,editorService.scenario.map.widthPixels.toFloat()),
+                        newUnitPos.y.coerceIn(0f,editorService.scenario.map.heightPixels.toFloat())
+                    )
+                )
+                unitList[reference.key] = newUnit
+            }
+            editorService.executeCompound(UpdateGameUnitListCommand(
+                editorService.scenario.units,
+                unitList
+            ))
+        }
+
+        val selectedObjective = editorService.selectedObjectives
+        if (selectedObjective != null) {
+            val objectiveList = editorService.scenario.objectives.toMutableList()
+            val oldObjective = selectedObjective.getValue(editorService.scenario.objectives::get)
+            val newObjectivePos = Vector2f(
+                oldObjective.position.x.coerceIn(0f,editorService.scenario.map.widthPixels.toFloat()),
+                oldObjective.position.y.coerceIn(0f,editorService.scenario.map.heightPixels.toFloat())
+            ).add(change)
+            val newObjective = oldObjective.copy(
+                position = Position(newObjectivePos.x, newObjectivePos.y)
+            )
+            objectiveList[selectedObjective.key] = newObjective
+            editorService.executeCompoundCommon(UpdateObjectiveListCommand(
+                editorService.scenario.objectives,
+                objectiveList
+            ))
+        }
+
+        return true
+    }
+
     override fun mousePressed(e: MouseEvent) {
         checkMiddlePressed(e)
         checkToolUsage(e)
@@ -186,74 +241,114 @@ class InputListener(
 
     private fun checkStartOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
+        val objective = getClickedObjective(e)
+
+        if (objective != null) {
+
+            editorService.selectedUnits.clear()
+            editorService.selectedObjectives = Reference(editorService.scenario.objectives.indexOf(objective))
+            lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
+            shouldDragSelectedObjects = true
+            rerender()
+            return
+        }
+
+        val units = getClickedUnits(e)
+        if (units.isNotEmpty()) {
+            editorService.selectedObjectives = null
+            shouldDragSelectedObjects = true
+            lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
+            val firstSelected = units.firstOrNull { unit ->
+                val reference = Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
+                editorService.selectedUnits.contains(reference)
+            }
+            if (firstSelected == null) {
+                editorService.selectedUnits.clear()
+                editorService.selectedUnits.add(Reference(editorService.scenario.units.indexOf(units.first())))
+            }
+            rerender()
+            return
+        }
+
+
         editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
         editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
         isSelectionDragging = true
     }
 
+    private fun getClickedObjective(e: MouseEvent): Objective? {
+        val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
+        val objectiveDimensions = Vector2f(
+            GameConstants.TILE_SIZE.toFloat()
+        ).mul(1.3f)
+        val objectiveDimensionMin = objectiveDimensions.div(-2f, Vector2f())
+        val objectiveDimensionMax = objectiveDimensions.div(2f, Vector2f())
+        // checking selection for objectives
+        val objectiveScale = max((2.5f / editorService.viewMatrix.getScale(Vector3f()).x), 1f)
+
+        return editorService.scenario.objectives.firstOrNull { objective ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
+            positionMatrix.scale(objectiveScale)
+            val inversePositionMatrix = positionMatrix.invert(Matrix4f())
+            val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
+                .mul(inversePositionMatrix, Vector4f())
+            val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
+            objectiveDimensionMin.x < localPoint.x && localPoint.x < objectiveDimensionMax.x &&
+                    objectiveDimensionMin.y < localPoint.y && localPoint.y < objectiveDimensionMax.y
+        }
+    }
+
+    private fun getClickedUnits(e: MouseEvent): List<GameUnit> {
+        val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
+        val unitDimensionsMin = UNIT_DIMENSIONS.div(-2f, Vector2f())
+        val unitDimensionsMax = UNIT_DIMENSIONS.div(2f, Vector2f())
+        return editorService.scenario.units.filter { unit ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
+            val inversePositionMatrix = positionMatrix.invert(Matrix4f())
+            val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
+                .mul(inversePositionMatrix, Vector4f())
+            val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
+            unitDimensionsMin.x < localPoint.x && localPoint.x < unitDimensionsMax.x &&
+                    unitDimensionsMin.y < localPoint.y && localPoint.y < unitDimensionsMax.y
+        }
+    }
+
+    private fun checkSingleSelection(e: MouseEvent) {
+        val objective = getClickedObjective(e)
+        if (objective != null) {
+            editorService.selectedUnits.clear()
+            editorService.selectedObjectives = Reference(editorService.scenario.objectives.indexOf(objective))
+            rerender()
+            return
+        }
+
+        val newSelectedUnits = getClickedUnits(e).map { unit ->
+            Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
+        }
+        editorService.selectedObjectives = null
+        if (!isShiftPressed && !isCtrlPressed) {
+            editorService.selectedUnits.clear()
+        }
+        if (!isCtrlPressed) editorService.selectedUnits.addAll(newSelectedUnits)
+        else editorService.selectedUnits.removeAll(newSelectedUnits.toSet())
+        rerender()
+
+    }
+
     private fun checkEndOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
         isSelectionDragging = false
+        if (shouldDragSelectedObjects) {
+            shouldDragSelectedObjects = false
+            editorService.flushCompound()
+            editorService.flushCompoundCommon()
+            return
+        }
         if (!editorService.selectionEnabled) {
-//                if (!isShiftPressed) editorService.selectedUnits.clear()
-            val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
-
-            val objectiveDimensions = Vector2f(
-                GameConstants.TILE_SIZE.toFloat()
-            ).mul(1.3f)
-
-            val objectiveDimensionMin = objectiveDimensions.div(-2f, Vector2f())
-            val objectiveDimensionMax = objectiveDimensions.div(2f, Vector2f())
-            // checking selection for objectives
-            val objectiveScale = max((2.5f / editorService.viewMatrix.getScale(Vector3f()).x), 1f)
-
-            val objective = editorService.scenario.objectives.firstOrNull { objective ->
-                val positionMatrix = Matrix4f()
-                positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
-                positionMatrix.scale(objectiveScale)
-                val inversePositionMatrix = positionMatrix.invert(Matrix4f())
-                val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
-                    .mul(inversePositionMatrix, Vector4f())
-                val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
-                objectiveDimensionMin.x < localPoint.x && localPoint.x < objectiveDimensionMax.x &&
-                        objectiveDimensionMin.y < localPoint.y && localPoint.y < objectiveDimensionMax.y
-            }
-
-            if (objective != null) {
-                editorService.selectedUnits.clear()
-                editorService.selectedObjectives = Reference(editorService.scenario.objectives.indexOf(objective))
-                rerender()
-                return
-            }
-
-            val unitDimensionsMin = UNIT_DIMENSIONS.div(-2f, Vector2f())
-            val unitDimensionsMax = UNIT_DIMENSIONS.div(2f, Vector2f())
-            val selectedUnits = editorService.scenario.units.filter { unit ->
-                val positionMatrix = Matrix4f()
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
-                positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-                val inversePositionMatrix = positionMatrix.invert(Matrix4f())
-                val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
-                    .mul(inversePositionMatrix, Vector4f())
-                val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
-                unitDimensionsMin.x < localPoint.x && localPoint.x < unitDimensionsMax.x &&
-                        unitDimensionsMin.y < localPoint.y && localPoint.y < unitDimensionsMax.y
-            }
-
-
-
-
-            val newSelectedUnits = selectedUnits.map { unit ->
-                Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
-            }
-            editorService.selectedObjectives = null
-            if (!isShiftPressed && !isCtrlPressed) {
-                editorService.selectedUnits.clear()
-            }
-            if (!isCtrlPressed) editorService.selectedUnits.addAll(newSelectedUnits)
-            else editorService.selectedUnits.removeAll(newSelectedUnits.toSet())
-            rerender()
-
+            checkSingleSelection(e)
             return
         }
         editorService.selectionEnabled = false
