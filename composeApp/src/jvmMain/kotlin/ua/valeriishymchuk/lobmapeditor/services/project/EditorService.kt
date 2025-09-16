@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.services.project
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -26,8 +27,8 @@ class EditorService<T : GameScenario<T>>(
     private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
     lateinit var scenario: T
-    val selectedUnits: MutableSet<Reference<Int, GameUnit>> = ConcurrentHashMap.newKeySet()
-    var selectedObjectives: Reference<Int, Objective>? = null
+    val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
+    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?>  = MutableStateFlow(null)
 
     private val scenarioSetter: (T) -> Unit = {
         this.scenario = it
@@ -50,6 +51,8 @@ class EditorService<T : GameScenario<T>>(
     var selectionEnabled: Boolean = false
     var width: Int = 0
     var height: Int = 0
+    // hoi4 mode
+    var enableColorClosestPoint = false
 
     val projectionMatrix = Matrix4f()
     val viewMatrix = Matrix4f().identity()

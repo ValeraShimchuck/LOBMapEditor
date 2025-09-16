@@ -140,9 +140,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             editorService.viewMatrix,
             editorService.projectionMatrix,
             editorService.scenario,
-            editorService.selectedUnits
+            editorService.selectedUnits.value
                 .mapNotNull { reference -> reference.getValueOrNull(editorService.scenario.units::getOrNull) },
-            editorService.selectedObjectives?.let {
+            editorService.selectedObjectives.value?.let {
                 listOf(it).mapNotNull { reference ->
                     reference.getValueOrNull(editorService.scenario.objectives::getOrNull)
                 }
@@ -155,6 +155,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         )
 
         renderStages.forEach { stage ->
+            if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
             stage.draw(renderCtx)
         }
         ctx.glBindVertexArray(0)
