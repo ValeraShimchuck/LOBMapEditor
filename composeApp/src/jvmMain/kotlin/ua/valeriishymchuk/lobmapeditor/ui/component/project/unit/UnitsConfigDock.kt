@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.ui.component.project.unit
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -53,7 +54,7 @@ fun UnitsConfigDock() {
             }
         },
         endComponent = {
-            Row(it.widthIn(min = 140.dp, max = 280.dp).wrapContentWidth()) {
+            Row(it.widthIn(min = 140.dp, max = 300.dp).wrapContentWidth()) {
 
                 val selectedUnits by editorService.selectedUnits.collectAsState()
                 val filterText = remember { TextFieldState() }
@@ -80,9 +81,9 @@ fun UnitsConfigDock() {
 
                     ) {
                     VerticallyScrollableContainer(
-                        Modifier.heightIn(100.dp, 450.dp)
+                        Modifier.heightIn(100.dp, 350.dp)
                     ) {
-                        Column {
+                        Column(Modifier.padding(end = 8.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(2.dp)
@@ -130,6 +131,7 @@ fun UnitsConfigDock() {
                             filteredUnits.forEach { unit ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     modifier = Modifier.padding(2.dp)
                                 ) {
                                     Checkbox(
