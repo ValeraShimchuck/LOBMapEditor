@@ -2,6 +2,8 @@ package ua.valeriishymchuk.lobmapeditor.domain
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import org.joml.Vector2f
+import org.joml.Vector2i
 
 data class Position(
     val x: Float,
@@ -23,4 +25,11 @@ data class Position(
         }
     }
 
+
+
 }
+
+fun Position.toVector2f() = Vector2f(x, y)
+fun Position.toVector2i() = Vector2i(x.toInt(), y.toInt())
+
+fun Vector2f.toPosition() = Position(x, y)
