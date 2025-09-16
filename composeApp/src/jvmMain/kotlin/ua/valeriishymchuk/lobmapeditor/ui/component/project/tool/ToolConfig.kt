@@ -172,7 +172,6 @@ private fun PlaceUnitToolConfig() {
                 PlaceUnitTool.currentUnit.value = currentUnit.copy(
                     name = text.takeIf { it.isNotBlank() }
                 )
-                println(text.takeIf { it.isNotBlank() })
             }
     }
 

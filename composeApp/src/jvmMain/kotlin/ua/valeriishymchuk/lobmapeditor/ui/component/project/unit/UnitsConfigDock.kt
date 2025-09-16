@@ -1,10 +1,9 @@
 package ua.valeriishymchuk.lobmapeditor.ui.component.project.unit
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -13,31 +12,22 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.ui.component.Checkbox
-import org.jetbrains.jewel.ui.component.Dropdown
 import org.jetbrains.jewel.ui.component.EditableComboBox
 import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.IconActionButton
-import org.jetbrains.jewel.ui.component.ListComboBox
-import org.jetbrains.jewel.ui.component.PopupContainer
 import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.component.TextField
+import org.jetbrains.jewel.ui.component.TriStateCheckbox
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
-import org.kodein.di.compose.rememberProvider
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -63,13 +53,13 @@ fun UnitsConfigDock() {
             }
         },
         endComponent = {
-            Row(it.widthIn(min = 120.dp, max = 260.dp).wrapContentWidth()) {
+            Row(it.widthIn(min = 140.dp, max = 280.dp).wrapContentWidth()) {
 
                 val selectedUnits by editorService.selectedUnits.collectAsState()
                 val filterText = remember { TextFieldState() }
 
 
-                val filteredItems = remember(filterText.text, scenario) {
+                val filteredUnits = remember(filterText.text, scenario) {
                     scenario!!.units.filter { unit ->
                         filterText.text.split(Regex(" ")).any { part ->
                             unit.type.name.contains(part, ignoreCase = true) ||
@@ -84,10 +74,60 @@ fun UnitsConfigDock() {
 
                 EditableComboBox(
                     filterText,
-                ) {
-                    VerticallyScrollableContainer {
+
+
+                    popupModifier = Modifier,
+
+                    ) {
+                    VerticallyScrollableContainer(
+                        Modifier.heightIn(100.dp, 450.dp)
+                    ) {
                         Column {
-                            filteredItems.forEach { unit ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(2.dp)
+                            ) {
+                                val map = selectedUnits.map { it.getValue(scenario!!.units::get) }
+
+                                val state = when {
+                                    map.toSet() == filteredUnits.toSet() -> ToggleableState.On
+                                    map.toSet().intersect(filteredUnits.toSet())
+                                        .isNotEmpty() -> ToggleableState.Indeterminate
+
+                                    else -> ToggleableState.Off
+                                }
+
+                                TriStateCheckbox(
+                                    state = state,
+                                    onClick = {
+                                        when (state) {
+                                            ToggleableState.Off, ToggleableState.Indeterminate ->
+                                                editorService.selectedUnits.value += filteredUnits.map {
+                                                    Reference<Int, GameUnit>(
+                                                        scenario!!.units.indexOf(it)
+                                                    )
+                                                }
+
+                                            ToggleableState.On -> editorService.selectedUnits.value =
+                                                setOf()
+                                        }
+
+                                        canvas.repaint()
+                                    }
+                                )
+                                Spacer(Modifier.weight(1f))
+                                Spacer(Modifier.weight(1f))
+                                Row {
+
+                                    IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
+
+                                        canvas.repaint()
+                                    })
+
+                                }
+                            }
+
+                            filteredUnits.forEach { unit ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(2.dp)
