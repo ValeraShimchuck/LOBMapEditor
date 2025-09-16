@@ -26,24 +26,24 @@ class EditorService<T : GameScenario<T>>(
 
     private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
-    lateinit var scenario: T
+    var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
     val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
     var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?>  = MutableStateFlow(null)
 
     private val scenarioSetter: (T) -> Unit = {
-        this.scenario = it
+        this.scenario.value = it
     }
 
     private val commonDataSetter: (GameScenario.CommonData) -> Unit = {
-        this.scenario = this.scenario.withCommonData(it)
+        this.scenario.value = this.scenario.value!!.withCommonData(it)
     }
 
     private val commonDataGetter: () -> GameScenario.CommonData = {
-        this.scenario.commonData
+        this.scenario.value!!.commonData
     }
 
     private val scenarioGetter: () -> T = {
-        scenario
+        scenario.value!!
     }
 
     var selectionStart: Vector2f = Vector2f()
@@ -190,7 +190,7 @@ class EditorService<T : GameScenario<T>>(
 
     fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
-        val map = scenario.map
+        val map = scenario.value!!.map
 
         // Clamp world coordinates to map boundaries
         val clampedX = worldCoordinates.x.coerceIn(0f, (map.widthPixels - 1).toFloat())

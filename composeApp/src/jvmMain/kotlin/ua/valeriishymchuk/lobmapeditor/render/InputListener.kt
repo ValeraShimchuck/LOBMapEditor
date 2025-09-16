@@ -188,38 +188,38 @@ class InputListener(
         lastDragPosition = newPos
         val change = newPos.sub(oldPos, Vector2f())
         if (editorService.selectedUnits.value.isNotEmpty()) {
-            val unitList = editorService.scenario.units.toMutableList()
+            val unitList = editorService.scenario.value!!.units.toMutableList()
             editorService.selectedUnits.value.forEach { reference ->
-                val oldUnit = reference.getValue(editorService.scenario.units::get)
+                val oldUnit = reference.getValue(editorService.scenario.value!!.units::get)
                 val newUnitPos = Vector2f(oldUnit.position.x, oldUnit.position.y).add(change)
                 val newUnit = oldUnit.copy(
                     position = Position(
-                        newUnitPos.x.coerceIn(0f,editorService.scenario.map.widthPixels.toFloat()),
-                        newUnitPos.y.coerceIn(0f,editorService.scenario.map.heightPixels.toFloat())
+                        newUnitPos.x.coerceIn(0f,editorService.scenario.value!!.map.widthPixels.toFloat()),
+                        newUnitPos.y.coerceIn(0f,editorService.scenario.value!!.map.heightPixels.toFloat())
                     )
                 )
                 unitList[reference.key] = newUnit
             }
             editorService.executeCompound(UpdateGameUnitListCommand(
-                editorService.scenario.units,
+                editorService.scenario.value!!.units,
                 unitList
             ))
         }
 
         val selectedObjective = editorService.selectedObjectives.value
         if (selectedObjective != null) {
-            val objectiveList = editorService.scenario.objectives.toMutableList()
-            val oldObjective = selectedObjective.getValue(editorService.scenario.objectives::get)
+            val objectiveList = editorService.scenario.value!!.objectives.toMutableList()
+            val oldObjective = selectedObjective.getValue(editorService.scenario.value!!.objectives::get)
             val newObjectivePos = Vector2f(
-                oldObjective.position.x.coerceIn(0f,editorService.scenario.map.widthPixels.toFloat()),
-                oldObjective.position.y.coerceIn(0f,editorService.scenario.map.heightPixels.toFloat())
+                oldObjective.position.x.coerceIn(0f,editorService.scenario.value!!.map.widthPixels.toFloat()),
+                oldObjective.position.y.coerceIn(0f,editorService.scenario.value!!.map.heightPixels.toFloat())
             ).add(change)
             val newObjective = oldObjective.copy(
                 position = Position(newObjectivePos.x, newObjectivePos.y)
             )
             objectiveList[selectedObjective.key] = newObjective
             editorService.executeCompoundCommon(UpdateObjectiveListCommand(
-                editorService.scenario.objectives,
+                editorService.scenario.value!!.objectives,
                 objectiveList
             ))
         }
@@ -246,7 +246,7 @@ class InputListener(
         if (objective != null && !shiftOrControl) {
 
             editorService.selectedUnits.value = setOf()
-            editorService.selectedObjectives.value = Reference(editorService.scenario.objectives.indexOf(objective))
+            editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
             shouldDragSelectedObjects = true
             rerender()
@@ -259,12 +259,12 @@ class InputListener(
             shouldDragSelectedObjects = true
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
             val firstSelected = units.firstOrNull { unit ->
-                val reference = Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
+                val reference = Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
                 editorService.selectedUnits.value.contains(reference)
             }
             if (firstSelected == null) {
                 editorService.selectedUnits.value = setOf()
-                editorService.selectedUnits.value += Reference(editorService.scenario.units.indexOf(units.first()))
+                editorService.selectedUnits.value += Reference(editorService.scenario.value!!.units.indexOf(units.first()))
             }
             rerender()
             return
@@ -286,7 +286,7 @@ class InputListener(
         // checking selection for objectives
         val objectiveScale = max((2.5f / editorService.viewMatrix.getScale(Vector3f()).x), 1f)
 
-        return editorService.scenario.objectives.firstOrNull { objective ->
+        return editorService.scenario.value!!.objectives.firstOrNull { objective ->
             val positionMatrix = Matrix4f()
             positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
             positionMatrix.scale(objectiveScale)
@@ -303,7 +303,7 @@ class InputListener(
         val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
         val unitDimensionsMin = UNIT_DIMENSIONS.div(-2f, Vector2f())
         val unitDimensionsMax = UNIT_DIMENSIONS.div(2f, Vector2f())
-        return editorService.scenario.units.filter { unit ->
+        return editorService.scenario.value!!.units.filter { unit ->
             val positionMatrix = Matrix4f()
             positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
             positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
@@ -320,13 +320,13 @@ class InputListener(
         val objective = getClickedObjective(e)
         if (objective != null) {
             editorService.selectedUnits.value = setOf()
-            editorService.selectedObjectives.value = Reference(editorService.scenario.objectives.indexOf(objective))
+            editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             rerender()
             return
         }
 
         val newSelectedUnits = getClickedUnits(e).map { unit ->
-            Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
+            Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
         }
         editorService.selectedObjectives.value = null
         if (!isShiftPressed && !isCtrlPressed) {
@@ -356,13 +356,13 @@ class InputListener(
         val worldPosEnd = editorService.fromNDCToWorldSpace(editorService.selectionEnd)
         val worldPosMin = worldPosStart.min(worldPosEnd, Vector2f())
         val worldPosMax = worldPosStart.max(worldPosEnd, Vector2f())
-        val selectedUnits = editorService.scenario.units.filter { unit ->
+        val selectedUnits = editorService.scenario.value!!.units.filter { unit ->
             val pos = unit.position
             worldPosMin.x < pos.x && pos.x < worldPosMax.x &&
                     worldPosMin.y < pos.y && pos.y < worldPosMax.y
         }
         val newSelectedUnits = selectedUnits.map { unit ->
-            Reference<Int, GameUnit>(editorService.scenario.units.indexOf(unit))
+            Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
         }
         if (newSelectedUnits.isNotEmpty()) editorService.selectedObjectives.value = null
         if (!isShiftPressed && !isCtrlPressed) editorService.selectedUnits.value = setOf()
@@ -390,7 +390,7 @@ class InputListener(
         isToolDragging = true
         val worldCoordinates = editorService.fromScreenToWorldSpace(e.x, e.y)
         if (worldCoordinates.x < 0 || worldCoordinates.y < 0) return
-        if (worldCoordinates.x > editorService.scenario.map.widthPixels || worldCoordinates.y > editorService.scenario.map.heightPixels) return
+        if (worldCoordinates.x > editorService.scenario.value!!.map.widthPixels || worldCoordinates.y > editorService.scenario.value!!.map.heightPixels) return
         if (toolService.useTool(worldCoordinates.x, worldCoordinates.y)) rerender()
     }
 

@@ -2,16 +2,12 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.Position
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
 object PlaceObjectiveTool : PresetTool() {
     var currentObjective = MutableStateFlow(Objective(
@@ -26,7 +22,7 @@ object PlaceObjectiveTool : PresetTool() {
     }
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
-        AllIconsKeys.Ide.FeedbackRatingOn,
+        AllIconsKeys.Toolbar.AddSlot,
         "Place objective",
         "Place objective: place an objective on map"
     )
@@ -39,8 +35,8 @@ object PlaceObjectiveTool : PresetTool() {
     ): Boolean {
 
         editorService.executeCommon(UpdateObjectiveListCommand(
-            editorService.scenario.objectives,
-            editorService.scenario.objectives.toMutableList().apply {
+            editorService.scenario.value!!.objectives,
+            editorService.scenario.value!!.objectives.toMutableList().apply {
                 add(currentObjective.value.copy(
                     position = Position(x, y)
                 ))

@@ -41,17 +41,17 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private val frame1Color = Vector4f(33f, 19f, 10f, 255f).div(255f)
     private val frame1Vertices = floatArrayOf(
         -frame1BorderOffset,
-        editorService.scenario.map.heightPixels + frame1BorderOffset,
-        editorService.scenario.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame1BorderOffset,
         -frame1BorderOffset,
         -frame1BorderOffset,
         -frame1BorderOffset,
 
         -frame1BorderOffset,
-        editorService.scenario.map.heightPixels + frame1BorderOffset,
-        editorService.scenario.map.widthPixels + frame1BorderOffset,
-        editorService.scenario.map.heightPixels + frame1BorderOffset,
-        editorService.scenario.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame1BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame1BorderOffset,
         -frame1BorderOffset,
     )
 
@@ -60,29 +60,29 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private val frame2Color = Vector4f(162f, 157f, 131f, 255f).div(255f)
     private val frame2Vertices = floatArrayOf(
         -frame2BorderOffset,
-        editorService.scenario.map.heightPixels + frame2BorderOffset,
-        editorService.scenario.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame2BorderOffset,
         -frame2BorderOffset,
         -frame2BorderOffset,
         -frame2BorderOffset,
 
         -frame2BorderOffset,
-        editorService.scenario.map.heightPixels + frame2BorderOffset,
-        editorService.scenario.map.widthPixels + frame2BorderOffset,
-        editorService.scenario.map.heightPixels + frame2BorderOffset,
-        editorService.scenario.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.heightPixels + frame2BorderOffset,
+        editorService.scenario.value!!.map.widthPixels + frame2BorderOffset,
         -frame2BorderOffset,
     )
 
 
     private val tileMapVertices = floatArrayOf(
-        0f, editorService.scenario.map.heightPixels.toFloat(),
-        editorService.scenario.map.widthPixels.toFloat(), 0f,
+        0f, editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(), 0f,
         0f, 0f,
 
-        0f, editorService.scenario.map.heightPixels.toFloat(),
-        editorService.scenario.map.widthPixels.toFloat(), editorService.scenario.map.heightPixels.toFloat(),
-        editorService.scenario.map.widthPixels.toFloat(), 0f,
+        0f, editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(), editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(), 0f,
     )
 
 
@@ -139,12 +139,12 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             textureStorage,
             editorService.viewMatrix,
             editorService.projectionMatrix,
-            editorService.scenario,
+            editorService.scenario.value!!,
             editorService.selectedUnits.value
-                .mapNotNull { reference -> reference.getValueOrNull(editorService.scenario.units::getOrNull) },
+                .mapNotNull { reference -> reference.getValueOrNull(editorService.scenario.value!!.units::getOrNull) },
             editorService.selectedObjectives.value?.let {
                 listOf(it).mapNotNull { reference ->
-                    reference.getValueOrNull(editorService.scenario.objectives::getOrNull)
+                    reference.getValueOrNull(editorService.scenario.value!!.objectives::getOrNull)
                 }
             } ?: emptyList(),
             RenderContext.SelectionContext(

@@ -27,8 +27,10 @@ import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextArea
 import org.jetbrains.jewel.ui.theme.popupContainerStyle
+import org.kodein.di.bindProvider
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
+import org.kodein.di.compose.withDI
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import ua.valeriishymchuk.lobmapeditor.render.InputListener
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
@@ -43,6 +45,7 @@ fun App() {
     val currentError by errorService.error.collectAsState()
     val toastService by rememberInstance<ToastService>()
     val toasts by toastService.toasts.collectAsState()
+
 
     Box {
         CurrentScreen()

@@ -8,7 +8,7 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
 object TerrainTool : BrushTool() {
 
@@ -39,8 +39,8 @@ object TerrainTool : BrushTool() {
             .map { pos ->
                 val tileX = pos.x
                 val tileY = pos.y
-                val oldTerrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return@map false
-                val height = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return@map false
+                val oldTerrain = editorService.scenario.value!!.map.terrainMap.get(tileX, tileY) ?: return@map false
+                val height = editorService.scenario.value!!.map.terrainHeight.get(tileX, tileY) ?: return@map false
                 if (oldTerrain == terrain.value) return@map false
                 val command = UpdateTerrainCommand(
                     tileX,

@@ -7,7 +7,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 import java.util.LinkedList
 import kotlin.math.abs
 
@@ -56,8 +56,8 @@ object HeightTool : BrushTool() {
         height: Int,
         editorService: EditorService<GameScenario.Preset>,
     ): Boolean {
-        val terrain = editorService.scenario.map.terrainMap.get(tileX, tileY) ?: return false
-        val oldValue = editorService.scenario.map.terrainHeight.get(tileX, tileY) ?: return false
+        val terrain = editorService.scenario.value!!.map.terrainMap.get(tileX, tileY) ?: return false
+        val oldValue = editorService.scenario.value!!.map.terrainHeight.get(tileX, tileY) ?: return false
         if (oldValue == height) return false
         editorService.executeCompoundCommon(
             UpdateTerrainCommand(
@@ -79,7 +79,7 @@ object HeightTool : BrushTool() {
         editorService: EditorService<GameScenario.Preset>,
         flushCompoundCommands: Boolean,
     ): Boolean {
-        val heightMap = editorService.scenario.map.terrainHeight
+        val heightMap = editorService.scenario.value!!.map.terrainHeight
         if (!set(tileX, tileY, height, editorService)) return false
 
         val queue = LinkedList<Pair<Int, Int>>()

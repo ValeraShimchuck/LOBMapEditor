@@ -6,7 +6,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
 object TerrainPickTool : PresetTool() {
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
@@ -28,7 +28,7 @@ object TerrainPickTool : PresetTool() {
 
         val toolService by editorService.di.instance<ToolService>()
 
-        editorService.scenario.map.terrainMap.get(x.toInt() / GameConstants.TILE_SIZE, y.toInt() / GameConstants.TILE_SIZE)?.let {
+        editorService.scenario.value!!.map.terrainMap.get(x.toInt() / GameConstants.TILE_SIZE, y.toInt() / GameConstants.TILE_SIZE)?.let {
             TerrainTool.terrain.value = it
             toolService.setTool(TerrainTool)
         }

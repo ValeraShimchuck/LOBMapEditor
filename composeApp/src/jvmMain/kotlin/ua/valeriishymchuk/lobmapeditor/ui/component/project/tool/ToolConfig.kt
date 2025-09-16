@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.ui.component.project
+package ua.valeriishymchuk.lobmapeditor.ui.component.project.tool
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.ui.component.*
-import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
@@ -53,13 +52,7 @@ fun ToolConfig(modifier: Modifier = Modifier) {
     }
 
     if (content != null) {
-        Column {
-            GroupHeader(
-                "Configuration for tool: ${currentTool.uiInfo.name}",
-                startComponent = { Icon(AllIconsKeys.General.Settings, null) })
-            Spacer(Modifier.height(4.dp))
-            content()
-        }
+        content()
     }
 }
 
@@ -127,7 +120,7 @@ private fun PlaceUnitToolConfig() {
     val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
 
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-    val scenario = editorService.scenario
+    val scenario by editorService.scenario.collectAsState()
 
 
     val playerIndex = currentUnit.owner.key
@@ -137,12 +130,12 @@ private fun PlaceUnitToolConfig() {
 
 
     ComboBox(
-        labelText = "$playerIndex ${scenario.players[playerIndex].team}",
+        labelText = "$playerIndex ${scenario!!.players[playerIndex].team}",
         popupManager = teamPopupManager,
         popupContent = {
             VerticallyScrollableContainer {
                 Column {
-                    scenario.players.withIndex().sortedByDescending {
+                    scenario!!.players.withIndex().sortedByDescending {
                         it.index
                     }.forEach { item ->
                         Row(
@@ -165,9 +158,22 @@ private fun PlaceUnitToolConfig() {
 
 
     val nameFieldState by remember { mutableStateOf(TextFieldState(currentUnit.name ?: "")) }
+
     LaunchedEffect(nameFieldState) {
         PlaceUnitTool.currentUnit.value = currentUnit.copy(
             name = nameFieldState.text.toString().takeIf { it.isNotBlank() })
+
+        println(nameFieldState.text.toString().takeIf { it.isNotBlank() })
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { nameFieldState.text.toString() }
+            .collect { text ->
+                PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                    name = text.takeIf { it.isNotBlank() }
+                )
+                println(text.takeIf { it.isNotBlank() })
+            }
     }
 
 
@@ -175,6 +181,9 @@ private fun PlaceUnitToolConfig() {
 
     TextField(
         nameFieldState, Modifier.fillMaxWidth(), placeholder = { Text("Unit name... (Blank - default name)") })
+
+    Spacer(Modifier.height(4.dp))
+
 
     ComboBox(
         labelText = currentUnit.type.name, popupManager = unitPopupManager, popupContent = {
@@ -213,7 +222,7 @@ private fun PlaceUnitToolConfig() {
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         AngleDial(
-            angle, color = scenario.players[playerIndex].team.color, modifier = Modifier.size(200.dp)
+            angle, color = scenario!!.players[playerIndex].team.color, modifier = Modifier.size(200.dp)
         )
 
         Slider(
@@ -234,7 +243,7 @@ private fun PlaceObjectiveToolConfig() {
 
     val currentObjective by PlaceObjectiveTool.currentObjective.collectAsState()
     val playerIndex = currentObjective.owner?.key
-    val scenario = editorService.scenario
+    val scenario by editorService.scenario.collectAsState()
 
     val playerTeamPopupManager = remember { PopupManager() }
 
@@ -243,7 +252,7 @@ private fun PlaceObjectiveToolConfig() {
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        ComboBox(labelText = playerIndex?.let { "$playerIndex ${scenario.players[playerIndex].team}" } ?: "No one",
+        ComboBox(labelText = playerIndex?.let { "$playerIndex ${scenario!!.players[playerIndex].team}" } ?: "No one",
             popupManager = playerTeamPopupManager,
             popupContent = {
                 VerticallyScrollableContainer {
@@ -260,7 +269,7 @@ private fun PlaceObjectiveToolConfig() {
                             )
                         }
 
-                        scenario.players.withIndex().sortedByDescending {
+                        scenario!!.players.withIndex().sortedByDescending {
                             it.index
                         }.forEach { item ->
                             Row(

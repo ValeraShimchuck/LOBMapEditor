@@ -29,6 +29,9 @@ sealed interface GameScenario<T : GameScenario<T>> {
         val units: List<GameUnit>,
         val players: List<Player>,
     ): GameScenario<Preset> {
+
+
+
         override val scenarioTypeKey: String = "preset"
 
         override fun serialize(): JsonObject {

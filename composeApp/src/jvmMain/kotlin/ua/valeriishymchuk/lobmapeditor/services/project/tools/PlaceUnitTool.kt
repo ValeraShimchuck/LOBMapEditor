@@ -2,17 +2,14 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
-import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
-import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.ToolUiInfo
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
 object PlaceUnitTool : PresetTool() {
     var currentUnit = MutableStateFlow(GameUnit(
@@ -41,8 +38,8 @@ object PlaceUnitTool : PresetTool() {
     ): Boolean {
 
         editorService.execute(UpdateGameUnitListCommand(
-            editorService.scenario.units,
-            editorService.scenario.units.toMutableList().apply {
+            editorService.scenario.value!!.units,
+            editorService.scenario.value!!.units.toMutableList().apply {
                 add(currentUnit.value.copy(
                     position = Position(x, y)
                 ))
