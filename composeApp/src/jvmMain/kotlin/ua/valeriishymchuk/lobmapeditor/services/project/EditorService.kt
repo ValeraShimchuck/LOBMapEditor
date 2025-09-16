@@ -9,6 +9,7 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
@@ -202,5 +203,22 @@ class EditorService<T : GameScenario<T>>(
 
         return Vector2i(tileX, tileY)
     }
+
+    companion object {
+        fun EditorService<GameScenario.Preset>.deleteUnits(map: Set<Reference<Int, GameUnit>>) {
+            selectedUnits.value -= map
+            val oldSelectedUnits = selectedUnits.value.map { it.getValue(scenario.value!!.units::get) }
+            val oldList = scenario.value!!.units
+            val newList = oldList.filterIndexed { index, unit -> !map.contains(Reference(index)) }
+            execute(UpdateGameUnitListCommand(oldList, newList))
+            val newSelectedList = scenario.value!!.units.mapIndexedNotNull { index, unit ->
+                if (oldSelectedUnits.contains(unit)) return@mapIndexedNotNull Reference<Int, GameUnit>(index)
+                null
+            }
+            selectedUnits.value = newSelectedList.toSet()
+        }
+    }
+
+
 
 }

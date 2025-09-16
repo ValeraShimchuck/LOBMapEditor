@@ -16,6 +16,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -89,7 +90,9 @@ class InputListener(
         return points
     }
 
-    override fun keyTyped(e: KeyEvent) {}
+    override fun keyTyped(e: KeyEvent) {
+
+    }
 
     override fun keyPressed(e: KeyEvent) {
         when (e.keyCode) {
@@ -97,6 +100,7 @@ class InputListener(
             KeyEvent.VK_CONTROL -> isCtrlPressed = true
         }
     }
+
 
     override fun keyReleased(e: KeyEvent) {
         when (e.keyCode) {
@@ -111,6 +115,14 @@ class InputListener(
 
             KeyEvent.VK_SHIFT -> isShiftPressed = false
             KeyEvent.VK_CONTROL -> isCtrlPressed = false
+
+            KeyEvent.VK_DELETE -> {
+                editorService.deleteUnits(
+                    editorService.selectedUnits.value
+                )
+                println("Trying to delete units")
+                rerender()
+            }
         }
     }
 
