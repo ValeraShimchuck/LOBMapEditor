@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
+import org.joml.Vector3f
 import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
@@ -15,7 +16,6 @@ import ua.valeriishymchuk.lobmapeditor.domain.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -61,7 +61,26 @@ class EditorService<T : GameScenario<T>>(
     private val undoStack = ArrayDeque<CommandWrapper<*>>()
     private val redoStack = ArrayDeque<CommandWrapper<*>>()
 
-    var cameraPosition: Vector2f
+    var cameraPosition: Vector2f get() {
+        val centerX = width / 2
+        val centerY = height / 2
+        return fromScreenToWorldSpace(centerX, centerY)
+    }
+        set(value) {
+
+            val centerX = width / 2
+            val centerY = height / 2
+            val currentCenter = fromScreenToWorldSpace(centerX, centerY)
+            val worldDiff = value.sub(currentCenter, Vector2f())
+
+            // Compute the transformed difference using the view matrix's linear part
+            val dir = Vector3f(worldDiff.x, worldDiff.y, 0f)
+            viewMatrix.transformDirection(dir)
+            val transDiff = Vector2f(-dir.x, -dir.y)
+            rawCameraPosition = rawCameraPosition.add(transDiff)
+        }
+
+    var rawCameraPosition: Vector2f
         get() = viewMatrix.getColumn(3, Vector4f()).let {
             Vector2f(it.x, it.y)
         }
@@ -188,6 +207,28 @@ class EditorService<T : GameScenario<T>>(
             projectionMatrix
         )
     }
+
+    fun fromWorldSpaceToNDC(x: Float, y: Float): Vector2f {
+        val profView = viewMatrix.mul(projectionMatrix, Matrix4f())
+        val cords = Vector4f(x, y, 0f, 1f)
+        cords.mul(profView)
+        return Vector2f(cords.x, cords.y)
+    }
+
+    fun fromNDCToScreen(ndc: Vector2f): Vector2i {
+        val x = (ndc.x + 1f) / 2f
+        val y = (ndc.y + 1f) / -2f
+        return Vector2i(x.toInt(), y.toInt())
+    }
+
+    fun fromWorldSpaceToScreen(
+        x: Float,
+        y: Float
+    ): Vector2i {
+        return fromNDCToScreen(fromWorldSpaceToNDC(x, y))
+    }
+
+
 
     fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)

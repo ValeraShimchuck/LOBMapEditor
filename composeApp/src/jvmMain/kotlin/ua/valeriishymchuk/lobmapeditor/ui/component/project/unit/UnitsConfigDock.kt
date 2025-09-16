@@ -31,7 +31,6 @@ import org.jetbrains.jewel.ui.component.TriStateCheckbox
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2f
-import org.joml.Vector3f
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.toVector2f

@@ -57,6 +57,10 @@ class TextureStorage {
     var selectionTexture: Int = -1
         private set
 
+    var arrowBody: Int = -1
+    private set
+    var arrowHead: Int = -1
+
     fun loadTextures(ctx: GL3) {
         loadTexture(ctx, "wood")
         TerrainType.MAIN_TERRAIN.forEach { terrain ->
@@ -139,6 +143,12 @@ class TextureStorage {
             )
         )
         heightBlobTexture = textures["tilesets/blending/height"]!!
+
+        loadTexture(ctx, "other/arrow-body")
+        arrowBody = textures["other/arrow-body"]!!
+
+        loadTexture(ctx, "other/arrow-head")
+        arrowHead = textures["other/arrow-head"]!!
     }
 
     data class ImageFilter(

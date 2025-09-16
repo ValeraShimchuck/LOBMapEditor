@@ -180,7 +180,7 @@ class InputListener(
 
         if (dx == 0 && dy == 0) return false
 
-        editorService.cameraPosition = editorService.cameraPosition.add(dx.toFloat(), dy.toFloat())
+        editorService.rawCameraPosition = editorService.rawCameraPosition.add(dx.toFloat(), dy.toFloat())
         return true
 
     }
