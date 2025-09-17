@@ -1,6 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.services.project
 
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.jetbrains.annotations.ApiStatus
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -208,6 +209,7 @@ class EditorService<T : GameScenario<T>>(
         )
     }
 
+    @ApiStatus.Experimental
     fun fromWorldSpaceToNDC(x: Float, y: Float): Vector2f {
         val profView = viewMatrix.mul(projectionMatrix, Matrix4f())
         val cords = Vector4f(x, y, 0f, 1f)
@@ -215,12 +217,15 @@ class EditorService<T : GameScenario<T>>(
         return Vector2f(cords.x, cords.y)
     }
 
+    @ApiStatus.Experimental
     fun fromNDCToScreen(ndc: Vector2f): Vector2i {
         val x = (ndc.x + 1f) / 2f
         val y = (ndc.y + 1f) / -2f
         return Vector2i(x.toInt(), y.toInt())
     }
 
+    // wasn't used anywhere so far, so it might break
+    @ApiStatus.Experimental
     fun fromWorldSpaceToScreen(
         x: Float,
         y: Float

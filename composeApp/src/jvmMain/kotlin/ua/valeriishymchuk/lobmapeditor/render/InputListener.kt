@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
+import kotlinx.coroutines.flow.firstOrNull
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -49,6 +50,8 @@ class InputListener(
     private var isSelectionDragging: Boolean = false
     private var shouldDragSelectedObjects: Boolean = false
     private var lastDragPosition: Vector2f = Vector2f()
+
+    private var rotatableUnit: Reference<Int, GameUnit>? = null
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
     private val toolService: ToolService by di.instance()
@@ -132,9 +135,33 @@ class InputListener(
             checkMiddleMouse(e),
             checkTilePainting(e),
             checkSelectionDrag(e),
-            checkSelectedObjectsDrag(e)
+            checkSelectedObjectsDrag(e),
+            checkUnitRotation(e)
         ).any { it }
         if (shouldRender) rerender()
+    }
+
+    private fun checkUnitRotation(e: MouseEvent): Boolean {
+        val unitReference = rotatableUnit ?: return false
+        val unit =  unitReference.getValue(editorService.scenario.value!!.units::get)
+        val unitPos = Vector2f(unit.position.x, unit.position.y)
+        val draggedPos = editorService.fromScreenToWorldSpace(e.x, e.y)
+        val differenceVector = draggedPos.sub(unitPos, Vector2f())
+        val unitVector = Vector2f(1f, 0f)
+        val newRotation = unitVector.angle(differenceVector)
+        val oldRotation = unit.rotationRadians
+        val differenceRotation = newRotation - oldRotation
+        editorService.executeCompound(UpdateGameUnitListCommand(
+            editorService.scenario.value!!.units,
+            editorService.scenario.value!!.units.mapIndexed { index, unit ->
+                val unitToChange = editorService.selectedUnits.value.firstOrNull { reference ->
+                    reference.key == index
+                }
+                if (unitToChange == null) return@mapIndexed unit
+                unit.copy(rotationRadians = unit.rotationRadians + differenceRotation)
+            }
+        ))
+        return true
     }
 
     override fun mouseMoved(e: MouseEvent) {}
@@ -253,10 +280,11 @@ class InputListener(
 
     private fun checkStartOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
+
+
         val objective = getClickedObjective(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
         if (objective != null && !shiftOrControl) {
-
             editorService.selectedUnits.value = setOf()
             editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
@@ -281,6 +309,13 @@ class InputListener(
             rerender()
             return
         }
+
+        val arrowOfUnit = getClickedArrow(e)
+        if (arrowOfUnit != null ) {
+            rotatableUnit = Reference(editorService.scenario.value!!.units.indexOf(arrowOfUnit))
+            return
+        }
+
 
 
         editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
@@ -308,6 +343,29 @@ class InputListener(
             val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
             objectiveDimensionMin.x < localPoint.x && localPoint.x < objectiveDimensionMax.x &&
                     objectiveDimensionMin.y < localPoint.y && localPoint.y < objectiveDimensionMax.y
+        }
+    }
+
+    private fun getClickedArrow(e: MouseEvent): GameUnit? {
+        val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
+        val hitboxDimensions = Vector2f(
+            54f,
+            16f
+        )
+        val hitboxDimensionsMin = hitboxDimensions.mul(0f,-0.5f, Vector2f())
+        val hitboxDimensionsMax = hitboxDimensions.mul(1f,0.5f, Vector2f())
+        return editorService.selectedUnits.value.map { reference ->
+            reference.getValue(editorService.scenario.value!!.units::get)
+        }.firstOrNull { unit ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
+            val inversePositionMatrix = positionMatrix.invert(Matrix4f())
+            val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
+                .mul(inversePositionMatrix, Vector4f())
+            val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
+            hitboxDimensionsMin.x < localPoint.x && localPoint.x < hitboxDimensionsMax.x &&
+                    hitboxDimensionsMin.y < localPoint.y && localPoint.y < hitboxDimensionsMax.y
         }
     }
 
@@ -352,6 +410,13 @@ class InputListener(
 
     private fun checkEndOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
+
+        if (rotatableUnit != null) {
+            rotatableUnit = null
+            editorService.flushCompound()
+            return
+        }
+
         isSelectionDragging = false
         if (shouldDragSelectedObjects) {
             shouldDragSelectedObjects = false
