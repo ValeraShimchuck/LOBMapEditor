@@ -156,16 +156,16 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 editorService.selectionEnd
             ),
             RenderContext.GridContext(
-                toolService.gridTool.offset,
-                toolService.gridTool.size,
-                toolService.gridTool.thickness,
-                toolService.gridTool.color
+                toolService.gridTool.offset.value,
+                toolService.gridTool.size.value,
+                toolService.gridTool.thickness.value,
+                toolService.gridTool.color.value
             )
         )
 
         renderStages.forEach { stage ->
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
-            if (stage is GridStage && !toolService.gridTool.enabled) return@forEach
+            if (stage is GridStage && !toolService.gridTool.enabled.value) return@forEach
             stage.draw(renderCtx)
         }
         ctx.glBindVertexArray(0)

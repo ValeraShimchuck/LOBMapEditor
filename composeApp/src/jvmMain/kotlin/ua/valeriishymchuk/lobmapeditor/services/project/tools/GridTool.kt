@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2f
 import org.joml.Vector4f
@@ -15,11 +16,11 @@ class GridTool : PresetTool() {
         "Grid: grid settings"
     )
 
-    var enabled: Boolean = true
-    var size: Vector2f = Vector2f(16f)
-    var offset: Vector2f = Vector2f()
-    var color: Vector4f = Vector4f(0f, 0f, 0f, 0.4f)
-    var thickness: Float = 0.5f
+    val enabled = MutableStateFlow(true)
+    val size = MutableStateFlow( Vector2f(16f))
+    val offset = MutableStateFlow(Vector2f())
+    val color = MutableStateFlow(Vector4f(0f, 0f, 0f, 0.4f))
+    val thickness = MutableStateFlow(0.5f)
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
     }
