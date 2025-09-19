@@ -93,11 +93,10 @@ class ColorClosestPointProgram(
         loadPoints(ctx, data)
         ctx.applyTexture(pointTextureLocation, 0, pointMapTexture)
         ctx.glUniform1i(totalPointsLocation, data.points.entries.sumOf { it.value.size })
-        val matrixBuffer = BufferHelper.allocateDirectFloatBuffer(4 * 4)
 
+        val matrixBuffer = BufferHelper.allocateDirectFloatBuffer(4 * 4)
         data.mvpMatrix.get(matrixBuffer)
         matrixBuffer.flip()
-
         ctx.glUniformMatrix4fv(mvpLocation, 1, false, matrixBuffer)
 
     }

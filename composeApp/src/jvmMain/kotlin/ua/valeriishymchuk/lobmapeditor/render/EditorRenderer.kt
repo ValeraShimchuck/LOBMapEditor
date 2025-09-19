@@ -19,6 +19,7 @@ import ua.valeriishymchuk.lobmapeditor.render.stage.BackgroundStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.BlobTileStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SelectionStage
@@ -35,6 +36,7 @@ import kotlin.math.abs
 class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
+    private val toolService: ToolService by di.instance()
     private val textureStorage: TextureStorage = TextureStorage()
 
     private val frame1BorderOffset = 21f
@@ -107,6 +109,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             BlobTileStage(ctx, tileMapVertices),
             OverlayTileStage(ctx, tileMapVertices),
             ColorClosestPointStage(ctx, tileMapVertices),
+            GridStage(ctx, tileMapVertices),
             SpriteStage(ctx),
             SelectionStage(ctx)
 
@@ -151,11 +154,18 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 editorService.selectionEnabled,
                 editorService.selectionStart,
                 editorService.selectionEnd
+            ),
+            RenderContext.GridContext(
+                toolService.gridTool.offset,
+                toolService.gridTool.size,
+                toolService.gridTool.thickness,
+                toolService.gridTool.color
             )
         )
 
         renderStages.forEach { stage ->
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
+            if (stage is GridStage && !toolService.gridTool.enabled) return@forEach
             stage.draw(renderCtx)
         }
         ctx.glBindVertexArray(0)
