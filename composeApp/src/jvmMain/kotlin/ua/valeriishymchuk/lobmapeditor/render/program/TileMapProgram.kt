@@ -47,7 +47,7 @@ class TileMapProgram(
         textureID.value
     }
 
-    // it will be panfully slow, we've got to change the storage format for the sake of performance
+    // it will be painfully slow, we've got to change the storage format for the sake of performance
     fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType) {
 
         // also we might want to use Pixel Buffer Objects
@@ -66,10 +66,6 @@ class TileMapProgram(
         serializedData.forEach {
             buffer.put(it)
         }
-//        println("Found ${serializedData.filter { it != 0 }.size} of $terrainType")
-        // Found 4 of SNOW out of thousands, thats fine
-        // but everything is set to snow
-        // something fishy is going on with loading the data
         buffer.flip()
 
 

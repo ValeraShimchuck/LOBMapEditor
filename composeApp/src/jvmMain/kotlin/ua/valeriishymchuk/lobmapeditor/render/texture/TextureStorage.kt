@@ -11,6 +11,8 @@ import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
+import java.io.File
+import java.io.InputStream
 import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -23,6 +25,7 @@ class TextureStorage {
     companion object {
         const val TERRAIN_PREPEND = "tilesets/terrain"
     }
+
     val textures: MutableMap<String, Int> = ConcurrentHashMap()
 
     fun getTerrain(path: String): Int {
@@ -41,7 +44,6 @@ class TextureStorage {
     }
 
 
-
     var backgroundImage: Int = -1
         private set
     var terrainMaskTexture: Int = -1
@@ -58,13 +60,38 @@ class TextureStorage {
         private set
 
     var arrowBody: Int = -1
-    private set
+        private set
     var arrowHead: Int = -1
+        private set
+
+    var refenceOverlayTexture: Int = -1
+        private set
+
+    fun loadReference(ctx: GL3, referenceToLoad: File): Boolean {
+
+        if (referenceToLoad.exists() && referenceToLoad.isFile) {
+            println("Found reference overlay image, loading...")
+            try {
+                refenceOverlayTexture = loadTexture(ctx, referenceToLoad.inputStream(), useNearest = false, useClamp = true )
+                println("Loaded refence overlay image successfully")
+                return true
+            } catch (e: Throwable) {
+                println("Can't load image for some reason")
+                e.printStackTrace()
+            }
+        } else println("Can't find ${referenceToLoad.absolutePath}")
+        refenceOverlayTexture = -1
+        return false
+    }
 
     fun loadTextures(ctx: GL3) {
-        loadTexture(ctx, "wood")
+
+        val referenceToLoad = File("testreference.png")
+        loadReference(ctx, referenceToLoad)
+
+        loadInternalTexture(ctx, "wood")
         TerrainType.MAIN_TERRAIN.forEach { terrain ->
-            loadTexture(ctx, "tilesets/${terrain.textureLocation}", false)
+            loadInternalTexture(ctx, "tilesets/${terrain.textureLocation}", false)
         }
         TerrainType.BLOB_TERRAIN.forEach { terrain ->
             loadAtlas(
@@ -77,17 +104,18 @@ class TextureStorage {
         }
 
         GameUnitType.entries.forEach { unitType ->
-            loadTexture(ctx, unitType.maskTexture)
-            unitType.overlayTexture?.let { loadTexture(ctx, it) }
+            loadInternalTexture(ctx, unitType.maskTexture)
+            unitType.overlayTexture?.let { loadInternalTexture(ctx, it) }
         }
 
-        loadTexture(ctx, "objectives/default", useNearest = false, useClamp = true)
-        loadTexture(ctx, "objectives/default1", useNearest = false, useClamp = true)
+        loadInternalTexture(ctx, "objectives/default", useNearest = false, useClamp = true)
+        loadInternalTexture(ctx, "objectives/default1", useNearest = false, useClamp = true)
 
         objectiveMaskTexture = textures["objectives/default"]!!
         objectiveOverlayTexture = textures["objectives/default1"]!!
 
-        loadTexture(ctx, "other/indicators",
+        loadInternalTexture(
+            ctx, "other/indicators",
             offset = Vector2i(65, 0),
             imageSize = Vector2i(63, 63),
             useClamp = true,
@@ -144,10 +172,10 @@ class TextureStorage {
         )
         heightBlobTexture = textures["tilesets/blending/height"]!!
 
-        loadTexture(ctx, "other/arrow-body")
+        loadInternalTexture(ctx, "other/arrow-body")
         arrowBody = textures["other/arrow-body"]!!
 
-        loadTexture(ctx, "other/arrow-head")
+        loadInternalTexture(ctx, "other/arrow-head")
         arrowHead = textures["other/arrow-head"]!!
     }
 
@@ -157,16 +185,15 @@ class TextureStorage {
         val useMipmaps: Boolean = true,
     )
 
-    private fun loadTexture(
+    fun loadTexture(
         ctx: GL3,
-        key: String,
+        inputStream: InputStream,
         useNearest: Boolean = true,
         useClamp: Boolean = false,
         offset: Vector2i = Vector2i(),
         imageSize: Vector2i? = null,
-        mapKey: String = key
-    ) {
-        val image = loadTextureData(key, offset, imageSize)
+    ): Int {
+        val image = loadTextureData(inputStream, offset, imageSize)
         val textureNameArray: IntArray = IntArray(1)
         ctx.glGenTextures(1, textureNameArray, 0)
         val texture: Int = textureNameArray[0]
@@ -207,16 +234,36 @@ class TextureStorage {
 
         ctx.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
-        textures[mapKey] = texture
+        return texture
     }
 
+    private fun loadInternalTexture(
+        ctx: GL3,
+        key: String,
+        useNearest: Boolean = true,
+        useClamp: Boolean = false,
+        offset: Vector2i = Vector2i(),
+        imageSize: Vector2i? = null,
+        mapKey: String = key
+    ) {
+
+        val textureId = loadTexture(
+            ctx,
+            ResourceLoader.loadResource("drawable/images/${key}.webp").inputStream(),
+            useNearest,
+            useClamp,
+            offset,
+            imageSize
+        )
+        textures[mapKey] = textureId
+    }
 
     private fun loadTextureData(
-        path: String,
+        inputStream: InputStream,
         offset: Vector2i = Vector2i(),
         imageSize: Vector2i? = null
     ): RGBAImage {
-        val imageWebp = ImageIO.read(ResourceLoader.loadResource("drawable/images/${path}.webp").inputStream())
+        val imageWebp = ImageIO.read(inputStream)
         val imageRgba = BufferedImage(
             imageWebp.width,
             imageWebp.height,
@@ -254,6 +301,18 @@ class TextureStorage {
         return RGBAImage(nioBuffer, newDimensions.x, newDimensions.y)
     }
 
+    private fun loadInternalTextureData(
+        path: String,
+        offset: Vector2i = Vector2i(),
+        imageSize: Vector2i? = null
+    ): RGBAImage {
+        return loadTextureData(
+            ResourceLoader.loadResource("drawable/images/${path}.webp").inputStream(),
+            offset,
+            imageSize
+        )
+    }
+
     fun loadAtlas(
         ctx: GL3,
         key: String,
@@ -261,7 +320,7 @@ class TextureStorage {
         tileDimensions: Vector2i, // amount of tiles
         filter: ImageFilter = ImageFilter(),
     ) {
-        val image = loadTextureData(key)
+        val image = loadInternalTextureData(key)
 
 
         // Calculate number of tiles

@@ -21,6 +21,7 @@ import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.ReferenceOverlayStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SelectionStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SpriteStage
@@ -109,6 +110,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             BlobTileStage(ctx, tileMapVertices),
             OverlayTileStage(ctx, tileMapVertices),
             ColorClosestPointStage(ctx, tileMapVertices),
+            ReferenceOverlayStage(ctx, tileMapVertices),
             GridStage(ctx, tileMapVertices),
             SpriteStage(ctx),
             SelectionStage(ctx)
@@ -160,12 +162,33 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                 toolService.gridTool.size.value,
                 toolService.gridTool.thickness.value,
                 toolService.gridTool.color.value
+            ),
+            RenderContext.OverlayReferenceContext(
+                Vector4f(1f, 1f, 1f, toolService.refenceOverlayTool.transparency.value),
+                Matrix4f().apply {
+
+                    val center = Vector2f(0.5f, 0.5f)
+
+                    // Translate to origin, rotate, then translate back to center
+                    translate(center.x, center.y, 0f)  // Move center to origin
+                    scale(Vector3f(Vector2f(1f).div(Vector2f(toolService.refenceOverlayTool.scale.value)), 1f))
+                    rotateZ(toolService.refenceOverlayTool.rotation.value)  // Perform rotation
+                    translate(-center.x, -center.y, 0f)  // Move back to original position
+
+                    // Apply other transformations (scale and offset)
+
+                    translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
+//                    scale(Vector3f(Vector2f(1f).div(Vector2f(toolService.refenceOverlayTool.scale.value)), 1f))
+//                    rotateZ(toolService.refenceOverlayTool.rotation.value)
+//                    translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
+                }
             )
         )
 
         renderStages.forEach { stage ->
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
             if (stage is GridStage && !toolService.gridTool.enabled.value) return@forEach
+            if (stage is ReferenceOverlayStage && !toolService.refenceOverlayTool.enabled.value) return@forEach
             stage.draw(renderCtx)
         }
         ctx.glBindVertexArray(0)

@@ -17,13 +17,13 @@ class BackgroundStage(
 
             // clip space vertices           // supposed to be texCords, but not actually used
             -1f, -1f, 0f, 0f,
-            1f, -1f, 1f, 0f,
-            1f, 1f, 1f, 1f,
+            1f, -1f,  1f, 0f,
+            1f, 1f,   1f, 1f,
 
 
             -1f, -1f, 0f, 0f,
-            1f, 1f, 1f, 1f,
-            -1f, 1f, 0f, 1f
+            1f, 1f,   1f, 1f,
+            -1f, 1f,  0f, 1f
         )
     }
 

@@ -12,6 +12,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PresetTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.RefenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 
@@ -21,6 +22,7 @@ class ToolService(override val di: DI) : DIAware {
 
 
     val gridTool = GridTool()
+    val refenceOverlayTool = RefenceOverlayTool()
 
     val tools = listOf(
         HeightTool,
@@ -28,7 +30,8 @@ class ToolService(override val di: DI) : DIAware {
         TerrainPickTool,
         PlaceUnitTool,
         PlaceObjectiveTool,
-        gridTool
+        gridTool,
+        refenceOverlayTool
     )
 
 

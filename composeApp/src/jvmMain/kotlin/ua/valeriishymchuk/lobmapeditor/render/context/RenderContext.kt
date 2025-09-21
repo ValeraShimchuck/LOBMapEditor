@@ -20,7 +20,8 @@ data class RenderContext(
     val selectedUnits: List<GameUnit>,
     val selectedObjectives: List<Objective>,
     val selection: SelectionContext,
-    val gridContext: GridContext
+    val gridContext: GridContext,
+    val overlayReferenceContext: OverlayReferenceContext
 ) {
     fun getMvp(model: Matrix4f): Matrix4f {
         return Matrix4f(projectionMatrix)
@@ -40,5 +41,12 @@ data class RenderContext(
         val gridThickness: Float,
         val color: Vector4f
     )
+
+    data class OverlayReferenceContext(
+        val colorTint: Vector4f,
+        val positionMatrix: Matrix4f
+    )
+
+
 
 }
