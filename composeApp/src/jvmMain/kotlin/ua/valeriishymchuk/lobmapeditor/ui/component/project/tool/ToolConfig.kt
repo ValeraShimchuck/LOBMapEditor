@@ -40,6 +40,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.getValue
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
@@ -429,10 +430,9 @@ private fun GridToolConfig() {
         thickness,
         onValueChange = {
             toolService.gridTool.thickness.value = it
-            println(it)
             canvas.repaint()
         },
-        valueRange = 0f..GameConstants.TILE_SIZE.toFloat()
+        valueRange = 0f.. max(toolService.gridTool.size.value.x, toolService.gridTool.size.value.y)
     )
 
     Spacer(Modifier.height(4.dp))
@@ -530,7 +530,7 @@ private fun GridToolConfig() {
             .collect {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.size.value
-                toolService.gridTool.size.value = Vector2f(vec.y, it)
+                toolService.gridTool.size.value = Vector2f(vec.x, it)
                 canvas.repaint()
             }
     }
@@ -550,7 +550,7 @@ private fun GridToolConfig() {
             .collect {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.offset.value
-                toolService.gridTool.offset.value = Vector2f(vec.y, it)
+                toolService.gridTool.offset.value = Vector2f(vec.x, it)
                 canvas.repaint()
             }
     }

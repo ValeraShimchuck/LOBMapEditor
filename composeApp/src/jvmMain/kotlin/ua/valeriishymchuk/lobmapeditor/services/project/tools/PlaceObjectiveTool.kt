@@ -22,7 +22,7 @@ object PlaceObjectiveTool : PresetTool() {
     }
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
-        AllIconsKeys.Toolbar.AddSlot,
+        AllIconsKeys.Nodes.Favorite,
         "Place objective",
         "Place objective: place an objective on map"
     )
