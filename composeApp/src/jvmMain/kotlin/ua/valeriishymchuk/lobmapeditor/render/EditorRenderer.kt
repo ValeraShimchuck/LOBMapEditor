@@ -1,7 +1,10 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL.*
+import com.jogamp.opengl.GL3
+import com.jogamp.opengl.GL4
 import com.jogamp.opengl.GLAutoDrawable
+import com.jogamp.opengl.GLDebugMessage
 import com.jogamp.opengl.GLEventListener
 import org.joml.Matrix4f
 import org.joml.Vector2f
@@ -12,27 +15,15 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
-import ua.valeriishymchuk.lobmapeditor.render.stage.BackgroundStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.BlobTileStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.ReferenceOverlayStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.SelectionStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.SpriteStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.TerrainMapStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.*
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
-import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
-import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.awt.event.*
-import kotlin.math.abs
+import java.lang.Math
+import java.lang.System
+
 
 class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
@@ -179,12 +170,11 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                     // Apply other transformations (scale and offset)
 
                     translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
-//                    scale(Vector3f(Vector2f(1f).div(Vector2f(toolService.refenceOverlayTool.scale.value)), 1f))
-//                    rotateZ(toolService.refenceOverlayTool.rotation.value)
-//                    translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
                 }
             )
         )
+
+
 
         renderStages.forEach { stage ->
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
@@ -192,6 +182,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             if (stage is ReferenceOverlayStage && !toolService.refenceOverlayTool.enabled.value) return@forEach
             stage.draw(renderCtx)
         }
+
         ctx.glBindVertexArray(0)
     }
 

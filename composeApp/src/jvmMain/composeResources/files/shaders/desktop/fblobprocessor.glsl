@@ -51,10 +51,10 @@ vec4 getPixel(vec2 texCord) {
     vec2 offBottomRightTexCord = texCord + offBottom + offRight;
     vec2 offBottomLeftTexCord = texCord + offBottom + offLeft;
 
-    vec4[48] blobTextureValues;
-    for (int i = 0; i < 48; i++) {
-        blobTextureValues[i] = texture(uBlobTexture, vec3(tileCoordinates, i));
-    }
+//    vec4[48] blobTextureValues;
+//    for (int i = 0; i < 48; i++) {
+//        blobTextureValues[i] = texture(uBlobTexture, vec3(tileCoordinates, i));
+//    }
 
     int mask = checkSet(offTopTexCord, 0) | // Top
     checkSet(offRightTexCord, 1) | // Right
@@ -200,8 +200,7 @@ vec4 getPixel(vec2 texCord) {
         ivec2 currentBlobMask = blobMasks[i];
         if (checkMask(mask, currentBlobMask.x)) blobIndex = currentBlobMask.y;
     }
-//    return blobTextureValues[blobIndex] * uColorTint;
-    return blobTextureValues[blobIndex];
+    return texture(uBlobTexture, vec3(tileCoordinates, blobIndex)) * uColorTint;
 
 }
 

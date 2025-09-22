@@ -32,7 +32,8 @@ class TerrainMapStage(
         TerrainType.entries.sortedBy { it.dominance }.forEach { terrain ->
             tileMapProgram.setUpVBO(glCtx, tileMapVertices)
             tileMapProgram.setUpVAO(glCtx)
-            tileMapProgram.loadMap(glCtx, scenario.map.terrainMap, terrain)
+            val shouldRender = tileMapProgram.loadMap(glCtx, scenario.map.terrainMap, terrain)
+            if (!shouldRender) return@forEach
             val terrainToRender = terrain.mainTerrain ?: terrain
             tileMapProgram.applyUniform(
                 glCtx, TileMapProgram.Uniform(
