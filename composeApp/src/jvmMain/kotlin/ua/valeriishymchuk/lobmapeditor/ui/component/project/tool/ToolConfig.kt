@@ -3,26 +3,42 @@ package ua.valeriishymchuk.lobmapeditor.ui.component.project.tool
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.AlphaTile
+import com.github.skydoves.colorpicker.compose.BrightnessSlider
+import com.github.skydoves.colorpicker.compose.ColorEnvelope
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
+import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.*
+import org.joml.Vector2f
+import org.joml.Vector4f
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
+import kotlin.getValue
 import kotlin.math.roundToInt
 
 @Composable
@@ -46,6 +62,10 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 
         is PlaceObjectiveTool -> {
             { PlaceObjectiveToolConfig() }
+        }
+
+        is GridTool -> {
+            { GridToolConfig() }
         }
 
         else -> null
@@ -158,13 +178,6 @@ private fun PlaceUnitToolConfig() {
 
 
     val nameFieldState by remember { mutableStateOf(TextFieldState(currentUnit.name ?: "")) }
-
-    LaunchedEffect(nameFieldState) {
-        PlaceUnitTool.currentUnit.value = currentUnit.copy(
-            name = nameFieldState.text.toString().takeIf { it.isNotBlank() })
-
-        println(nameFieldState.text.toString().takeIf { it.isNotBlank() })
-    }
 
     LaunchedEffect(Unit) {
         snapshotFlow { nameFieldState.text.toString() }
@@ -301,6 +314,224 @@ private fun PlaceObjectiveToolConfig() {
         PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
             name = objectiveNameTextFieldState.takeIf { it.text.isNotBlank() }?.text?.toString()
         )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
+private fun GridToolConfig() {
+    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val toolService by rememberInstance<ToolService>()
+    val canvas by rememberInstance<GLCanvas>()
+
+
+    val size by toolService.gridTool.size.collectAsState()
+    val offset by toolService.gridTool.offset.collectAsState()
+    val thickness by toolService.gridTool.thickness.collectAsState()
+    val color by toolService.gridTool.color.collectAsState()
+
+    val sizeXTextFieldState = rememberTextFieldState(size.x.toString())
+    val sizeYTextFieldState = rememberTextFieldState(size.y.toString())
+
+    val offsetXTextFieldState = rememberTextFieldState(offset.x.toString())
+    val offsetYTextFieldState = rememberTextFieldState(offset.y.toString())
+
+    val enabled by toolService.gridTool.enabled.collectAsState();
+
+    val controller = rememberColorPickerController()
+
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            enabled,
+            onCheckedChange = {
+                toolService.gridTool.enabled.value = it
+                canvas.repaint()
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Show grid")
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        TextField(
+            sizeXTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("X", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        TextField(
+            sizeYTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("Y", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Size")
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        TextField(
+            offsetXTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("X", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        TextField(
+            offsetYTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("Y", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Offset")
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+    Text("Thickness")
+    Spacer(Modifier.height(4.dp))
+    Slider(
+        thickness,
+        onValueChange = {
+            toolService.gridTool.thickness.value = it
+            println(it)
+            canvas.repaint()
+        },
+        valueRange = 0f..GameConstants.TILE_SIZE.toFloat()
+    )
+
+    Spacer(Modifier.height(4.dp))
+
+
+    HsvColorPicker(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 240.dp)
+            .padding(10.dp),
+        controller = controller,
+
+        initialColor =  toolService.gridTool.color.value.let {
+            Color(
+                it.x * 255,
+                it.y * 255,
+                it.z * 255,
+                it.w
+            )
+        },
+
+        onColorChanged = { colorEnvelope: ColorEnvelope ->
+            toolService.gridTool.color.value =
+                Vector4f(
+                    colorEnvelope.color.red,
+                    colorEnvelope.color.green,
+                    colorEnvelope.color.blue,
+                    colorEnvelope.color.alpha
+                )
+
+            println(colorEnvelope.color.red)
+
+            canvas.repaint()
+        }
+    )
+
+    BrightnessSlider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            ,
+        controller = controller,
+    )
+    Spacer(Modifier.height(10.dp))
+
+    AlphaSlider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(32.dp),
+        controller = controller,
+
+    )
+
+    Spacer(Modifier.height(10.dp))
+
+
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        AlphaTile(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(RoundedCornerShape(6.dp)),
+            controller = controller
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { sizeXTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.size.value
+                toolService.gridTool.size.value = Vector2f(it, vec.y)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { sizeYTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.size.value
+                toolService.gridTool.size.value = Vector2f(vec.y, it)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { offsetXTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.offset.value
+                toolService.gridTool.offset.value = Vector2f(it, vec.y)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { offsetYTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.offset.value
+                toolService.gridTool.offset.value = Vector2f(vec.y, it)
+                canvas.repaint()
+            }
     }
 
 

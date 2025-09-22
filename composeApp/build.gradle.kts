@@ -77,6 +77,9 @@ kotlin {
                 implementation("io.github.vinceglb:filekit-dialogs:${fileKitVersion}")
                 implementation("io.github.vinceglb:filekit-dialogs-compose:${fileKitVersion}")
                 implementation("io.github.vinceglb:filekit-coil:${fileKitVersion}")
+
+                implementation("com.github.skydoves:colorpicker-compose:1.1.2")
+
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
 //                currentOS.isWindows -> {

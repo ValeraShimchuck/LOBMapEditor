@@ -22,7 +22,6 @@ class GridTool : PresetTool() {
     val color = MutableStateFlow(Vector4f(0f, 0f, 0f, 0.4f))
     val thickness = MutableStateFlow(0.5f)
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
-    }
+    override fun flush(editorService: EditorService<GameScenario.Preset>) { }
 
 }
