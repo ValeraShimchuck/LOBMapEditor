@@ -1,6 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.ui.component.project.tool
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.Text
+import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
@@ -35,7 +37,11 @@ fun ToolDock() {
             ToolBar(it)
         },
         content = {
-            ToolConfig()
+            VerticallyScrollableContainer {
+                Column(it) {
+                    ToolConfig()
+                }
+            }
         }
     )
 }

@@ -34,6 +34,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -66,6 +67,10 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 
         is GridTool -> {
             { GridToolConfig() }
+        }
+
+        is ReferenceOverlayTool -> {
+            { ReferenceOverlayToolConfig() }
         }
 
         else -> null
@@ -234,7 +239,9 @@ private fun PlaceUnitToolConfig() {
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         AngleDial(
-            angle, color = scenario!!.players[playerIndex].team.color, modifier = Modifier.size(200.dp)
+            angle,
+            color = scenario!!.players[playerIndex].team.color,
+            modifier = Modifier.size(200.dp)
         )
 
         Slider(
@@ -440,9 +447,9 @@ private fun GridToolConfig() {
 
         initialColor =  toolService.gridTool.color.value.let {
             Color(
-                it.x * 255,
-                it.y * 255,
-                it.z * 255,
+                it.x ,
+                it.y,
+                it.z,
                 it.w
             )
         },
@@ -535,4 +542,169 @@ private fun GridToolConfig() {
     }
 
 
+}
+
+@Composable
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
+private fun ReferenceOverlayToolConfig() {
+    val toolService by rememberInstance<ToolService>()
+    val canvas by rememberInstance<GLCanvas>()
+
+    val enabled by toolService.refenceOverlayTool.enabled.collectAsState();
+    val scale by toolService.refenceOverlayTool.scale.collectAsState()
+    val offset by toolService.refenceOverlayTool.offset.collectAsState()
+    val transparency by toolService.refenceOverlayTool.transparency.collectAsState()
+    val rotation by toolService.refenceOverlayTool.rotation.collectAsState()
+
+    val scaleXTextFieldState = rememberTextFieldState(scale.x.toString())
+    val scaleYTextFieldState = rememberTextFieldState(scale.y.toString())
+
+    val offsetXTextFieldState = rememberTextFieldState(offset.x.toString())
+    val offsetYTextFieldState = rememberTextFieldState(offset.y.toString())
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            enabled,
+            onCheckedChange = {
+                toolService.refenceOverlayTool.enabled.value = it
+                canvas.repaint()
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Show reference")
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { scaleXTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.size.value
+                toolService.refenceOverlayTool.scale.value = Vector2f(it, vec.y)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { scaleYTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.size.value
+                toolService.refenceOverlayTool.scale.value = Vector2f(vec.y, it)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { offsetXTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.offset.value
+                toolService.refenceOverlayTool.offset.value = Vector2f(it.coerceIn(-1f..1f), vec.y)
+                canvas.repaint()
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { offsetYTextFieldState.text.toString().toFloatOrNull() }
+            .collect {
+                if (it == null) return@collect
+                val vec = toolService.gridTool.offset.value
+                toolService.refenceOverlayTool.offset.value = Vector2f(vec.y, it.coerceIn(-1f..1f))
+                canvas.repaint()
+            }
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        TextField(
+            scaleXTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("X", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        TextField(
+            scaleYTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("Y", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Size")
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        TextField(
+            offsetXTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("X", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        TextField(
+            offsetYTextFieldState,
+            leadingIcon = {
+                Row {
+                    Text("Y", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Offset")
+    }
+
+
+    Spacer(Modifier.height(4.dp))
+    Text("Transparency")
+    Spacer(Modifier.height(4.dp))
+    Slider(
+        transparency,
+        onValueChange = {
+            toolService.refenceOverlayTool.transparency.value = it
+            canvas.repaint()
+        },
+        valueRange = 0f..1f
+    )
+
+    Spacer(Modifier.height(4.dp))
+    Text("Rotation")
+
+    Spacer(Modifier.height(4.dp))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        AngleDial(
+            rotation,
+            color = Color.Green,
+            modifier = Modifier.size(200.dp)
+        )
+
+        Slider(
+            value = rotation,
+            onValueChange = {
+                toolService.refenceOverlayTool.rotation.value = it
+                canvas.repaint()
+            },
+            valueRange = 0f..(2 * Math.PI).toFloat(),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }

@@ -2,7 +2,6 @@ package ua.valeriishymchuk.lobmapeditor.services.project
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.joml.Vector2f
-import org.joml.Vector2i
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
@@ -12,7 +11,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PresetTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.RefenceOverlayTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 
@@ -22,7 +21,7 @@ class ToolService(override val di: DI) : DIAware {
 
 
     val gridTool = GridTool()
-    val refenceOverlayTool = RefenceOverlayTool()
+    val refenceOverlayTool = ReferenceOverlayTool()
 
     val tools = listOf(
         HeightTool,
