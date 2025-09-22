@@ -10,7 +10,7 @@ abstract class BrushTool : PresetTool() {
         CIRCLE
     }
 
-    val brushSize = MutableStateFlow(8)
+    val brushSize = MutableStateFlow(1)
     val brushShape = MutableStateFlow(BrushShape.CIRCLE)
 
     protected fun calcBrush(pos: Vector2i): List<Vector2i> =

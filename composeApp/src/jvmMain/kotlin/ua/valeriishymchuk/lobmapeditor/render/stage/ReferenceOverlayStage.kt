@@ -37,7 +37,6 @@ class ReferenceOverlayStage(
     override fun RenderContext.draw0() {
         val textureId = textureStorage.refenceOverlayTexture
         if (textureId < 0) return
-        println("Trying to render overlay")
         glCtx.glUseProgram(program.program)
         glCtx.glBindVertexArray(program.vao)
         glCtx.glBindVBO(program.vbo)
@@ -48,7 +47,6 @@ class ReferenceOverlayStage(
 
         program.setUpVBO(glCtx, textureVertices)
         program.setUpVAO(glCtx)
-        println(overlayReferenceContext.positionMatrix)
 
         program.applyUniform(glCtx, TextureProgram.Uniform(
             mvp,

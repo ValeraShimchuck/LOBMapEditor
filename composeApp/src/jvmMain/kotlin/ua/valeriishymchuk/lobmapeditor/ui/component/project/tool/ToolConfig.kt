@@ -445,7 +445,7 @@ private fun GridToolConfig() {
             .padding(10.dp),
         controller = controller,
 
-        initialColor =  toolService.gridTool.color.value.let {
+        initialColor =  color.let {
             Color(
                 it.x ,
                 it.y,
@@ -463,7 +463,6 @@ private fun GridToolConfig() {
                     colorEnvelope.color.alpha
                 )
 
-            println(colorEnvelope.color.red)
 
             canvas.repaint()
         }
@@ -475,6 +474,14 @@ private fun GridToolConfig() {
             .height(32.dp)
             ,
         controller = controller,
+        initialColor =  color.let {
+            Color(
+                it.x ,
+                it.y,
+                it.z,
+                it.w
+            )
+        }
     )
     Spacer(Modifier.height(10.dp))
 
@@ -483,7 +490,14 @@ private fun GridToolConfig() {
             .fillMaxWidth()
             .height(32.dp),
         controller = controller,
-
+        initialColor =  color.let {
+            Color(
+                it.x ,
+                it.y,
+                it.z,
+                it.w
+            )
+        }
     )
 
     Spacer(Modifier.height(10.dp))
@@ -580,7 +594,7 @@ private fun ReferenceOverlayToolConfig() {
         snapshotFlow { scaleXTextFieldState.text.toString().toFloatOrNull() }
             .collect {
                 if (it == null) return@collect
-                val vec = toolService.gridTool.size.value
+                val vec = toolService.refenceOverlayTool.scale.value
                 toolService.refenceOverlayTool.scale.value = Vector2f(it, vec.y)
                 canvas.repaint()
             }
@@ -590,8 +604,8 @@ private fun ReferenceOverlayToolConfig() {
         snapshotFlow { scaleYTextFieldState.text.toString().toFloatOrNull() }
             .collect {
                 if (it == null) return@collect
-                val vec = toolService.gridTool.size.value
-                toolService.refenceOverlayTool.scale.value = Vector2f(vec.y, it)
+                val vec = toolService.refenceOverlayTool.scale.value
+                toolService.refenceOverlayTool.scale.value = Vector2f(vec.x, it)
                 canvas.repaint()
             }
     }
@@ -600,7 +614,7 @@ private fun ReferenceOverlayToolConfig() {
         snapshotFlow { offsetXTextFieldState.text.toString().toFloatOrNull() }
             .collect {
                 if (it == null) return@collect
-                val vec = toolService.gridTool.offset.value
+                val vec = toolService.refenceOverlayTool.offset.value
                 toolService.refenceOverlayTool.offset.value = Vector2f(it.coerceIn(-1f..1f), vec.y)
                 canvas.repaint()
             }
@@ -610,8 +624,8 @@ private fun ReferenceOverlayToolConfig() {
         snapshotFlow { offsetYTextFieldState.text.toString().toFloatOrNull() }
             .collect {
                 if (it == null) return@collect
-                val vec = toolService.gridTool.offset.value
-                toolService.refenceOverlayTool.offset.value = Vector2f(vec.y, it.coerceIn(-1f..1f))
+                val vec = toolService.refenceOverlayTool.offset.value
+                toolService.refenceOverlayTool.offset.value = Vector2f(vec.x, it.coerceIn(-1f..1f))
                 canvas.repaint()
             }
     }

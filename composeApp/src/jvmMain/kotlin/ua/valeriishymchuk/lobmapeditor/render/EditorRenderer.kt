@@ -172,7 +172,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
                     // Translate to origin, rotate, then translate back to center
                     translate(center.x, center.y, 0f)  // Move center to origin
                     scale(Vector3f(Vector2f(1f).div(Vector2f(toolService.refenceOverlayTool.scale.value)), 1f))
-                    rotateZ(toolService.refenceOverlayTool.rotation.value)  // Perform rotation
+                    val normalizedRotation = (Math.PI.toFloat() * 2) - toolService.refenceOverlayTool.rotation.value
+                    rotateZ(normalizedRotation)  // Perform rotation
                     translate(-center.x, -center.y, 0f)  // Move back to original position
 
                     // Apply other transformations (scale and offset)

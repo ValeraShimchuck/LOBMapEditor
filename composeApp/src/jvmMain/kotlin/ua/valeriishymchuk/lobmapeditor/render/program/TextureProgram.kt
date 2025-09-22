@@ -29,7 +29,6 @@ class TextureProgram(
 
 
     override fun setUpVBO(ctx: GL3, data: FloatArray) {
-        println("vbo: ${data.joinToString()}")
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
