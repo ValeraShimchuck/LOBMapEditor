@@ -15,6 +15,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import java.io.File
+import javax.imageio.ImageIO
 
 class ProjectsService(override val di: DI) : DIAware {
 
@@ -41,6 +42,19 @@ class ProjectsService(override val di: DI) : DIAware {
 
         val updated = existingProjects.keys.filter { it != ref }
         File(PROJECTS_INDEX_PATH).writeText(Json.encodeToString(updated))
+    }
+
+    fun saveProjectData(projectRef: ProjectRef, projectData: ProjectData) {
+        val projectJson = Json.encodeToString(projectData)
+        projectRef.projectFile.writeText(projectJson)
+    }
+
+    fun importReference(projectRef: ProjectRef, referenceFile: File) {
+        ImageIO.write(ImageIO.read(referenceFile), "PNG", projectRef.referenceFile)
+    }
+
+    fun clearReference(projectRef: ProjectRef) {
+        projectRef.referenceFile.delete()
     }
 
     suspend fun createProject(dto: CreateProjectData): ProjectRef = withContext(Dispatchers.IO) {

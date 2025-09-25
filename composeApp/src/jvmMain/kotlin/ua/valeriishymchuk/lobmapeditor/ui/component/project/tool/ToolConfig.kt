@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,15 +20,25 @@ import com.github.skydoves.colorpicker.compose.ColorEnvelope
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.jogamp.opengl.awt.GLCanvas
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.*
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2f
 import org.joml.Vector4f
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
+import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
@@ -37,6 +48,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
+import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.getValue
@@ -563,6 +575,9 @@ private fun GridToolConfig() {
 private fun ReferenceOverlayToolConfig() {
     val toolService by rememberInstance<ToolService>()
     val canvas by rememberInstance<GLCanvas>()
+    val projectService by rememberInstance<ProjectsService>()
+    val projectRef by rememberInstance<ProjectRef>()
+    val textureStorage by rememberInstance<TextureStorage>()
 
     val enabled by toolService.refenceOverlayTool.enabled.collectAsState();
     val scale by toolService.refenceOverlayTool.scale.collectAsState()
@@ -575,6 +590,7 @@ private fun ReferenceOverlayToolConfig() {
 
     val offsetXTextFieldState = rememberTextFieldState(offset.x.toString())
     val offsetYTextFieldState = rememberTextFieldState(offset.y.toString())
+
 
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -721,4 +737,41 @@ private fun ReferenceOverlayToolConfig() {
             modifier = Modifier.fillMaxWidth()
         )
     }
+
+    Spacer(Modifier.height(4.dp))
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+//        Text("Import reference")
+//        Spacer(Modifier.width(4.dp))
+
+        DefaultButton(
+            onClick = {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val pickResult = FileKit.openFilePicker(FileKitType.Image) ?: return@launch
+                    projectService.importReference(projectRef, pickResult.file)
+                    textureStorage.referenceFile = projectRef.referenceFile
+                    canvas.repaint()
+
+                }
+            },
+        ) {
+            Text("Import reference")
+        }
+
+        OutlinedButton(onClick = {
+            CoroutineScope(Dispatchers.IO).launch {
+                projectService.clearReference(projectRef)
+                textureStorage.referenceFile = null
+                canvas.repaint()
+            }
+        }) {
+            Text("Clear reference")
+        }
+
+
+
+
+    }
+
+
 }

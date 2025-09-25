@@ -20,6 +20,7 @@ import ua.valeriishymchuk.lobmapeditor.render.stage.*
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import java.awt.event.*
 import java.lang.Math
 import java.lang.System
@@ -29,7 +30,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     private val editorService: EditorService<GameScenario.Preset> by di.instance()
     private val toolService: ToolService by di.instance()
-    private val textureStorage: TextureStorage = TextureStorage()
+    private val textureStorage: TextureStorage by di.instance()
+    private val projectRef: ProjectRef by di.instance()
 
     private val frame1BorderOffset = 21f
     private val frame1Color = Vector4f(33f, 19f, 10f, 255f).div(255f)
@@ -85,6 +87,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.gL3
+        textureStorage.referenceFile = projectRef.referenceFile
 
         ctx.glEnable(GL_BLEND)
         ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -126,6 +129,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     override fun display(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.gL3
+        textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
         ctx.glClear(GL_COLOR_BUFFER_BIT)
 

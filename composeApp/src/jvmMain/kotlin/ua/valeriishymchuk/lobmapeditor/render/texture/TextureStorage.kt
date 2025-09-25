@@ -67,27 +67,34 @@ class TextureStorage {
     var refenceOverlayTexture: Int = -1
         private set
 
-    fun loadReference(ctx: GL3, referenceToLoad: File): Boolean {
+    var referenceFile: File? = null
+        set(value) {
+            field = value
+            referenceIsLoaded = false
+            refenceOverlayTexture = -1
+        }
+    var referenceIsLoaded: Boolean = false
 
-        if (referenceToLoad.exists() && referenceToLoad.isFile) {
+    fun loadReference(ctx: GL3): Boolean {
+        if (referenceIsLoaded) return false
+        val referenceFile = this.referenceFile ?: return false
+        referenceIsLoaded = true
+        if (referenceFile.exists() && referenceFile.isFile) {
             println("Found reference overlay image, loading...")
             try {
-                refenceOverlayTexture = loadTexture(ctx, referenceToLoad.inputStream(), useNearest = false, useClamp = true )
+                refenceOverlayTexture = loadTexture(ctx, referenceFile.inputStream(), useNearest = false, useClamp = true )
                 println("Loaded refence overlay image successfully")
                 return true
             } catch (e: Throwable) {
                 println("Can't load image for some reason")
                 e.printStackTrace()
             }
-        } else println("Can't find ${referenceToLoad.absolutePath}")
+        } else println("Can't find ${referenceFile.absolutePath}")
         refenceOverlayTexture = -1
         return false
     }
 
     fun loadTextures(ctx: GL3) {
-
-        val referenceToLoad = File("testreference.png")
-        loadReference(ctx, referenceToLoad)
 
         loadInternalTexture(ctx, "wood")
         TerrainType.MAIN_TERRAIN.forEach { terrain ->

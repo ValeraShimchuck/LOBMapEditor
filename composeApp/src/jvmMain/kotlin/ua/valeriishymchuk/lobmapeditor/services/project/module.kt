@@ -7,6 +7,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
@@ -25,4 +26,5 @@ fun <T: GameScenario<T>> setupProjectScopeDiModule(
     bindEagerSingleton<ProjectData> {
         runBlocking { directDI.instance<ProjectsService>().loadProject(ref) }
     }
+    bindSingleton { TextureStorage() }
 }
