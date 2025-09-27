@@ -51,8 +51,8 @@ fun App() {
         CurrentScreen()
 
         Column(
-            modifier = Modifier.align(Alignment.BottomEnd)
-                .widthIn(min = 100.dp, max = 200.dp),
+            modifier = Modifier.align(Alignment.BottomStart)
+                .widthIn(min = 100.dp, max = 400.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             toasts.forEach {

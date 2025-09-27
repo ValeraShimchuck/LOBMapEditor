@@ -36,57 +36,17 @@ import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolDock
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.UnitsConfigDock
+import ua.valeriishymchuk.lobmapeditor.ui.screen.project.ProjectTitleScreenProvider
 import java.awt.Desktop
 import java.io.File
 
 class ProjectScreen(
     private val ref: ProjectRef,
-) : TitleBarScreen {
+) : TitleBarScreen() {
 
-
-    @OptIn(ExperimentalFoundationApi::class)
-    @Composable
-    context(TitleBarScope) override fun TitleBar() {
-        val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-        val scenarioIO by rememberInstance<ScenarioIOService>()
-        val toastService by rememberInstance<ToastService>()
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Tooltip(
-                { Text("Save map") }
-            ) {
-                IconActionButton(
-                    AllIconsKeys.Actions.MenuSaveall,
-                    null,
-                    onClick = {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            scenarioIO.save(editorService.scenario.value!!, ref.mapFile)
-                            toastService.toast() {
-                                SuccessInlineBanner(
-                                    "Map saved at: ${ref.mapFile.absoluteFile}",
-                                    actions = {
-                                        OutlinedButton(onClick = {
-                                            Desktop.getDesktop().open(ref.dirFile)
-                                        }) {
-                                            Text("Open project folder")
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
-        super.TitleBar()
-    }
 
     @Composable
     override fun Content() {
-
         val scenarioIO by rememberInstance<ScenarioIOService>()
         val errorService by rememberInstance<ErrorService>()
         val nav = LocalNavigator.currentOrThrow
@@ -95,6 +55,9 @@ class ProjectScreen(
         org.kodein.di.compose.subDI(diBuilder = {
             import(setupProjectScopeDiModule(ref))
         }, content = {
+
+            ProjectTitleScreenProvider()
+
 
             val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
 

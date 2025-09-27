@@ -16,7 +16,7 @@ class ToastService(override val di: DI) : DIAware {
     var toasts: MutableStateFlow<List<@Composable ColumnScope.() -> Unit>> = MutableStateFlow(emptyList())
         private set;
 
-    fun toast(time: Duration = 3.seconds, content: @Composable ColumnScope.() -> Unit) {
+    fun toast(time: Duration = 5.seconds, content: @Composable ColumnScope.() -> Unit) {
         toasts.value += content
         CoroutineScope(Dispatchers.Default).launch {
             delay(time)
