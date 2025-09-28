@@ -16,6 +16,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -38,17 +39,14 @@ import kotlin.getValue
 @OptIn(ExperimentalJewelApi::class)
 @Composable
 fun UnitsPropertiesConfig() {
-    println("rerender called")
 
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-
     val scenario by editorService.scenario.collectAsState()
+    val rawSelection by editorService.selectedUnits.collectAsState()
     val canvas by rememberInstance<GLCanvas>()
 
-    val rawSelection by editorService.selectedUnits.collectAsState()
 
     if (rawSelection.isEmpty()) return
-
 
     val selection by derivedStateOf {
         rawSelection.map { unit -> unit.getValue(scenario!!.units::get) }
@@ -73,48 +71,44 @@ fun UnitsPropertiesConfig() {
     }
 
     val isNameMixed by derivedStateOf { selection.map { it.name }.distinct().size > 1 }
-    val nameFieldState = rememberTextFieldState("")
 
-// 2. Use a LaunchedEffect to update the TextFieldState when the selection changes.
-    LaunchedEffect(selection) {
-        val name = when {
-            selection.isEmpty() -> ""
-            selection.map { it.name }.distinct().size > 1 -> ""
-            else -> selection.first().name ?: ""
-        }
-        nameFieldState.setTextAndPlaceCursorAtEnd(name)
+    // Use TextFieldValue directly instead of TextFieldState
+    var textFieldValue by remember(selection) {
+        mutableStateOf(
+            Unit.let {
+                val currentText = when {
+                    selection.isEmpty() -> ""
+                    selection.map { it.name }.distinct().size > 1 -> ""
+                    else -> selection.first().name ?: ""
+                }
+                TextFieldValue(
+                    text = currentText,
+                    selection = TextRange(currentText.length) // Or calculate appropriate position
+                )
+            }
+        )
     }
-
 
     VerticallyScrollableContainer {
         Column {
-//            scenario!!.units.forEach { u ->
-//                Text(u.type.toString() + " " + u.name)
-//            }
             Spacer(Modifier.width(4.dp))
             Text("Name")
             TextField(
-                value = TextFieldValue(nameFieldState.text.toString(), selection = nameFieldState.selection),
-                onValueChange = { newText ->
-                    nameFieldState.edit {
-                        replace(0, length, newText.text)
-                        println(nameFieldState.selection)
-                        this.selection = nameFieldState.selection
-                    }
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    // Simply update the state with the complete new value
+                    textFieldValue = newValue
 
-                    val finalText: String? = newText.text.ifEmpty { null }
+                    val finalText: String? = newValue.text.ifEmpty { null }
                     updateSelectedUnits { it.copy(name = finalText) }
                 },
-                Modifier.fillMaxWidth().onFocusChanged { focus ->
+                modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                     if (!focus.isFocused) {
                         editorService.flushCompound()
                     }
                 },
-                placeholder = { Text(if (isNameMixed) "Mixed" else "Empty") },
-
+                placeholder = { Text(if (isNameMixed) "Mixed" else "Empty") }
             )
-
         }
     }
-
 }
