@@ -219,13 +219,7 @@ fun UnitsConfigDock() {
             }
         },
         content = {
-            VerticallyScrollableContainer {
-                Column {
-                    scenario!!.units.forEach { u ->
-                        Text(u.type.toString() + " " + u.name)
-                    }
-                }
-            }
+            UnitsPropertiesConfig()
         }
     )
 }
