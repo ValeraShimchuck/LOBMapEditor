@@ -124,10 +124,14 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         println("GL initialized")
 
+
+
     }
 
+    private var lastTimeMeasurement = System.currentTimeMillis()
 
     override fun display(drawable: GLAutoDrawable) {
+        val start = System.currentTimeMillis()
         val ctx = drawable.gl.gL3
         textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
@@ -188,6 +192,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         }
 
         ctx.glBindVertexArray(0)
+
+
     }
 
     override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {

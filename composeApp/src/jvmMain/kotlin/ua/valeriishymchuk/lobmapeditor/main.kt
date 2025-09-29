@@ -41,6 +41,7 @@ fun main() {
 //    System.setProperty("jogl.debug", "true")
 //    System.setProperty("nativewindow.debug", "all")
 //    System.setProperty("jogl.verbose", "true")
+//    System.setProperty("jogl.debug.GLDrawable.PerfStats", "true")
     loadJogsLibs()
     println("Successfully loaded libs")
 

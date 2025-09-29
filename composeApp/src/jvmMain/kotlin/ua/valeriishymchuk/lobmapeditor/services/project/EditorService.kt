@@ -95,7 +95,7 @@ class EditorService<T : GameScenario<T>>(
 
     fun executeCompound(command: Command<T>) {
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
-        lock.withLock {
+        lock {
             composedCommands.add(wrapper)
             wrapper.execute()
         }
@@ -103,15 +103,21 @@ class EditorService<T : GameScenario<T>>(
 
     fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
         val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
-        lock.withLock {
+        lock {
             composedCommands.add(wrapper)
             wrapper.execute()
         }
     }
 
-    fun flushCompound() {
+    private fun lock(handler: () -> Unit) {
         lock.withLock {
-            if (composedCommands.isEmpty()) return@withLock
+            handler()
+        }
+    }
+
+    fun flushCompound() {
+        lock {
+            if (composedCommands.isEmpty()) return@lock
             val command = ComposedCommand(composedCommands.map { it.command })
             composedCommands.clear()
             undoStack.addLast(CommandWrapper(scenarioGetter, scenarioSetter, command as Command<T>))
@@ -120,8 +126,8 @@ class EditorService<T : GameScenario<T>>(
     }
 
     fun flushCompoundCommon() {
-        lock.withLock {
-            if (composedCommands.isEmpty()) return@withLock
+        lock {
+            if (composedCommands.isEmpty()) return@lock
             val command = ComposedCommand(composedCommands.map { it.command })
             composedCommands.clear()
             undoStack.addLast(CommandWrapper(commonDataGetter, commonDataSetter, command as Command<GameScenario.CommonData>))

@@ -132,7 +132,6 @@ fun UnitsConfigDock() {
                                                 setOf()
                                         }
 
-                                        canvas.repaint()
                                     }
                                 )
                                 Spacer(Modifier.weight(1f))
@@ -149,12 +148,10 @@ fun UnitsConfigDock() {
                                                     }.div(it.size.toFloat())
                                                 }.also { println("${it.x} ${it.y}")}
 
-                                        canvas.repaint()
                                     })
 
                                     IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
                                         editorService.deleteUnits(selectedUnits.toSet())
-                                        canvas.repaint()
                                     })
 
                                 }
@@ -177,7 +174,6 @@ fun UnitsConfigDock() {
                                                     it.getValue(scenario!!.units::get) != unit
                                                 }.toSet()
 
-                                            canvas.repaint()
                                         }
                                     )
                                     Text(unit.type.name, Modifier.weight(1f))
@@ -188,7 +184,6 @@ fun UnitsConfigDock() {
                                                 unit.position.x,
                                                 unit.position.y
                                             )
-                                            canvas.repaint()
                                         })
                                         IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
                                             editorService.selectedUnits.value =
@@ -205,7 +200,6 @@ fun UnitsConfigDock() {
                                             )
 
 
-                                            canvas.repaint()
                                         })
 
                                     }

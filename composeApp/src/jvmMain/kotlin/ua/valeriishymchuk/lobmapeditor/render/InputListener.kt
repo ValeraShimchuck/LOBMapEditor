@@ -1,6 +1,15 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.openFileSaver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import org.jetbrains.jewel.ui.component.OutlinedButton
+import org.jetbrains.jewel.ui.component.SuccessInlineBanner
+import org.jetbrains.jewel.ui.component.Text
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -21,19 +30,20 @@ import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import java.awt.Desktop
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionListener
 import java.awt.event.MouseWheelEvent
+import kotlin.coroutines.CoroutineContext
 import kotlin.getValue
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.ranges.contains
 
 class InputListener(
-    private val rerender: () -> Unit,
     override val di: DI
 ) : MouseAdapter(), MouseMotionListener, KeyListener, DIAware {
 
@@ -113,7 +123,6 @@ class InputListener(
                 if (isShiftPressed) {
                     editorService.redo()
                 } else editorService.undo()
-                rerender()
             }
 
             KeyEvent.VK_SHIFT -> isShiftPressed = false
@@ -123,22 +132,19 @@ class InputListener(
                 editorService.deleteUnits(
                     editorService.selectedUnits.value
                 )
-                println("Trying to delete units")
-                rerender()
             }
         }
     }
 
-    override fun mouseDragged(e: MouseEvent) {
 
-        val shouldRender = listOf(
-            checkMiddleMouse(e),
-            checkTilePainting(e),
-            checkSelectionDrag(e),
-            checkSelectedObjectsDrag(e),
-            checkUnitRotation(e)
-        ).any { it }
-        if (shouldRender) rerender()
+    override fun mouseDragged(e: MouseEvent) {
+        checkMiddleMouse(e)
+        checkTilePainting(e)
+        checkSelectionDrag(e)
+        checkSelectedObjectsDrag(e)
+        checkUnitRotation(e)
+//        println("Current thread: ${Thread.currentThread().name}")
+
     }
 
     private fun checkUnitRotation(e: MouseEvent): Boolean {
@@ -226,11 +232,13 @@ class InputListener(
         val newPos = editorService.fromScreenToWorldSpace(e.x, e.y)
         lastDragPosition = newPos
         val change = newPos.sub(oldPos, Vector2f())
+
         if (editorService.selectedUnits.value.isNotEmpty()) {
             val unitList = editorService.scenario.value!!.units.toMutableList()
             editorService.selectedUnits.value.forEach { reference ->
                 val oldUnit = reference.getValue(editorService.scenario.value!!.units::get)
                 val newUnitPos = Vector2f(oldUnit.position.x, oldUnit.position.y).add(change)
+//                println("New unit pos: ${newPos.x} ${newPos.y} change: ${change.x} ${change.y} change distance: ${change.length()}")
                 val newUnit = oldUnit.copy(
                     position = Position(
                         newUnitPos.x.coerceIn(0f,editorService.scenario.value!!.map.widthPixels.toFloat()),
@@ -239,6 +247,8 @@ class InputListener(
                 )
                 unitList[reference.key] = newUnit
             }
+//            if (true) return true
+
             editorService.executeCompound(UpdateGameUnitListCommand(
                 editorService.scenario.value!!.units,
                 unitList
@@ -289,7 +299,6 @@ class InputListener(
             editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
             shouldDragSelectedObjects = true
-            rerender()
             return
         }
 
@@ -306,7 +315,6 @@ class InputListener(
                 editorService.selectedUnits.value = setOf()
                 editorService.selectedUnits.value += Reference(editorService.scenario.value!!.units.indexOf(units.first()))
             }
-            rerender()
             return
         }
 
@@ -391,7 +399,6 @@ class InputListener(
         if (objective != null) {
             editorService.selectedUnits.value = setOf()
             editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
-            rerender()
             return
         }
 
@@ -404,7 +411,6 @@ class InputListener(
         }
         if (!isCtrlPressed) editorService.selectedUnits.value += newSelectedUnits
         else editorService.selectedUnits.value -= newSelectedUnits.toSet()
-        rerender()
 
     }
 
@@ -445,7 +451,6 @@ class InputListener(
         if (!isShiftPressed && !isCtrlPressed) editorService.selectedUnits.value = setOf()
         if (!isCtrlPressed) editorService.selectedUnits.value += newSelectedUnits
         else editorService.selectedUnits.value -= newSelectedUnits.toSet()
-        rerender()
     }
 
     private fun checkMiddlePressed(e: MouseEvent) {
@@ -468,7 +473,7 @@ class InputListener(
         val worldCoordinates = editorService.fromScreenToWorldSpace(e.x, e.y)
         if (worldCoordinates.x < 0 || worldCoordinates.y < 0) return
         if (worldCoordinates.x > editorService.scenario.value!!.map.widthPixels || worldCoordinates.y > editorService.scenario.value!!.map.heightPixels) return
-        if (toolService.useTool(worldCoordinates.x, worldCoordinates.y)) rerender()
+        toolService.useTool(worldCoordinates.x, worldCoordinates.y)
     }
 
     private fun checkEndOfToolUsage(e: MouseEvent) {
@@ -511,7 +516,6 @@ class InputListener(
 
         // Update main view matrix and request redraw
         editorService.viewMatrix.set(newView)
-        rerender()
     }
 
 

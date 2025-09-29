@@ -342,7 +342,7 @@ private fun PlaceObjectiveToolConfig() {
 private fun GridToolConfig() {
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
     val toolService by rememberInstance<ToolService>()
-    val canvas by rememberInstance<GLCanvas>()
+//    val canvas by rememberInstance<GLCanvas>()
 
 
     val size by toolService.gridTool.size.collectAsState()
@@ -368,7 +368,6 @@ private fun GridToolConfig() {
             enabled,
             onCheckedChange = {
                 toolService.gridTool.enabled.value = it
-                canvas.repaint()
             }
         )
         Spacer(Modifier.width(4.dp))
@@ -442,7 +441,6 @@ private fun GridToolConfig() {
         thickness,
         onValueChange = {
             toolService.gridTool.thickness.value = it
-            canvas.repaint()
         },
         valueRange = 0f.. max(toolService.gridTool.size.value.x, toolService.gridTool.size.value.y)
     )
@@ -476,7 +474,6 @@ private fun GridToolConfig() {
                 )
 
 
-            canvas.repaint()
         }
     )
 
@@ -533,7 +530,6 @@ private fun GridToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.size.value
                 toolService.gridTool.size.value = Vector2f(it, vec.y)
-                canvas.repaint()
             }
     }
 
@@ -543,7 +539,6 @@ private fun GridToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.size.value
                 toolService.gridTool.size.value = Vector2f(vec.x, it)
-                canvas.repaint()
             }
     }
 
@@ -553,7 +548,6 @@ private fun GridToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.offset.value
                 toolService.gridTool.offset.value = Vector2f(it, vec.y)
-                canvas.repaint()
             }
     }
 
@@ -563,7 +557,6 @@ private fun GridToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.gridTool.offset.value
                 toolService.gridTool.offset.value = Vector2f(vec.x, it)
-                canvas.repaint()
             }
     }
 
@@ -574,7 +567,6 @@ private fun GridToolConfig() {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun ReferenceOverlayToolConfig() {
     val toolService by rememberInstance<ToolService>()
-    val canvas by rememberInstance<GLCanvas>()
     val projectService by rememberInstance<ProjectsService>()
     val projectRef by rememberInstance<ProjectRef>()
     val textureStorage by rememberInstance<TextureStorage>()
@@ -599,7 +591,6 @@ private fun ReferenceOverlayToolConfig() {
             enabled,
             onCheckedChange = {
                 toolService.refenceOverlayTool.enabled.value = it
-                canvas.repaint()
             }
         )
         Spacer(Modifier.width(4.dp))
@@ -612,7 +603,6 @@ private fun ReferenceOverlayToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.refenceOverlayTool.scale.value
                 toolService.refenceOverlayTool.scale.value = Vector2f(it, vec.y)
-                canvas.repaint()
             }
     }
 
@@ -622,7 +612,6 @@ private fun ReferenceOverlayToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.refenceOverlayTool.scale.value
                 toolService.refenceOverlayTool.scale.value = Vector2f(vec.x, it)
-                canvas.repaint()
             }
     }
 
@@ -632,7 +621,6 @@ private fun ReferenceOverlayToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.refenceOverlayTool.offset.value
                 toolService.refenceOverlayTool.offset.value = Vector2f(it.coerceIn(-1f..1f), vec.y)
-                canvas.repaint()
             }
     }
 
@@ -642,7 +630,6 @@ private fun ReferenceOverlayToolConfig() {
                 if (it == null) return@collect
                 val vec = toolService.refenceOverlayTool.offset.value
                 toolService.refenceOverlayTool.offset.value = Vector2f(vec.x, it.coerceIn(-1f..1f))
-                canvas.repaint()
             }
     }
     Row(
@@ -710,7 +697,6 @@ private fun ReferenceOverlayToolConfig() {
         transparency,
         onValueChange = {
             toolService.refenceOverlayTool.transparency.value = it
-            canvas.repaint()
         },
         valueRange = 0f..1f
     )
@@ -731,7 +717,6 @@ private fun ReferenceOverlayToolConfig() {
             value = rotation,
             onValueChange = {
                 toolService.refenceOverlayTool.rotation.value = it
-                canvas.repaint()
             },
             valueRange = 0f..(2 * Math.PI).toFloat(),
             modifier = Modifier.fillMaxWidth()
@@ -750,7 +735,6 @@ private fun ReferenceOverlayToolConfig() {
                     val pickResult = FileKit.openFilePicker(FileKitType.Image) ?: return@launch
                     projectService.importReference(projectRef, pickResult.file)
                     textureStorage.referenceFile = projectRef.referenceFile
-                    canvas.repaint()
 
                 }
             },
@@ -762,7 +746,6 @@ private fun ReferenceOverlayToolConfig() {
             CoroutineScope(Dispatchers.IO).launch {
                 projectService.clearReference(projectRef)
                 textureStorage.referenceFile = null
-                canvas.repaint()
             }
         }) {
             Text("Clear reference")

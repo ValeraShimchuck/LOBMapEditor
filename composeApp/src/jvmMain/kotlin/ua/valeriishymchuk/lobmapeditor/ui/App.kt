@@ -19,6 +19,10 @@ import cafe.adriel.voyager.navigator.CurrentScreen
 import com.jogamp.opengl.GLCapabilities
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
+import com.jogamp.opengl.util.FPSAnimator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.jewel.foundation.Stroke
 import org.jetbrains.jewel.foundation.modifier.border
@@ -158,9 +162,8 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
                 val glListener = EditorRenderer(di)
 
 
-
                 addGLEventListener(glListener)
-                val inputListener = InputListener(this::repaint, di)
+                val inputListener = InputListener(di)
                 addMouseMotionListener(inputListener)
                 addMouseListener(inputListener)
                 addMouseWheelListener(inputListener)
@@ -168,6 +171,9 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
 
                 isVisible = true
                 canvasRefSet(this)
+
+                val animator = FPSAnimator(this, 60)
+                animator.start()
 
 
             }
