@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.onClick
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -27,17 +29,18 @@ import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.ComboBox
 import org.jetbrains.jewel.ui.component.PopupManager
+import org.jetbrains.jewel.ui.component.Slider
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
-import org.jetbrains.skia.paragraph.Alignment
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.getValue
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
@@ -76,10 +79,13 @@ fun UnitsPropertiesConfig() {
 
     val isNameMixed by derivedStateOf { selection.map { it.name }.distinct().size > 1 }
     val isOwnerMixed by derivedStateOf { selection.map { it.owner }.distinct().size > 1 }
+    val isUnitTypeMixed by derivedStateOf { selection.map { it.type }.distinct().size > 1 }
     val isXPositionMixed by derivedStateOf { selection.map { it.position.x }.distinct().size > 1 }
     val isYPositionMixed by derivedStateOf { selection.map { it.position.y }.distinct().size > 1 }
+    val isRotationMixed by derivedStateOf { selection.map { it.rotationRadians }.distinct().size > 1 }
 
     val ownerPopupManager = remember { PopupManager() }
+    val unityTypePopupManager = remember { PopupManager() }
 
     var xPositionTextFieldValue by remember {
         mutableStateOf(
@@ -136,6 +142,30 @@ fun UnitsPropertiesConfig() {
         }
     }
 
+    var rotationTextFieldValue by remember {
+        mutableStateOf(
+            Unit.let {
+                val currentValue: Float? = when {
+                    selection.isEmpty() -> null
+                    isRotationMixed -> null
+                    else -> selection.map { it.rotationRadians }.distinct().first()
+                }
+                currentValue
+            }
+        )
+    }
+
+    LaunchedEffect(selection) {
+
+        val textValue = rotationTextFieldValue
+        val rotationValue = selection.map { it.rotationRadians }.distinct().firstOrNull()
+        if (textValue != rotationValue || (textValue != null && isRotationMixed)) {
+            val finalValue: Float? = if (rotationValue != null && !isRotationMixed) rotationValue
+            else null
+            rotationTextFieldValue = finalValue
+        }
+    }
+
     // Use TextFieldValue directly instead of TextFieldState
     var textFieldValue by remember(selection) {
         mutableStateOf(
@@ -181,9 +211,9 @@ fun UnitsPropertiesConfig() {
             Text("Owner:")
             ComboBox(
                 labelText = if (isOwnerMixed) "Mixed" else let {
-                     val owner = selection.map { it.owner }.distinct().first()
+                    val owner = selection.map { it.owner }.distinct().first()
                     "${owner.key} ${scenario!!.players[owner.key].team}"
-                } ,
+                },
                 popupManager = ownerPopupManager,
                 popupContent = {
                     VerticallyScrollableContainer {
@@ -216,6 +246,40 @@ fun UnitsPropertiesConfig() {
 
             Spacer(Modifier.height(10.dp))
 
+            Text("Type:")
+            ComboBox(
+                labelText = if (isUnitTypeMixed) "Mixed" else let {
+                    val unityType = selection.map { it.type }.distinct().first()
+                    "$unityType"
+                },
+                popupManager = unityTypePopupManager,
+                popupContent = {
+                    VerticallyScrollableContainer {
+                        Column {
+                            GameUnitType.entries.sortedByDescending {
+                                it.ordinal
+                            }.forEach { item ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                        updateSelectedUnits { unit ->
+                                            unit.copy(type = item)
+                                        }
+                                        editorService.flushCompound()
+                                        unityTypePopupManager.setPopupVisible(false)
+                                    }) {
+                                    Text(
+                                        text = "$item",
+                                    )
+                                }
+
+                            }
+                        }
+                    }
+                }
+            )
+
+            Spacer(Modifier.height(10.dp))
+
             Text("Position:")
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -224,13 +288,14 @@ fun UnitsPropertiesConfig() {
                     onValueChange = { newValue ->
                         // Simply update the state with the complete new value
                         xPositionTextFieldValue = newValue
-                        xPositionTextFieldValue = xPositionTextFieldValue.copy(text = newValue.text
-                            .replace(Regex("[^0-9.]"), "").let { str ->
-                                val value = str.toFloatOrNull() ?: return@let str
-                                val coercedValue = value.coerceIn(0f, scenario!!.map.widthPixels.toFloat())
-                                if (coercedValue == value) return@let str
-                                coercedValue.toString()
-                            }
+                        xPositionTextFieldValue = xPositionTextFieldValue.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    val coercedValue = value.coerceIn(0f, scenario!!.map.widthPixels.toFloat())
+                                    if (coercedValue == value) return@let str
+                                    coercedValue.toString()
+                                }
                         )
 
 
@@ -258,13 +323,14 @@ fun UnitsPropertiesConfig() {
                     onValueChange = { newValue ->
                         // Simply update the state with the complete new value
                         yPositionTextFieldValue = newValue
-                        yPositionTextFieldValue = yPositionTextFieldValue.copy(text = newValue.text
-                            .replace(Regex("[^0-9.]"), "").let { str ->
-                                val value = str.toFloatOrNull() ?: return@let str
-                                val coercedValue = value.coerceIn(0f, scenario!!.map.heightPixels.toFloat())
-                                if (coercedValue == value) return@let str
-                                coercedValue.toString()
-                            }
+                        yPositionTextFieldValue = yPositionTextFieldValue.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    val coercedValue = value.coerceIn(0f, scenario!!.map.heightPixels.toFloat())
+                                    if (coercedValue == value) return@let str
+                                    coercedValue.toString()
+                                }
                         )
 
 
@@ -284,6 +350,33 @@ fun UnitsPropertiesConfig() {
                             Spacer(Modifier.width(4.dp))
                         }
                     }
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Text("Rotation:")
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                AngleDial(
+                    rotationTextFieldValue ?: 0f,
+                    color = Color(230, 230, 230),
+                    modifier = Modifier.size(200.dp)
+                )
+
+                if (isRotationMixed) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("Mixed")
+                    Spacer(Modifier.height(4.dp))
+                }
+
+                Slider(
+                    value = rotationTextFieldValue ?: 0f,
+                    onValueChange = { newRotation ->
+
+                        rotationTextFieldValue = newRotation
+                        updateSelectedUnits { it.copy(rotationRadians = rotationTextFieldValue ?: 0f) }
+                    },
+                    valueRange = 0f..(2 * Math.PI).toFloat(),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

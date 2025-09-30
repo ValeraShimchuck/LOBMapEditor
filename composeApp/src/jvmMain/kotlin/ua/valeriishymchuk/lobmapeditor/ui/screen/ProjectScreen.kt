@@ -133,7 +133,7 @@ class ProjectScreen(
             second = {
                 UnitsConfigDock()
             },
-            state = rememberSplitLayoutState(0.85f),
+            state = rememberSplitLayoutState(0.45f),
             firstPaneMinWidth = 200.dp,
             secondPaneMinWidth = 300.dp
         )
