@@ -172,7 +172,7 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
                 isVisible = true
                 canvasRefSet(this)
 
-                val animator = FPSAnimator(this, 60)
+                val animator = FPSAnimator(this, 60) // problem here
                 animator.start()
 
 

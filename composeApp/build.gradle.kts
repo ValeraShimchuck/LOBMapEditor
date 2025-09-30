@@ -103,6 +103,7 @@ kotlin {
 
 tasks.named<JavaExec>("hotRunJvm") {
     workingDir = File("run").apply { mkdirs() }
+    jvmArgs("--add-exports=jogl.all/com.jogamp.opengl.util=ALL-UNNAMED")
 }
 
 compose.desktop {
