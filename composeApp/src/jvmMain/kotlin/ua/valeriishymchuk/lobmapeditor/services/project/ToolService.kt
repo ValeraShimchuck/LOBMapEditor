@@ -10,6 +10,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlayerTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PresetTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
@@ -22,8 +23,10 @@ class ToolService(override val di: DI) : DIAware {
 
     val gridTool = GridTool()
     val refenceOverlayTool = ReferenceOverlayTool()
+    val playerTool = PlayerTool()
 
     val tools = listOf(
+        playerTool,
         HeightTool,
         TerrainTool,
         TerrainPickTool,

@@ -4,8 +4,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.Position
+import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
@@ -14,7 +15,8 @@ object PlaceObjectiveTool : PresetTool() {
 //        Reference(0),
         null,
         null,
-        Position(0f, 0f)
+        Position(0f, 0f),
+        ObjectiveType.SMALL
     ))
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {

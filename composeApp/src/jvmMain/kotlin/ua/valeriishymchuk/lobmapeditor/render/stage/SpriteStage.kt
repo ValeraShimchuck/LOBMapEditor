@@ -7,7 +7,8 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.joml.Vector4f
-import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
@@ -253,18 +254,24 @@ class SpriteStage(
         }
 
         val objectiveShadowsToRender: List<Objective> = scenario.objectives
+
         val objectivesToRender: Map<Optional<PlayerTeam>, List<Objective>> = objectiveShadowsToRender.groupBy {
             Optional.ofNullable(it.owner?.getValue(scenario.players::get)?.team)
         }
 
 
+
         val objectiveScale = max((2.5f / viewMatrix.getScale(Vector3f()).x), 1f)
+
 
 
         val objectiveDimensions = Vector2f(
             GameConstants.TILE_SIZE.toFloat()
         ).mul(1.3f)
 
+        val smallObjectiveDimensions = Vector2f(
+            GameConstants.TILE_SIZE.toFloat()
+        ).mul(0.7f)
 
         also {
             val selectionsToRender = selectedObjectives.toList()
@@ -320,10 +327,11 @@ class SpriteStage(
             val positionMatrix = Matrix4f()
             positionMatrix.setTranslation(Vector3f(unit.position.x + 1, unit.position.y + 1, 0f))
             positionMatrix.scale(objectiveScale)
+            val currentObjective = if (unit.type == ObjectiveType.BIG) objectiveDimensions else smallObjectiveDimensions
             SpriteProgram.BufferData(
                 RectanglePoints.fromPoints(
-                    objectiveDimensions.div(-2f, Vector2f()),
-                    objectiveDimensions.div(2f, Vector2f()),
+                    currentObjective.div(-2f, Vector2f()),
+                    currentObjective.div(2f, Vector2f()),
                 ),
                 RectanglePoints.TEXTURE_CORDS,
                 positionMatrix
@@ -359,10 +367,11 @@ class SpriteStage(
                 val positionMatrix = Matrix4f()
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 positionMatrix.scale(objectiveScale)
+                val currentObjective = if (unit.type == ObjectiveType.BIG) objectiveDimensions else smallObjectiveDimensions
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
-                        objectiveDimensions.div(-2f, Vector2f()),
-                        objectiveDimensions.div(2f, Vector2f()),
+                        currentObjective.div(-2f, Vector2f()),
+                        currentObjective.div(2f, Vector2f()),
                     ),
                     RectanglePoints.TEXTURE_CORDS,
                     positionMatrix

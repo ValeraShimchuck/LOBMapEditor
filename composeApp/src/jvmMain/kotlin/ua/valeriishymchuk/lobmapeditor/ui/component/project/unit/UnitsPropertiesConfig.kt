@@ -56,7 +56,7 @@ fun UnitsPropertiesConfig() {
     if (rawSelection.isEmpty()) return
 
     val selection by derivedStateOf {
-        rawSelection.map { unit -> unit.getValue(scenario!!.units::get) }
+        rawSelection.mapNotNull { unit -> unit.getValueOrNull(scenario!!.units::getOrNull) }
     }
 
     fun updateSelectedUnits(unitMap: (GameUnit) -> GameUnit) {
@@ -212,7 +212,7 @@ fun UnitsPropertiesConfig() {
             ComboBox(
                 labelText = if (isOwnerMixed) "Mixed" else let {
                     val owner = selection.map { it.owner }.distinct().first()
-                    "${owner.key} ${scenario!!.players[owner.key].team}"
+                    "${owner.key + 1} ${scenario!!.players[owner.key].team}"
                 },
                 popupManager = ownerPopupManager,
                 popupContent = {
@@ -234,7 +234,7 @@ fun UnitsPropertiesConfig() {
                                         ownerPopupManager.setPopupVisible(false)
                                     }) {
                                     Text(
-                                        text = "${item.index} ${item.value.team}",
+                                        text = "${item.index + 1} ${item.value.team}",
                                     )
                                 }
 

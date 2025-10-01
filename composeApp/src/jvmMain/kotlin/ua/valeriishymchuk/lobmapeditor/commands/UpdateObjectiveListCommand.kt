@@ -1,7 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.commands
 
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 
 data class UpdateObjectiveListCommand(
     private val oldObjectives: List<Objective>,

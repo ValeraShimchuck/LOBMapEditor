@@ -6,7 +6,7 @@ import org.joml.Vector2f
 import org.joml.Vector2i
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 

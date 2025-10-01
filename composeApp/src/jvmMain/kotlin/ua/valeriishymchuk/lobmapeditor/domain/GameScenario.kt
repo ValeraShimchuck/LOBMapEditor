@@ -3,6 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.domain
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
@@ -44,6 +45,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
                         add(JsonObject().apply {
                             add("player", JsonPrimitive(index + 1))
                             add("team", JsonPrimitive(player.team.id))
+                            add("ammoReserve", JsonPrimitive(player.ammo))
                         })
                     }
                 })
@@ -153,7 +155,8 @@ sealed interface GameScenario<T : GameScenario<T>> {
                         val playerObj = element.asJsonObject
                         val teamId = playerObj.getAsJsonPrimitive("team").asInt
                         Player(
-                            team = PlayerTeam.fromId(teamId)
+                            team = PlayerTeam.fromId(teamId),
+                            playerObj.getAsJsonPrimitive("ammoReserve").asInt
                         )
                     }.toList()
 

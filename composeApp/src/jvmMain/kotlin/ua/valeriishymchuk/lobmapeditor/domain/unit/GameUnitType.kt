@@ -31,6 +31,8 @@ enum class GameUnitType(
     TWELVE_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 12, "heavy-artillery"),
     FOUR_LB_FOOT_ARTILLERY(GameUnitCategory.ARTILLERY, 15, "4lb-artillery"),
     ROCKETS(GameUnitCategory.ARTILLERY, 19, "rockets", "rockets1"),
+    TEN_LB_LICORNE(GameUnitCategory.ARTILLERY, 24, "10lb-licorne"),
+    EIGHTEEN_LB_LICORNE(GameUnitCategory.ARTILLERY, 25, "18lb-licorne"),
 
     // Skirmishers
     SKIRMISHERS(GameUnitCategory.SKIRMISHERS, 16, "skirmishers", "skirmishers1"),
