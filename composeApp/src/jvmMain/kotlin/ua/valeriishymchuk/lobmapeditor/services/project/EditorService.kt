@@ -12,6 +12,7 @@ import org.kodein.di.DIAware
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
@@ -19,6 +20,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.streams.toList
 
 class EditorService<T : GameScenario<T>>(
     override val di: DI,
@@ -93,9 +95,16 @@ class EditorService<T : GameScenario<T>>(
             viewMatrix.setColumn(3, vector4)
         }
 
+    private fun checkComposedCommandsIntegrity(typeChecker: (Command<*>) -> Boolean) {
+        if (composedCommands.isEmpty()) return
+        if (!composedCommands.all { typeChecker(it.command) })
+            throw IllegalStateException("The composed commands list doesn't have integrity: ${composedCommands}")
+    }
+
     fun executeCompound(command: Command<T>) {
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
         lock {
+            checkComposedCommandsIntegrity { it is Command.Preset }
             composedCommands.add(wrapper)
             wrapper.execute()
         }
@@ -104,6 +113,7 @@ class EditorService<T : GameScenario<T>>(
     fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
         val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
         lock {
+            checkComposedCommandsIntegrity { it is Command.CommonData  }
             composedCommands.add(wrapper)
             wrapper.execute()
         }
@@ -170,8 +180,20 @@ class EditorService<T : GameScenario<T>>(
         val valueSetter: (T) -> Unit,
         val command: Command<T>
     ) {
+
+        val creationStack = StackWalker.getInstance()
+            .walk { it.map { frame -> frame.toStackTraceElement().toString() }.toList() }.joinToString("\n")
+
         fun undo() {
-            valueSetter(command.undo(valueGetter()))
+
+            try {
+                valueSetter(command.undo(valueGetter()))
+            } catch (e: Throwable) {
+                println("Undoing $command the input ${valueGetter()?.javaClass?.simpleName}")
+                e.printStackTrace()
+                println("Was created at $creationStack")
+            }
+
         }
 
         fun execute() {
@@ -256,12 +278,27 @@ class EditorService<T : GameScenario<T>>(
         return Vector2i(tileX, tileY)
     }
 
+    fun deleteObjectives(map: Set<Reference<Int, Objective>>) {
+        if (map.contains(selectedObjectives.value)) selectedObjectives.value = null
+        val oldSelectedObjectives = selectedObjectives.value.let { reference ->
+            listOf(reference).mapNotNull { it }
+        }.map { it.getValue(scenario.value!!.objectives::get) }
+        val oldList = scenario.value!!.objectives
+        val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
+        executeCommon(UpdateObjectiveListCommand(oldList, newList))
+        val newSelectedList = scenario.value!!.objectives.mapIndexedNotNull { index, objective ->
+            if (oldSelectedObjectives.contains(objective)) return@mapIndexedNotNull Reference<Int, Objective>(index)
+            null
+        }
+        selectedObjectives.value = newSelectedList.firstOrNull()
+    }
+
     companion object {
         fun EditorService<GameScenario.Preset>.deleteUnits(map: Set<Reference<Int, GameUnit>>) {
             selectedUnits.value -= map
             val oldSelectedUnits = selectedUnits.value.map { it.getValue(scenario.value!!.units::get) }
             val oldList = scenario.value!!.units
-            val newList = oldList.filterIndexed { index, unit -> !map.contains(Reference(index)) }
+            val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
             execute(UpdateGameUnitListCommand(oldList, newList))
             val newSelectedList = scenario.value!!.units.mapIndexedNotNull { index, unit ->
                 if (oldSelectedUnits.contains(unit)) return@mapIndexedNotNull Reference<Int, GameUnit>(index)

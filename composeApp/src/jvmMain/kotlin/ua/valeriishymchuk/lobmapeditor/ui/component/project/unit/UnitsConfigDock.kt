@@ -39,6 +39,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
 import kotlin.getValue
 
 @OptIn(ExperimentalJewelApi::class)
@@ -214,6 +215,7 @@ fun UnitsConfigDock() {
         },
         content = {
             UnitsPropertiesConfig()
+            ObjectivePropertiesConfig()
         }
     )
 }

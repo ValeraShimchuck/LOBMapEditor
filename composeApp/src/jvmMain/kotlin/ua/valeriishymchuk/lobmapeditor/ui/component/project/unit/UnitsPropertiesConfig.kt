@@ -50,7 +50,6 @@ fun UnitsPropertiesConfig() {
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
     val scenario by editorService.scenario.collectAsState()
     val rawSelection by editorService.selectedUnits.collectAsState()
-    val canvas by rememberInstance<GLCanvas>()
 
 
     if (rawSelection.isEmpty()) return

@@ -113,16 +113,6 @@ fun ToolConfig(modifier: Modifier = Modifier) {
     }
 }
 
-internal enum class OldOwnerHandling {
-    DELETE_RELATED_OBJECTS,
-    MOVE_OWNERSHIP
-}
-
-//internal enum class DialogStatus {
-//    HIDDEN,
-//    RELATED_OBJECTS_REMAIN,
-//    FEW_PLAYERS
-//}
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -139,7 +129,6 @@ private fun PlayerToolConfig() {
         tool.currentPlayer.value = Reference(scenario!!.players.mapIndexed { index, _ -> index }.first())
         return
     }
-    val canvas by rememberInstance<GLCanvas>()
 
     var showDialog by remember(currentPlayerReference, scenario) { mutableStateOf(false) }
 
@@ -267,8 +256,6 @@ private fun PlayerToolConfig() {
                 Spacer(Modifier.width(4.dp))
             }
         }
-
-
     )
 
 

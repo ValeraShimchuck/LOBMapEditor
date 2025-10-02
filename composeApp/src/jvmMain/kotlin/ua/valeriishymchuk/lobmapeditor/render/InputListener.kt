@@ -132,6 +132,12 @@ class InputListener(
                 editorService.deleteUnits(
                     editorService.selectedUnits.value
                 )
+                editorService.selectedObjectives.value?.let { reference ->
+                    editorService.deleteObjectives(
+                        setOf(reference)
+                    )
+                }
+
             }
         }
     }
@@ -426,8 +432,9 @@ class InputListener(
         isSelectionDragging = false
         if (shouldDragSelectedObjects) {
             shouldDragSelectedObjects = false
-            editorService.flushCompound()
-            editorService.flushCompoundCommon()
+            if (editorService.selectedUnits.value.isNotEmpty())
+                editorService.flushCompound()
+            else editorService.flushCompoundCommon()
             return
         }
         if (!editorService.selectionEnabled) {

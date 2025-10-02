@@ -33,6 +33,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModul
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.JoglCanvas
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolDock
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.UnitsConfigDock
