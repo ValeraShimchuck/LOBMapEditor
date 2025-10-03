@@ -123,12 +123,25 @@ compose.desktop {
             "--add-opens java.desktop/sun.java2d=ALL-UNNAMED"
         )
         nativeDistributions {
-            targetFormats(
-                TargetFormat.Dmg,
-                TargetFormat.Msi, TargetFormat.Exe,
-                TargetFormat.Deb, TargetFormat.Rpm,
-                TargetFormat.AppImage // Platform Specific
-            )
+            when (org.gradle.internal.os.OperatingSystem.current()) {
+                org.gradle.internal.os.OperatingSystem.LINUX -> {
+                    targetFormats(
+                        TargetFormat.Deb,
+                        TargetFormat.Rpm,
+                        TargetFormat.AppImage // Linux-only format
+                    )
+                }
+                org.gradle.internal.os.OperatingSystem.MAC_OS -> {
+                    targetFormats(TargetFormat.Dmg) // macOS format
+                }
+                org.gradle.internal.os.OperatingSystem.WINDOWS -> {
+                    targetFormats(TargetFormat.Msi, TargetFormat.Exe) // Windows formats
+                }
+                else -> {
+                    // Handle other or unknown OS, or do nothing
+                    println("WARNING: Unsupported operating system for packaging.")
+                }
+            }
             includeAllModules = true
             packageName = "LobMapEditor"
             packageVersion = System.getenv("GITHUB_REF")?.removePrefix("refs/tags/v") ?: "1.0.0"
