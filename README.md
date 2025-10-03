@@ -2,6 +2,8 @@ Map Editor for Lines Of Battle!
 
 <img width="1911" height="952" alt="image" src="https://github.com/user-attachments/assets/fece431b-1a73-48f1-a9dc-afaaf215f2a3" />
 
+Quick video showcase https://youtu.be/Fo3VIW98ktY
+
 # How to install
 1. Head towards releases section [here](https://github.com/ValeraShimchuck/LOBMapEditor/releases).
 2. Find your installer depending on your operating system(.exe and .msi for windows, dmg for macos, etc). Or use .jar(you need java 21 in order to run) file of the editor.
