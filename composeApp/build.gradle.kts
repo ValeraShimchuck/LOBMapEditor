@@ -12,7 +12,7 @@ plugins {
 
 kotlin {
     jvm()
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -40,7 +40,7 @@ kotlin {
                 maven("https://www.jetbrains.com/intellij-repository/releases/")
             }
             dependencies {
-                implementation(compose.desktop.currentOs){
+                implementation(compose.desktop.currentOs) {
                     exclude(group = "org.jetbrains.compose.material")
                     exclude(group = "org.jetbrains.compose.material3")
                 }
@@ -116,12 +116,27 @@ compose.desktop {
             "--add-opens=jogl.all/com.jogamp.opengl.glu=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
             "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-opens=java.desktop/sun.java2d=ALL-UNNAMED"
+            "--add-opens=java.desktop/sun.java2d=ALL-UNNAMED",
+            "--add-opens jdk.security.auth/com.sun.security.auth.module=ALL-UNNAMED",
+            "--add-opens java.base/java.lang=ALL-UNNAMED",
+            "--add-opens java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens java.desktop/sun.java2d=ALL-UNNAMED"
         )
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "ua.valeriishymchuk"
+            targetFormats(
+                TargetFormat.Dmg,
+                TargetFormat.Msi, TargetFormat.Exe,
+                TargetFormat.Deb, TargetFormat.Rpm,
+                TargetFormat.AppImage // Platform Specific
+            )
+            includeAllModules = true
+            packageName = "LobMapEditor"
             packageVersion = "1.0.0"
+        }
+
+        buildTypes.release.proguard {
+            isEnabled.set(false)
+            obfuscate.set(false)
         }
     }
 }
