@@ -28,6 +28,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+
+
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -39,8 +41,13 @@ jobs:
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
+      - name: Make gradlew executable # <-- Add this step
+        run: chmod +x ./gradlew
+
       - name: Build Uber JAR for Current OS
         run: ./gradlew packageUberJarForCurrentOS --no-daemon
+
+
 
       - name: Build Native Distributions
         run: ./gradlew packageDistributionForCurrentOS --no-daemon
