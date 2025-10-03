@@ -128,7 +128,7 @@ compose.desktop {
                     targetFormats(
                         TargetFormat.Deb,
                         TargetFormat.Rpm,
-                        TargetFormat.AppImage // Linux-only format
+//                        TargetFormat.AppImage // Linux-only format
                     )
                 }
                 org.gradle.internal.os.OperatingSystem.MAC_OS -> {
