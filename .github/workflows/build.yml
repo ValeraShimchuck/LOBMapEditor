@@ -61,7 +61,7 @@ jobs:
         with:
           name: desktop-packages-${{ matrix.os }}
           path: |
-            composeApp/build/compose/binaries/**/*.jar
+            composeApp/build/compose/jars/**/*.jar
             composeApp/build/compose/binaries/**/*.${{ matrix.formats == 'Msi,Exe' && 'msi' || matrix.formats == 'Deb,Rpm,AppImage' && 'deb' || 'dmg' }}
             composeApp/build/compose/binaries/**/*.${{ matrix.formats == 'Msi,Exe' && 'exe' || matrix.formats == 'Deb,Rpm,AppImage' && 'rpm' || '' }}
             composeApp/build/compose/binaries/**/*.${{ matrix.formats == 'Deb,Rpm,AppImage' && 'AppImage' || '' }}
