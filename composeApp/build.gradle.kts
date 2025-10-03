@@ -131,8 +131,10 @@ compose.desktop {
             )
             includeAllModules = true
             packageName = "LobMapEditor"
-            packageVersion = "1.0.0"
+            packageVersion = System.getenv("GITHUB_REF")?.removePrefix("refs/tags/v") ?: "1.0.0"
         }
+
+
 
         buildTypes.release.proguard {
             isEnabled.set(false)
