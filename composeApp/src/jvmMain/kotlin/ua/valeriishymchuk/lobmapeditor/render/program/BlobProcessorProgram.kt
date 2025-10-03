@@ -89,8 +89,9 @@ class BlobProcessorProgram(
 
         val serializedData = terrainMap.map.flatMap { it }.map {
             if (terrainType == it) return@map 1
-            if (it == TerrainType.BRIDGE && (terrainType == TerrainType.ROAD || terrainType == TerrainType.ROAD_WINTER)) return@map 2
-            if (terrainType == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER)) return@map 2
+            if (it == TerrainType.BRIDGE && (terrainType == TerrainType.ROAD || terrainType == TerrainType.ROAD_WINTER || terrainType == TerrainType.SUNKEN_ROAD)) return@map 2
+            if (terrainType == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER || it == TerrainType.SUNKEN_ROAD)) return@map 2
+            if (it == TerrainType.SUNKEN_ROAD && terrainType == TerrainType.ROAD || it == TerrainType.ROAD && terrainType == TerrainType.SUNKEN_ROAD ) return@map 2
             0
         }
 

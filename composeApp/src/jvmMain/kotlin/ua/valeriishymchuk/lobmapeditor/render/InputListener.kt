@@ -47,6 +47,9 @@ class InputListener(
     override val di: DI
 ) : MouseAdapter(), MouseMotionListener, KeyListener, DIAware {
 
+    private var lastMouseX = 0
+    private var lastMouseY = 0
+
     private var lastX = 0
     private var lastY = 0
     private var isDragging = false
@@ -139,7 +142,58 @@ class InputListener(
                 }
 
             }
+
+            KeyEvent.VK_D -> {
+                handleDuplication()
+            }
         }
+    }
+
+    private fun handleDuplication() {
+        if (!isCtrlPressed) return
+        val selectedUnitsToCopy =
+            editorService.selectedUnits.value.map { it.getValue(editorService.scenario.value!!.units::get) }
+        if (selectedUnitsToCopy.isNotEmpty()) {
+            val minPos = selectedUnitsToCopy.map { Vector2f(it.position.x, it.position.y) }
+                .reduce { vec1, vec2 ->
+                    vec1.min(vec2, Vector2f())
+                }
+            val maxPos = selectedUnitsToCopy.map { Vector2f(it.position.x, it.position.y) }
+                .reduce { vec1, vec2 ->
+                    vec1.max(vec2, Vector2f())
+                }
+
+            val center = Vector2f((minPos.x + maxPos.x ) / 2, (minPos.y + maxPos.y ) / 2)
+            val mousePos = editorService.fromScreenToWorldSpace(lastMouseX, lastMouseY)
+            val difference = mousePos.sub(center, Vector2f())
+            val unitsToAdd = selectedUnitsToCopy.map {
+                it.copy(position = Position(it.position.x + difference.x, it.position.y + difference.y))
+            }
+            val oldList = editorService.scenario.value!!.units
+            val newList = oldList.toMutableList()
+            newList.addAll(unitsToAdd)
+            editorService.execute(UpdateGameUnitListCommand(
+                oldList,
+                newList
+            ))
+        }
+
+        val selectedObjectivesToCopy = editorService.selectedObjectives.value
+            ?.getValue(editorService.scenario.value!!.objectives::get) ?: return
+
+        val center = Vector2f(selectedObjectivesToCopy.position.x, selectedObjectivesToCopy.position.y)
+        val mousePos = editorService.fromScreenToWorldSpace(lastMouseX, lastMouseY)
+        val difference = mousePos.sub(center, Vector2f())
+        val oldList = editorService.scenario.value!!.objectives
+        val newList = oldList.toMutableList()
+        newList.add(selectedObjectivesToCopy.copy(position = Position(
+            selectedObjectivesToCopy.position.x + difference.x,
+            selectedObjectivesToCopy.position.y + difference.y
+        )))
+        editorService.executeCommon(UpdateObjectiveListCommand(
+            oldList,
+            newList
+        ))
     }
 
 
@@ -155,7 +209,7 @@ class InputListener(
 
     private fun checkUnitRotation(e: MouseEvent): Boolean {
         val unitReference = rotatableUnit ?: return false
-        val unit =  unitReference.getValue(editorService.scenario.value!!.units::get)
+        val unit = unitReference.getValue(editorService.scenario.value!!.units::get)
         val unitPos = Vector2f(unit.position.x, unit.position.y)
         val draggedPos = editorService.fromScreenToWorldSpace(e.x, e.y)
         val differenceVector = draggedPos.sub(unitPos, Vector2f())
@@ -163,7 +217,8 @@ class InputListener(
         val newRotation = unitVector.angle(differenceVector)
         val oldRotation = unit.rotationRadians
         val differenceRotation = newRotation - oldRotation
-        editorService.executeCompound(UpdateGameUnitListCommand(
+        editorService.executeCompound(
+            UpdateGameUnitListCommand(
             editorService.scenario.value!!.units,
             editorService.scenario.value!!.units.mapIndexed { index, unit ->
                 val unitToChange = editorService.selectedUnits.value.firstOrNull { reference ->
@@ -176,7 +231,10 @@ class InputListener(
         return true
     }
 
-    override fun mouseMoved(e: MouseEvent) {}
+    override fun mouseMoved(e: MouseEvent) {
+        lastMouseX = e.x
+        lastMouseY = e.y
+    }
 
     private fun checkTilePainting(e: MouseEvent): Boolean {
         if (!isToolDragging) return false
@@ -247,18 +305,20 @@ class InputListener(
 //                println("New unit pos: ${newPos.x} ${newPos.y} change: ${change.x} ${change.y} change distance: ${change.length()}")
                 val newUnit = oldUnit.copy(
                     position = Position(
-                        newUnitPos.x.coerceIn(0f,editorService.scenario.value!!.map.widthPixels.toFloat()),
-                        newUnitPos.y.coerceIn(0f,editorService.scenario.value!!.map.heightPixels.toFloat())
+                        newUnitPos.x.coerceIn(0f, editorService.scenario.value!!.map.widthPixels.toFloat()),
+                        newUnitPos.y.coerceIn(0f, editorService.scenario.value!!.map.heightPixels.toFloat())
                     )
                 )
                 unitList[reference.key] = newUnit
             }
 //            if (true) return true
 
-            editorService.executeCompound(UpdateGameUnitListCommand(
-                editorService.scenario.value!!.units,
-                unitList
-            ))
+            editorService.executeCompound(
+                UpdateGameUnitListCommand(
+                    editorService.scenario.value!!.units,
+                    unitList
+                )
+            )
         }
 
         val selectedObjective = editorService.selectedObjectives.value
@@ -266,17 +326,19 @@ class InputListener(
             val objectiveList = editorService.scenario.value!!.objectives.toMutableList()
             val oldObjective = selectedObjective.getValue(editorService.scenario.value!!.objectives::get)
             val newObjectivePos = Vector2f(
-                oldObjective.position.x.coerceIn(0f,editorService.scenario.value!!.map.widthPixels.toFloat()),
-                oldObjective.position.y.coerceIn(0f,editorService.scenario.value!!.map.heightPixels.toFloat())
+                oldObjective.position.x.coerceIn(0f, editorService.scenario.value!!.map.widthPixels.toFloat()),
+                oldObjective.position.y.coerceIn(0f, editorService.scenario.value!!.map.heightPixels.toFloat())
             ).add(change)
             val newObjective = oldObjective.copy(
                 position = Position(newObjectivePos.x, newObjectivePos.y)
             )
             objectiveList[selectedObjective.key] = newObjective
-            editorService.executeCompoundCommon(UpdateObjectiveListCommand(
-                editorService.scenario.value!!.objectives,
-                objectiveList
-            ))
+            editorService.executeCompoundCommon(
+                UpdateObjectiveListCommand(
+                    editorService.scenario.value!!.objectives,
+                    objectiveList
+                )
+            )
         }
 
         return true
@@ -302,7 +364,8 @@ class InputListener(
         val shiftOrControl = isShiftPressed || isCtrlPressed
         if (objective != null && !shiftOrControl) {
             editorService.selectedUnits.value = setOf()
-            editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
+            editorService.selectedObjectives.value =
+                Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
             shouldDragSelectedObjects = true
             return
@@ -325,7 +388,7 @@ class InputListener(
         }
 
         val arrowOfUnit = getClickedArrow(e)
-        if (arrowOfUnit != null ) {
+        if (arrowOfUnit != null) {
             rotatableUnit = Reference(editorService.scenario.value!!.units.indexOf(arrowOfUnit))
             return
         }
@@ -366,8 +429,8 @@ class InputListener(
             54f,
             16f
         )
-        val hitboxDimensionsMin = hitboxDimensions.mul(0f,-0.5f, Vector2f())
-        val hitboxDimensionsMax = hitboxDimensions.mul(1f,0.5f, Vector2f())
+        val hitboxDimensionsMin = hitboxDimensions.mul(0f, -0.5f, Vector2f())
+        val hitboxDimensionsMax = hitboxDimensions.mul(1f, 0.5f, Vector2f())
         return editorService.selectedUnits.value.map { reference ->
             reference.getValue(editorService.scenario.value!!.units::get)
         }.firstOrNull { unit ->
@@ -404,7 +467,8 @@ class InputListener(
         val objective = getClickedObjective(e)
         if (objective != null) {
             editorService.selectedUnits.value = setOf()
-            editorService.selectedObjectives.value = Reference(editorService.scenario.value!!.objectives.indexOf(objective))
+            editorService.selectedObjectives.value =
+                Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             return
         }
 

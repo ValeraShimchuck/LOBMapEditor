@@ -58,6 +58,8 @@ fun UnitsPropertiesConfig() {
         rawSelection.mapNotNull { unit -> unit.getValueOrNull(scenario!!.units::getOrNull) }
     }
 
+    if (selection.isEmpty()) return
+
     fun updateSelectedUnits(unitMap: (GameUnit) -> GameUnit) {
         val copyList = scenario!!.units.toMutableList()
         val rawSelectionReferences = rawSelection.map { it.key }

@@ -9,8 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +31,7 @@ import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
+import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import ua.valeriishymchuk.lobmapeditor.ui.screen.TitleBarScreen
 import java.awt.Desktop
 import kotlin.getValue
@@ -39,18 +44,34 @@ fun TitleBarScreen.ProjectTitleScreenProvider() {
     val toastService by rememberInstance<ToastService>()
     val ref by rememberInstance<ProjectRef>()
 
-
+    val nav = LocalNavigator.currentOrThrow
     TitleBar.value = {
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.align(Alignment.Start).padding(8.dp)
         ) {
+
+            Tooltip(
+                { Text("Back to home screen") }
+            ) {
+                IconActionButton(
+                    AllIconsKeys.General.ChevronLeft,
+                    null,
+                    onClick = {
+                        nav.push(HomeScreen)
+                    }
+                )
+            }
+
+            Spacer(Modifier.width(4.dp))
+
+
             Tooltip(
                 { Text("Export map") }
             ) {
                 IconActionButton(
-                    AllIconsKeys    .Actions.MenuSaveall,
+                    AllIconsKeys.General.Export,
                     null,
                     onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
@@ -95,7 +116,45 @@ fun TitleBarScreen.ProjectTitleScreenProvider() {
                     }
                 )
             }
+
             Spacer(Modifier.width(4.dp))
+
+            Tooltip(
+                { Text("Import map") }
+            ) {
+                IconActionButton(
+                    AllIconsKeys.ToolbarDecorator.Import,
+                    null,
+                    onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+
+                            val file = FileKit.openFilePicker(type = FileKitType.File("json")) ?: return@launch
+
+                            val newScenario = scenarioIO.load(file.file) as? GameScenario.Preset ?: return@launch
+
+                            editorService.importScenario(newScenario)
+//                            editorService.scenario.value = newScenario
+//                            editorService.save(true)
+
+                            toastService.toast() {
+                                SuccessInlineBanner(
+                                    "Map imported from: ${file.file.absoluteFile}",
+                                    actions = {
+//                                        OutlinedButton(onClick = {
+//                                            Desktop.getDesktop().open(file.file.parentFile)
+//                                        }) {
+//                                            Text("Open export path folder")
+//                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+
+            Spacer(Modifier.width(4.dp))
+
             Text(editorService.scenario.value?.name ?: "map")
         }
         Text("LOBMapEditor")

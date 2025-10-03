@@ -507,9 +507,9 @@ private fun HeightToolConfig() {
     Slider(
         value = value, // Float
         onValueChange = { newValue ->
-            value = newValue // просто оновлюємо
-        }, valueRange = 0f..10f, // будь-яке значення між 1 та 10
-        steps = 0, // без кроків
+            value = newValue
+        }, valueRange = 0f..7f,
+        steps = 0,
         modifier = Modifier.fillMaxWidth()
     )
 }

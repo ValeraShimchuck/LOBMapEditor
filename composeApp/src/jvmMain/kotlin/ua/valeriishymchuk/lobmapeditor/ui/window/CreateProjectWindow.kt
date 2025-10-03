@@ -36,6 +36,7 @@ fun WindowScope.CreateProjectWindow() {
     var errors: List<String> by remember { mutableStateOf(emptyList()) }
 
     fun create() {
+        println("Before validating $form")
         val validate = CreateProjectData.validator.validate(form)
         if(validate.isValid) {
             errors = emptyList()
@@ -71,7 +72,8 @@ fun WindowScope.CreateProjectWindow() {
         Row {
             val widthState = remember { TextFieldState(form.widthPx.toString()) }
             LaunchedEffect(widthState.text) {
-                val newWidth = nameState.text.toString().toIntOrNull()
+//                println("Changed state of witdth ${}")
+                val newWidth = widthState.text.toString().toIntOrNull()
                 if (newWidth != null && form.widthPx != newWidth) {
                     form = form.copy(widthPx = newWidth)
                 }
@@ -86,7 +88,7 @@ fun WindowScope.CreateProjectWindow() {
 
             val heightState = remember { TextFieldState(form.heightPx.toString()) }
             LaunchedEffect(heightState.text) {
-                val newHeight = nameState.text.toString().toIntOrNull()
+                val newHeight = heightState.text.toString().toIntOrNull()
                 if (newHeight != null && form.heightPx != newHeight) {
                     form = form.copy(heightPx = newHeight)
                 }

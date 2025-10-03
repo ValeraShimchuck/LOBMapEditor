@@ -128,10 +128,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     }
 
-    private var lastTimeMeasurement = System.currentTimeMillis()
 
     override fun display(drawable: GLAutoDrawable) {
-        val start = System.currentTimeMillis()
+        editorService.save()
         val ctx = drawable.gl.gL3
         textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
@@ -214,6 +213,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     }
 
-    override fun dispose(drawable: GLAutoDrawable) {}
+    override fun dispose(drawable: GLAutoDrawable) {
+        editorService.save(true)
+    }
 
 }

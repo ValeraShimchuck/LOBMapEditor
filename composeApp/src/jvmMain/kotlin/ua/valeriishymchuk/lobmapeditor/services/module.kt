@@ -13,4 +13,5 @@ val servicesModule by DI.Module {
 
     bindEagerSingleton { ErrorService(di) }
     bindEagerSingleton { ToastService(di) }
+    bindEagerSingleton { LifecycleService(di) }
 }

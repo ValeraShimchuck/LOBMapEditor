@@ -64,6 +64,8 @@ class ProjectsService(override val di: DI) : DIAware {
         val projectJson = Json.encodeToString(ProjectData(dto.name))
         File(dir, PROJECT_FILE_NAME).writeText(projectJson)
 
+        println("Creating project $dto")
+
         scenarioIO.save(
             GameScenario.Preset(
                 GameScenario.CommonData(

@@ -35,10 +35,13 @@ import org.kodein.di.bindProvider
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
 import org.kodein.di.compose.withDI
+import org.kodein.di.instance
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import ua.valeriishymchuk.lobmapeditor.render.InputListener
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import java.awt.Dimension
 
 
@@ -137,46 +140,56 @@ fun App() {
 @Composable
 fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
     val di = localDI()
+    val editorService by di.instance<EditorService<GameScenario.Preset>>()
+    val updaterObserver by editorService.openglUpdateState.collectAsState()
+    var glListener by remember { mutableStateOf(
+        EditorRenderer(di)
+    ) }
+    val canvas = remember {
+        println("Initializing factory")
+        val profile = GLProfile.get(GLProfile.GL3)
+        val capabilities = GLCapabilities(profile)
+//        capabilities.isPBuffer = true
+        capabilities.apply {
+            doubleBuffered = true
+            depthBits = 24
+        }
 
+
+
+        GLCanvas(capabilities).apply {
+            name = "MainGLCanvas $updaterObserver"  // For debugging
+            setSize(800, 600)
+            preferredSize = Dimension(800, 600)
+            GLProfile.initSingleton()
+            println("Initializing GLProfile singleton")
+
+            addGLEventListener(glListener)
+            val inputListener = InputListener(di)
+            addMouseMotionListener(inputListener)
+            addMouseListener(inputListener)
+            addMouseWheelListener(inputListener)
+            addKeyListener(inputListener)
+
+            isVisible = true
+            canvasRefSet(this)
+
+            val animator = FPSAnimator(this, 60)
+            animator.start()
+
+
+        }
+    }
+    LaunchedEffect(updaterObserver) {
+        println("render jogl canvas $updaterObserver")
+        val oldListener = glListener
+        glListener = EditorRenderer(di)
+        canvas.removeGLEventListener(oldListener)
+        canvas.addGLEventListener(glListener)
+    }
     SwingPanel(
         factory = {
-            println("Initializing factory")
-            val profile = GLProfile.get(GLProfile.GL3)
-            val capabilities = GLCapabilities(profile)
-//        capabilities.isPBuffer = true
-            capabilities.apply {
-                doubleBuffered = true
-                depthBits = 24
-            }
-
-
-
-            GLCanvas(capabilities).apply {
-                name = "MainGLCanvas"  // For debugging
-                setSize(800, 600)
-                preferredSize = Dimension(800, 600)
-                GLProfile.initSingleton()
-                println("Initializing GLProfile singleton")
-
-
-                val glListener = EditorRenderer(di)
-
-
-                addGLEventListener(glListener)
-                val inputListener = InputListener(di)
-                addMouseMotionListener(inputListener)
-                addMouseListener(inputListener)
-                addMouseWheelListener(inputListener)
-                addKeyListener(inputListener)
-
-                isVisible = true
-                canvasRefSet(this)
-
-                val animator = FPSAnimator(this, 60) // problem here
-                animator.start()
-
-
-            }
+            canvas
         },
         modifier = Modifier.fillMaxSize()
 

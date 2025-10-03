@@ -19,7 +19,7 @@ data class GameUnit(
             name?.let {
                 add("name", JsonPrimitive(it))
             }
-            add("player", JsonPrimitive(owner.key))
+            add("player", JsonPrimitive(owner.key + 1))
             add("pos", position.serialize())
             add("rotation", JsonPrimitive(rotationRadians))
             add("type", JsonPrimitive(type.id))
@@ -32,7 +32,7 @@ data class GameUnit(
 
         fun deserialize(json: JsonObject): GameUnit {
             val name = json.getAsJsonPrimitive("name")?.asString
-            val playerKey = json.getAsJsonPrimitive("player").asInt
+            val playerKey = json.getAsJsonPrimitive("player").asInt - 1
             val position = Position.deserialize(json.getAsJsonObject("pos"))
             val rotation = json.getAsJsonPrimitive("rotation").asFloat
             val typeId = json.getAsJsonPrimitive("type").asInt

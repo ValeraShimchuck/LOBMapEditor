@@ -11,6 +11,11 @@ data class Terrain (
     val terrainHeight: ArrayMap2d<Int>
 ) {
 
+    init {
+        if (terrainMap.sizeX != terrainHeight.sizeX) throw IllegalStateException("Terrain map should match height")
+        if (terrainMap.sizeY != terrainHeight.sizeY) throw IllegalStateException("Terrain map should match height")
+    }
+
     val widthPixels: Int get() = widthTiles * GameConstants.TILE_SIZE
     val heightPixels: Int get() = heightTiles * GameConstants.TILE_SIZE
 
@@ -24,26 +29,38 @@ data class Terrain (
             add("width", JsonPrimitive(sizeX * GameConstants.TILE_SIZE))
             add("height", JsonPrimitive(sizeY * GameConstants.TILE_SIZE))
 
+            println("Saving map data: $sizeX $sizeY first array size: ${terrainMap.map.size}")
+
+            // Serialize terrain types - convert from column-major to row-major for JSON
             add("terrains", JsonArray().apply {
-                terrainMap.serialize().forEach { row ->
+                // For each row (y)
+                for (y in 0 until sizeX) {
                     add(JsonArray().apply {
-                        row.forEach { serializedTerrain ->
-                            add(serializedTerrain)
+                        // For each column (x) in this row
+                        for (x in 0 until sizeY) {
+                            // Access terrainMap data in column-major order: [x][y]
+                            val terrain = terrainMap.map[x][y]
+//                            val terrain = terrainMap.map[y][x]
+                            add(terrain.id) // or however you get the serialized ID
                         }
                     })
                 }
             })
 
+            // Serialize height map - convert from column-major to row-major for JSON
             add("heightMap", JsonArray().apply {
-                terrainHeight.map.forEach { row ->
+                // For each row (y)
+                for (y in 0 until sizeX) {
                     add(JsonArray().apply {
-                        row.forEach { height ->
-                            add(height)
+                        // For each column (x) in this row
+                        for (x in 0 until sizeY) {
+                            // Access height data in column-major order: [x][y]
+                            add(terrainHeight.map[x][y])
+//                            add(terrainHeight.map[y][x])
                         }
                     })
                 }
             })
-
         }
     }
 
@@ -52,6 +69,7 @@ data class Terrain (
 
         fun deserialize(json: JsonObject): Terrain {
             // Extract dimensions in pixels
+            // Extract dimensions in pixels
             val widthPixels = json.getAsJsonPrimitive("width").asInt
             val heightPixels = json.getAsJsonPrimitive("height").asInt
 
@@ -59,23 +77,37 @@ data class Terrain (
             val cellsX = widthPixels / GameConstants.TILE_SIZE
             val cellsY = heightPixels / GameConstants.TILE_SIZE
 
-            // Deserialize terrain types
+
+
+            // Deserialize terrain types - column-major order
             val terrainsArray = json.getAsJsonArray("terrains")
-            val terrainMap2D = Array(cellsY) { y ->
-                val row = terrainsArray[y].asJsonArray
-                Array(cellsX) { x ->
-                    val terrainId = row[x].asInt
-                    TerrainType.fromId(terrainId)
+            val terrainMap2D = Array(cellsX) { x ->
+                try {
+                    return@Array Array(cellsY) { y ->
+                        val row = terrainsArray[x].asJsonArray // y-th row
+                        val terrainId = row[y].asInt // x-th element in the row
+                        TerrainType.fromId(terrainId)
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    return@Array Array(cellsY) { y -> TerrainType.DEFAULT }
                 }
+
             }
 
-            // Deserialize height map
+            // Deserialize height map - also column-major order
             val heightArray = json.getAsJsonArray("heightMap")
-            val heightMap2D = Array(cellsY) { y ->
-                val row = heightArray[y].asJsonArray
-                Array(cellsX) { x ->
-                    row[x].asInt
+            val heightMap2D = Array(cellsX) { x ->
+                try {
+                    return@Array Array(cellsY) { y ->
+                        val row = heightArray[x].asJsonArray // y-th row
+                        row[y].asInt // x-th element in the row
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    return@Array Array(cellsY) { y -> 0 }
                 }
+
             }
 
             return Terrain(
@@ -87,8 +119,8 @@ data class Terrain (
         fun ofPixels(pixelSizeX: Int = 1504, pixelSizeY: Int = 1312): Terrain {
             return Terrain(
                 TerrainMap.ofPixels(pixelSizeX, pixelSizeY),
-                ArrayMap2d(Array<Array<Int>>(pixelSizeY / GameConstants.TILE_SIZE) {
-                    Array<Int>(pixelSizeX / GameConstants.TILE_SIZE) {
+                ArrayMap2d(Array<Array<Int>>(pixelSizeX / GameConstants.TILE_SIZE) {
+                    Array<Int>(pixelSizeY / GameConstants.TILE_SIZE) {
                         0
                     }
                 })
@@ -122,8 +154,8 @@ class TerrainMap (
     companion object {
 
         fun ofCells(widthCells: Int, heightCells: Int): TerrainMap {
-            val array = Array<Array<TerrainType>>(heightCells) {
-                Array<TerrainType>(widthCells) {
+            val array = Array<Array<TerrainType>>(widthCells) {
+                Array<TerrainType>(heightCells) {
                     TerrainType.DEFAULT
                 }
             }

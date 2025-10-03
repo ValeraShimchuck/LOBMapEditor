@@ -1,6 +1,11 @@
 package ua.valeriishymchuk.lobmapeditor.services.project
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.annotations.ApiStatus
 import org.joml.Matrix4f
 import org.joml.Vector2f
@@ -9,6 +14,7 @@ import org.joml.Vector3f
 import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
@@ -16,19 +22,27 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
+import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
+import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import kotlin.streams.toList
 
 class EditorService<T : GameScenario<T>>(
     override val di: DI,
 ): DIAware {
 
+    private val scenarioIOService by di.instance<ScenarioIOService>()
+    private val projectRef by di.instance<ProjectRef>()
+    private val lifecycleService by di.instance<LifecycleService>()
+
     private val lock = ReentrantLock()
 
     private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
+
+    var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
     val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
@@ -101,7 +115,68 @@ class EditorService<T : GameScenario<T>>(
             throw IllegalStateException("The composed commands list doesn't have integrity: ${composedCommands}")
     }
 
+    var lastSave: Long = 0
+        private set
+    var lastHashCode: Int = 0
+        private set
+    var lastAction: Long = 0
+        private set
+    private var savingJob: Job? = null
+
+
+    init {
+        lifecycleService.onClose = {
+            savingJob = null
+            println("trying to force save")
+            save(true, blocking = true)
+        }
+    }
+
+    fun importScenario(scenario: T) {
+        lock {
+            undoStack.clear()
+            redoStack.clear()
+            composedCommands.clear()
+            selectedObjectives.value = null
+            selectedUnits.value = setOf()
+            this.scenario.value = scenario
+            openglUpdateState.value++
+            println("Importing project ${openglUpdateState.value}")
+            savingJob = null
+            save(true)
+        }
+    }
+
+    fun save(forceSave: Boolean = false, blocking: Boolean = false) {
+        if (savingJob?.isActive == true) return
+        if (!forceSave) {
+            if (System.currentTimeMillis() - lastSave < 30000 && System.currentTimeMillis() - lastAction < 5000) return
+        }
+        if (scenario.value!!.hashCode() == lastHashCode) return
+
+        suspend fun save0() {
+            lastSave = System.currentTimeMillis()
+            lastHashCode = scenario.value!!.hashCode()
+            scenarioIOService.save(scenario.value!!, projectRef.mapFile)
+            println("Saved map")
+        }
+
+        if (blocking) {
+            runBlocking {
+                save0()
+            }
+        } else {
+            savingJob = CoroutineScope(Dispatchers.IO).launch {
+                save0()
+            }
+        }
+
+
+
+    }
+
     fun executeCompound(command: Command<T>) {
+        lastAction = System.currentTimeMillis()
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
         lock {
             checkComposedCommandsIntegrity { it is Command.Preset }
@@ -111,6 +186,7 @@ class EditorService<T : GameScenario<T>>(
     }
 
     fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
+        lastAction = System.currentTimeMillis()
         val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
         lock {
             checkComposedCommandsIntegrity { it is Command.CommonData  }
@@ -147,6 +223,7 @@ class EditorService<T : GameScenario<T>>(
 
     fun execute(command: Command<T>) {
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
+        lastAction = System.currentTimeMillis()
         wrapper.execute()
         undoStack.addLast(wrapper)
         redoStack.clear()
@@ -154,6 +231,7 @@ class EditorService<T : GameScenario<T>>(
 
     fun executeCommon(command: Command<GameScenario.CommonData>) {
         val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
+        lastAction = System.currentTimeMillis()
         wrapper.execute()
         undoStack.addLast(wrapper)
         redoStack.clear()

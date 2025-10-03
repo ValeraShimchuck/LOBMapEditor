@@ -21,14 +21,22 @@ import androidx.compose.ui.window.rememberWindowState
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberDI
+import org.kodein.di.compose.rememberInstance
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
+import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.composable.WindowController
@@ -84,7 +92,7 @@ object HomeScreen : Screen {
                 )
                 NewProjectButton(createProjectWindow)
                 OpenProjectButton()
-                ImportMapButton()
+//                ImportMapButton()
 
 
             }
@@ -149,7 +157,33 @@ object HomeScreen : Screen {
 
     @Composable
     private fun OpenProjectButton() {
-        OutlinedButton(onClick = { }) {
+        val toastService by rememberInstance<ToastService>()
+        val projectService by rememberInstance<ProjectsService>()
+        val currentNavigator = LocalNavigator.currentOrThrow
+        OutlinedButton(onClick = {
+            CoroutineScope(Dispatchers.IO).launch {
+                val folder = FileKit.openDirectoryPicker("Choose existing project") ?: return@launch
+                val folderFile = folder.file
+                val ref = ProjectRef(folderFile.absolutePath)
+                if (!ref.projectFile.exists() && !ref.mapFile.exists()) {
+                    toastService.toast {
+                        ErrorInlineBanner(
+                            "Can't import project from: ${folder.file.absoluteFile}",
+                        )
+                    }
+                } else {
+                    val project = projectService.loadProject(ref)
+                    currentNavigator.push(ProjectScreen(ref))
+                    toastService.toast {
+                        SuccessInlineBanner(
+                            "Project ${project.name} imported from: ${folder.file.absoluteFile}",
+                        )
+                    }
+                }
+
+
+            }
+        }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(AllIconsKeys.Nodes.Folder, contentDescription = null)
                 Spacer(Modifier.width(4.dp))

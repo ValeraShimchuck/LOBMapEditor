@@ -18,7 +18,7 @@ data class Objective(
                 add("name", JsonPrimitive(it))
             }
             owner?.key?.let {
-                add("player", JsonPrimitive(it))
+                add("player", JsonPrimitive(it + 1))
             }
             add("pos", position.serialize())
             add("type", JsonPrimitive(type.id))
@@ -28,7 +28,7 @@ data class Objective(
     companion object {
         fun deserialize(json: JsonObject): Objective {
             val owner: Reference<Int, Player>? = if (json.has("player")) {
-                Reference(json.getAsJsonPrimitive("player").asInt)
+                Reference(json.getAsJsonPrimitive("player").asInt - 1)
             } else null
             val name = if (json.has("name"))
                 json.getAsJsonPrimitive("name").asString

@@ -20,7 +20,9 @@ import org.jetbrains.jewel.window.styling.TitleBarStyle
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
 import org.kodein.di.compose.withDI
+import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
+import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.servicesModule
 import ua.valeriishymchuk.lobmapeditor.ui.App
@@ -46,7 +48,11 @@ fun main() {
 //    System.setProperty("compose.swing.render.on.graphics", "true")
     loadJogsLibs()
     println("Successfully loaded libs")
-
+    Runtime.getRuntime().addShutdownHook(Thread {
+        val lifecycleService by di.instance<LifecycleService>()
+        println("Closing application")
+        lifecycleService.onClose()
+    })
     application {
         val textStyle = JewelTheme.createDefaultTextStyle()
         val editorStyle = JewelTheme.createEditorTextStyle()
