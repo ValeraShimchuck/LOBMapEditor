@@ -54,9 +54,6 @@ jobs:
         env:
           NATIVE_FORMATS: ${{ matrix.formats }}
 
-      - name: Debug
-        run: ls -l
-
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
