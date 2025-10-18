@@ -18,12 +18,9 @@ import org.jetbrains.jewel.window.DecoratedWindow
 import org.jetbrains.jewel.window.styling.DecoratedWindowStyle
 import org.jetbrains.jewel.window.styling.TitleBarStyle
 import org.kodein.di.DI
-import org.kodein.di.bindEagerSingleton
 import org.kodein.di.compose.withDI
 import org.kodein.di.instance
-import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
-import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.servicesModule
 import ua.valeriishymchuk.lobmapeditor.ui.App
 import ua.valeriishymchuk.lobmapeditor.ui.TitleBarView
@@ -71,19 +68,32 @@ fun main() {
                         ),
             ) {
                 Navigator(HomeScreen) {
-                    DecoratedWindow(
-                        onCloseRequest = { exitApplication() },
-                        title = "LOBMapEditor",
-                        style = DecoratedWindowStyle.dark(),
-                        content = {
-                            TitleBarView()
-                            Box(modifier = Modifier.background(
-                                JewelTheme.globalColors.panelBackground
-                            ).fillMaxSize()) {
-                                App()
-                            }
-                        },
-                    )
+                    IntUiTheme(
+                        theme = JewelTheme.darkThemeDefinition(
+                            defaultTextStyle = textStyle,
+                            editorTextStyle = editorStyle
+                        ),
+                        styling =
+                            ComponentStyling.default()
+                                .decoratedWindow(
+                                    titleBarStyle = TitleBarStyle.dark()
+                                ),
+                    ) {
+                        DecoratedWindow(
+                            onCloseRequest = { exitApplication() },
+                            title = "LOBMapEditor",
+                            style = DecoratedWindowStyle.dark(),
+                            content = {
+                                TitleBarView()
+                                Box(modifier = Modifier.background(
+                                    JewelTheme.globalColors.panelBackground
+                                ).fillMaxSize()) {
+                                    App()
+                                }
+                            },
+                        )
+                    }
+
                 }
             }
         }
