@@ -104,7 +104,7 @@ fun UnitsPropertiesConfig() {
         )
     }
 
-    LaunchedEffect(selection) {
+    LaunchedEffect(rawSelection) {
 
         val textValue = xPositionTextFieldValue.text.toFloatOrNull()
         val xValue = selection.map { it.position.x }.distinct().firstOrNull()
@@ -132,7 +132,7 @@ fun UnitsPropertiesConfig() {
         )
     }
 
-    LaunchedEffect(selection) {
+    LaunchedEffect(rawSelection) {
 
         val textValue = yPositionTextFieldValue.text.toFloatOrNull()
         val yValue = selection.map { it.position.y }.distinct().firstOrNull()
@@ -156,7 +156,7 @@ fun UnitsPropertiesConfig() {
         )
     }
 
-    LaunchedEffect(selection) {
+    LaunchedEffect(rawSelection) {
 
         val textValue = rotationTextFieldValue
         val rotationValue = selection.map { it.rotationRadians }.distinct().firstOrNull()
@@ -168,7 +168,8 @@ fun UnitsPropertiesConfig() {
     }
 
     // Use TextFieldValue directly instead of TextFieldState
-    var textFieldValue by remember(selection) {
+
+    var textFieldValue by remember(rawSelection) {
         mutableStateOf(
             Unit.let {
                 val currentText = when {

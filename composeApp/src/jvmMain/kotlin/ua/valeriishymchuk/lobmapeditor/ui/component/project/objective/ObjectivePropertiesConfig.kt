@@ -78,7 +78,7 @@ fun ObjectivePropertiesConfig() {
     val ownerPopupManager = remember { PopupManager() }
     val typePopupManager = remember { PopupManager() }
 
-    var textFieldValue by remember(selection) {
+    var textFieldValue by remember(rawSelection) {
         mutableStateOf(
             TextFieldValue(
                 text = selection!!.name ?: "",
@@ -99,7 +99,7 @@ fun ObjectivePropertiesConfig() {
         )
     }
 
-    LaunchedEffect(selection) {
+    LaunchedEffect(rawSelection) {
         xPositionTextFieldValue = xPositionTextFieldValue.copy(text = selection!!.position.x.toString())
     }
 
@@ -116,7 +116,7 @@ fun ObjectivePropertiesConfig() {
         )
     }
 
-    LaunchedEffect(selection) {
+    LaunchedEffect(rawSelection) {
         yPositionTextFieldValue = yPositionTextFieldValue.copy(text = selection!!.position.y.toString())
     }
 
