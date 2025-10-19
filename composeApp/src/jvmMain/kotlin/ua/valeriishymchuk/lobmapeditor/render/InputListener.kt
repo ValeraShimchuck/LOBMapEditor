@@ -146,7 +146,18 @@ class InputListener(
             KeyEvent.VK_D -> {
                 handleDuplication()
             }
+
+            KeyEvent.VK_E -> {
+                runTestError()
+            }
         }
+    }
+
+    private fun runTestError() {
+        if (!isCtrlPressed) return
+        println("Throwing error")
+        editorService.throwTestError.value = true
+//        throw IllegalStateException("Test exception")
     }
 
     private fun handleDuplication() {

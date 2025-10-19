@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.application
 import cafe.adriel.voyager.navigator.Navigator
+import kotlinx.coroutines.handleCoroutineException
 import kotlinx.coroutines.runBlocking
 import lobmapeditor.composeapp.generated.resources.Res
 import org.jetbrains.jewel.foundation.theme.JewelTheme
@@ -28,6 +31,9 @@ import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
+import java.io.PrintStream
+import java.io.PrintWriter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -35,8 +41,82 @@ val di = DI {
     import(servicesModule)
 }
 
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ApplicationScope.applicationContent() {
+
+    val textStyle = JewelTheme.createDefaultTextStyle()
+    val editorStyle = JewelTheme.createEditorTextStyle()
+
+
+    withDI(di) {
+        IntUiTheme(
+            theme = JewelTheme.darkThemeDefinition(
+                defaultTextStyle = textStyle,
+                editorTextStyle = editorStyle
+            ),
+            styling =
+                ComponentStyling.default()
+                    .decoratedWindow(
+                        titleBarStyle = TitleBarStyle.dark()
+                    ),
+        ) {
+            Navigator(HomeScreen) {
+                IntUiTheme(
+                    theme = JewelTheme.darkThemeDefinition(
+                        defaultTextStyle = textStyle,
+                        editorTextStyle = editorStyle
+                    ),
+                    styling =
+                        ComponentStyling.default()
+                            .decoratedWindow(
+                                titleBarStyle = TitleBarStyle.dark()
+                            ),
+                ) {
+                    DecoratedWindow(
+                        onCloseRequest = { exitApplication() },
+                        title = "LOBMapEditor",
+                        style = DecoratedWindowStyle.dark(),
+                        content = {
+                            TitleBarView()
+                            Box(modifier = Modifier.background(
+                                JewelTheme.globalColors.panelBackground
+                            ).fillMaxSize()) {
+                                App()
+                            }
+                        },
+                    )
+                }
+
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 fun main() {
+    Thread.setDefaultUncaughtExceptionHandler(ErrorHandler)
+    val errorLogsFile = File("error2.log")
+    val buffer = errorLogsFile.printWriter()
+    val err = System.err
+    System.setErr(PrintStream(object : OutputStream() {
+        override fun write(b: Int) {
+            err.print(b.toChar())
+            buffer.print(b.toChar())
+
+            if (b.toChar() == '\n') {
+                buffer.flush()
+            }
+
+        }
+
+
+        override fun flush() {
+            err.flush()
+            buffer.flush()
+        }
+
+    }))
 //    System.setProperty("jogl.debug", "true")
 //    System.setProperty("nativewindow.debug", "all")
 //    System.setProperty("jogl.verbose", "true")
@@ -48,55 +128,11 @@ fun main() {
     Runtime.getRuntime().addShutdownHook(Thread {
         val lifecycleService by di.instance<LifecycleService>()
         println("Closing application")
+        buffer.close()
         lifecycleService.onClose()
     })
     application {
-        val textStyle = JewelTheme.createDefaultTextStyle()
-        val editorStyle = JewelTheme.createEditorTextStyle()
-
-
-        withDI(di) {
-            IntUiTheme(
-                theme = JewelTheme.darkThemeDefinition(
-                    defaultTextStyle = textStyle,
-                    editorTextStyle = editorStyle
-                ),
-                styling =
-                    ComponentStyling.default()
-                        .decoratedWindow(
-                            titleBarStyle = TitleBarStyle.dark()
-                        ),
-            ) {
-                Navigator(HomeScreen) {
-                    IntUiTheme(
-                        theme = JewelTheme.darkThemeDefinition(
-                            defaultTextStyle = textStyle,
-                            editorTextStyle = editorStyle
-                        ),
-                        styling =
-                            ComponentStyling.default()
-                                .decoratedWindow(
-                                    titleBarStyle = TitleBarStyle.dark()
-                                ),
-                    ) {
-                        DecoratedWindow(
-                            onCloseRequest = { exitApplication() },
-                            title = "LOBMapEditor",
-                            style = DecoratedWindowStyle.dark(),
-                            content = {
-                                TitleBarView()
-                                Box(modifier = Modifier.background(
-                                    JewelTheme.globalColors.panelBackground
-                                ).fillMaxSize()) {
-                                    App()
-                                }
-                            },
-                        )
-                    }
-
-                }
-            }
-        }
+        applicationContent()
     }
 }
 

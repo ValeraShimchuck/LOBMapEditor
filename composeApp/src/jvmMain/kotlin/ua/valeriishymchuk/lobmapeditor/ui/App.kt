@@ -145,6 +145,13 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
     var glListener by remember { mutableStateOf(
         EditorRenderer(di)
     ) }
+
+    val shouldRunError by editorService.throwTestError.collectAsState()
+
+    if (shouldRunError) {
+        throw Exception("Test error")
+    }
+
     val canvas = remember {
         println("Initializing factory")
         val profile = GLProfile.get(GLProfile.GL3)

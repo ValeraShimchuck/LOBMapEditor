@@ -46,6 +46,7 @@ kotlin {
                 }
                 implementation(libs.kotlinx.coroutinesSwing)
 
+//                implementation("ch.qos.logback:logback-classic:1.4.14")
                 // See https://github.com/JetBrains/Jewel/releases for the release notes
                 implementation("org.jetbrains.jewel:jewel-int-ui-standalone:0.29.0-252.24604")
 

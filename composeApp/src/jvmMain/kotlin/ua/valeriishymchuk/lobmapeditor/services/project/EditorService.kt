@@ -34,6 +34,7 @@ class EditorService<T : GameScenario<T>>(
     override val di: DI,
 ): DIAware {
 
+    val throwTestError: MutableStateFlow<Boolean>  = MutableStateFlow(false)
     private val scenarioIOService by di.instance<ScenarioIOService>()
     private val projectRef by di.instance<ProjectRef>()
     private val lifecycleService by di.instance<LifecycleService>()
