@@ -17,7 +17,7 @@ jobs:
       contents: write  # This scope is required for creating releases
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm]
         include:
           - os: ubuntu-latest
             formats: "Deb,Rpm,AppImage"
@@ -25,6 +25,8 @@ jobs:
             formats: "Msi,Exe"
           - os: macos-latest
             formats: "Dmg"
+          - os: ubuntu-24.04-arm
+            formats: "Deb,Rpm,AppImage"
 
     steps:
       - name: Checkout code
