@@ -25,7 +25,7 @@ jobs:
             formats: "Msi,Exe"
           - os: macos-latest
             formats: "Dmg"
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             formats: "Deb,Rpm,AppImage"
 
     steps:
