@@ -28,6 +28,9 @@ In the map editor the grid(even thin one) will render correctly whereas official
 Make your forks or contribute to the project directly heling the community and the project.
 
 ## Keybindings
+- Ctrl + g - toggle grid
+- Ctrl + r - toggle show reference 
+- Ctrl + q - terrain pick 
 - Ctrl + z and ctrl + shift + z - undo/redo.
 - Delete - delets selected units or objective.
 - Ctrl + d - duplicates selected units or objective.
