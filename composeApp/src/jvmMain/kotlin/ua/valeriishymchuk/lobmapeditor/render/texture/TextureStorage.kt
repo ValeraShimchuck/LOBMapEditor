@@ -52,6 +52,8 @@ class TextureStorage {
         private set
     var heightBlobTexture: Int = -1
         private set
+    var heightMaskBlobTexture: Int = -1
+        private set
     var objectiveMaskTexture: Int = -1
         private set
     var objectiveOverlayTexture: Int = -1
@@ -178,6 +180,17 @@ class TextureStorage {
             )
         )
         heightBlobTexture = textures["tilesets/blending/height"]!!
+
+        loadAtlas(
+            ctx, "tilesets/blending/height_mask",
+            Vector2i(16),
+            Vector2i(8, 6),
+            ImageFilter(
+                useClamp = true,
+                useLinear = false
+            )
+        )
+        heightMaskBlobTexture = textures["tilesets/blending/height_mask"]!!
 
         loadInternalTexture(ctx, "other/arrow-body")
         arrowBody = textures["other/arrow-body"]!!

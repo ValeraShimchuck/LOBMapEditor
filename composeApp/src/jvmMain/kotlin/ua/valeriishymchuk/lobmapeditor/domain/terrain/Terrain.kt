@@ -66,6 +66,7 @@ data class Terrain (
 
     companion object {
 
+        const val MAX_TERRAIN_HEIGHT = 7;
 
         fun deserialize(json: JsonObject): Terrain {
             // Extract dimensions in pixels

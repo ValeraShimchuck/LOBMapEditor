@@ -28,6 +28,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMEN
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.awt.Desktop
@@ -150,6 +151,27 @@ class InputListener(
             KeyEvent.VK_E -> {
 //                runTestError()
             }
+
+            KeyEvent.VK_R -> {
+                if (isCtrlPressed) {
+                    toolService.refenceOverlayTool.enabled.value = !toolService.refenceOverlayTool.enabled.value
+                }
+            }
+
+
+            KeyEvent.VK_G -> {
+                if (isCtrlPressed) {
+                    toolService.gridTool.enabled.value = !toolService.gridTool.enabled.value
+                }
+            }
+
+
+            KeyEvent.VK_Q -> {
+                if (isCtrlPressed) {
+                    toolService.currentTool.value = TerrainPickTool
+                }
+            }
+
         }
     }
 

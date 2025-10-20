@@ -178,7 +178,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
                     translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
                 }
-            )
+            ),
+            toolService.debugTool.debugInfo.value
         )
 
 

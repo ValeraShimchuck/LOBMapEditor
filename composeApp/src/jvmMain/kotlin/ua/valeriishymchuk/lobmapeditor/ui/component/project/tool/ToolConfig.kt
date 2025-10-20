@@ -49,12 +49,14 @@ import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.DebugTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
@@ -105,6 +107,10 @@ fun ToolConfig(modifier: Modifier = Modifier) {
             { PlayerToolConfig() }
         }
 
+        is DebugTool -> {
+            { DebugToolConfig() }
+        }
+
         else -> null
     }
 
@@ -113,6 +119,161 @@ fun ToolConfig(modifier: Modifier = Modifier) {
     }
 }
 
+
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun DebugToolConfig() {
+    val toolService by rememberInstance<ToolService>()
+    val debugInfo by toolService.debugTool.debugInfo.collectAsState()
+    val controller = rememberColorPickerController()
+    val controller2 = rememberColorPickerController()
+
+
+
+    Column {
+        Spacer(Modifier.height(4.dp))
+        let {
+            Text("First height color:")
+            Text("Value: " +
+                    "${debugInfo.firstHeightColor.x} " +
+                    "${debugInfo.firstHeightColor.y} " +
+                    "${debugInfo.firstHeightColor.z} " +
+                    "${debugInfo.firstHeightColor.w} "
+            )
+            HsvColorPicker(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 240.dp)
+                    .padding(10.dp),
+                controller = controller,
+
+                initialColor = debugInfo.firstHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                },
+
+                onColorChanged = { colorEnvelope: ColorEnvelope ->
+                    toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                        firstHeightColor = Vector4f(
+                            colorEnvelope.color.red,
+                            colorEnvelope.color.green,
+                            colorEnvelope.color.blue,
+                            colorEnvelope.color.alpha
+                        )
+                    )
+                }
+            )
+
+            BrightnessSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp),
+                controller = controller,
+                initialColor = debugInfo.firstHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                }
+            )
+            Spacer(Modifier.height(10.dp))
+
+            AlphaSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp),
+                controller = controller,
+                initialColor = debugInfo.firstHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                }
+            )
+        }
+
+        let {
+            Text("Second height color:")
+            Text("Value: " +
+                    "${debugInfo.secondHeightColor.x} " +
+                    "${debugInfo.secondHeightColor.y} " +
+                    "${debugInfo.secondHeightColor.z} " +
+                    "${debugInfo.secondHeightColor.w} "
+            )
+            HsvColorPicker(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 240.dp)
+                    .padding(10.dp),
+                controller = controller2,
+
+                initialColor = debugInfo.secondHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                },
+
+                onColorChanged = { colorEnvelope: ColorEnvelope ->
+                    toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                        secondHeightColor = Vector4f(
+                            colorEnvelope.color.red,
+                            colorEnvelope.color.green,
+                            colorEnvelope.color.blue,
+                            colorEnvelope.color.alpha
+                        )
+                    )
+                }
+            )
+
+            BrightnessSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp),
+                controller = controller2,
+                initialColor = debugInfo.secondHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                }
+            )
+            Spacer(Modifier.height(10.dp))
+
+            AlphaSlider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp),
+                controller = controller2,
+                initialColor = debugInfo.secondHeightColor.let {
+                    Color(
+                        it.x,
+                        it.y,
+                        it.z,
+                        it.w
+                    )
+                }
+            )
+        }
+
+    }
+
+
+
+
+}
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -508,7 +669,7 @@ private fun HeightToolConfig() {
         value = value, // Float
         onValueChange = { newValue ->
             value = newValue
-        }, valueRange = 0f..7f,
+        }, valueRange = 0f..Terrain.MAX_TERRAIN_HEIGHT.toFloat(),
         steps = 0,
         modifier = Modifier.fillMaxWidth()
     )

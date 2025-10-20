@@ -6,12 +6,22 @@ out vec4 FragColor;
 
 uniform usampler2D uTileMap;
 uniform sampler2DArray uBlobTexture;
+uniform sampler2DArray uBlobMask;
+uniform vec4 uMaskColor;
+uniform bool uShouldDrawMask;
+
 
 uniform vec2 uTileUnit;// (1,1) / map_size_in_tiles
 uniform vec4 uColorTint;
 
 bool withinBounds(vec2 toCheck, vec2 minBounds, vec2 maxBounds) {
     return toCheck.x >= minBounds.x && toCheck.x < maxBounds.x && toCheck.y >= minBounds.y && toCheck.y < maxBounds.y;
+}
+
+vec4 blendPixels(vec4 src, vec4 dst) {
+//    vec4 preProcessed = (src * src.a) + (dst * (1.0 - src.a));
+//    return vec4(preProcessed.rgb, max(src.a, dst.a));
+    return max(src, dst);
 }
 
 bool withinUnit(vec2 cords) {
@@ -200,7 +210,15 @@ vec4 getPixel(vec2 texCord) {
         ivec2 currentBlobMask = blobMasks[i];
         if (checkMask(mask, currentBlobMask.x)) blobIndex = currentBlobMask.y;
     }
-    return texture(uBlobTexture, vec3(tileCoordinates, blobIndex)) * uColorTint;
+
+    vec4 currentColor = texture(uBlobTexture, vec3(tileCoordinates, blobIndex)) * uColorTint;
+    if (!uShouldDrawMask)
+        return currentColor;
+    else {
+        vec4 maskColor = texture(uBlobMask, vec3(tileCoordinates, blobIndex)) * uMaskColor;
+//        return blendPixels(currentColor, maskColor);
+        return blendPixels(maskColor, currentColor);
+    }
 
 }
 

@@ -22,6 +22,7 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants

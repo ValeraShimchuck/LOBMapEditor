@@ -25,6 +25,9 @@ class BlobProcessorProgram(
     val mvpLocation = ctx.glGetUniformLocation(program, "uMVP")
     val tileMapLocation = ctx.glGetUniformLocation(program, "uTileMap")
     val blobTextureLocation = ctx.glGetUniformLocation(program, "uBlobTexture")
+    val shouldDrawMaskLocation = ctx.glGetUniformLocation(program, "uShouldDrawMask")
+    val maskColorLocation = ctx.glGetUniformLocation(program, "uMaskColor")
+    val blobMaskTextureLocation = ctx.glGetUniformLocation(program, "uBlobMask")
     val tileUnitLocation = ctx.glGetUniformLocation(program, "uTileUnit")
     val mapSizeLocation = ctx.glGetUniformLocation(program, "uMapSize")
     val colorTintLocation = ctx.glGetUniformLocation(program, "uColorTint")
@@ -145,6 +148,16 @@ class BlobProcessorProgram(
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 1)
         ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.blobTexture)
         ctx.glUniform1i(blobTextureLocation, 1)
+
+        val mask = data.mask
+        ctx.glUniform1i(shouldDrawMaskLocation, if(mask != null ) 1 else 0)
+        if (mask != null) {
+            ctx.glActiveTexture(GL.GL_TEXTURE0 + 2)
+            ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, mask.blobMask)
+            ctx.glUniform1i(blobMaskTextureLocation, 2)
+            ctx.glUniform4fv(maskColorLocation, 1, floatArrayOf(mask.maskColor.x, mask.maskColor.y, mask.maskColor.z, mask.maskColor.w), 0)
+        }
+
 //        if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
 //            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
 
@@ -176,6 +189,8 @@ class BlobProcessorProgram(
         val tileUnit: Vector2f,
         val mapSize: Vector2f, // in world units
         val colorTint: Vector4f,
+        val mask: Mask?
+
     ) {
         constructor(
             mvp: Matrix4f,
@@ -183,14 +198,21 @@ class BlobProcessorProgram(
             mapTileSize: Vector2i,
             mapSize: Vector2i, // in world units
             colorTint: Vector4f,
+            mask: Mask? = null
         ): this(
             mvp,
             blobTexture,
             Vector2f(1f / mapTileSize.x, 1f / mapTileSize.y),
             Vector2f(mapSize.x.toFloat(), mapSize.y.toFloat()),
             colorTint,
-
+            mask
         )
+
+        data class Mask(
+            val blobMask: Int,
+            val maskColor: Vector4f
+        )
+
     }
 
 }

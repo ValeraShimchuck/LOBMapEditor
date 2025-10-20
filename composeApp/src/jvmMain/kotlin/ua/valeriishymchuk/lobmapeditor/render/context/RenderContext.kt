@@ -21,7 +21,8 @@ data class RenderContext(
     val selectedObjectives: List<Objective>,
     val selection: SelectionContext,
     val gridContext: GridContext,
-    val overlayReferenceContext: OverlayReferenceContext
+    val overlayReferenceContext: OverlayReferenceContext,
+    val debugInfo: DebugInfo
 ) {
     fun getMvp(model: Matrix4f): Matrix4f {
         return Matrix4f(projectionMatrix)
@@ -47,6 +48,10 @@ data class RenderContext(
         val positionMatrix: Matrix4f
     )
 
+    data class DebugInfo(
+        val firstHeightColor: Vector4f,
+        val secondHeightColor: Vector4f
+    )
 
 
 }

@@ -38,7 +38,7 @@ fun WindowScope.CreateProjectWindow() {
 
     var errors: List<String> by remember { mutableStateOf(emptyList()) }
 
-    fun create() {
+    fun create(): Boolean {
         println("Before validating $form")
         val validate = CreateProjectData.validator.validate(form)
         if(validate.isValid) {
@@ -48,10 +48,12 @@ fun WindowScope.CreateProjectWindow() {
                 delay(300)
                 close()
             }
+            return true
 
         } else {
             errors = validate.errors.map { it.dataPath.substringAfterLast('.') + ": " + it.message }
         }
+        return false
     }
 
     Column(
@@ -139,8 +141,7 @@ fun WindowScope.CreateProjectWindow() {
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             DefaultButton(onClick = {
-                isCreating = true
-                create()
+                if (create()) isCreating = true
             }, enabled = !isCreating) { Text("Create") }
         }
 

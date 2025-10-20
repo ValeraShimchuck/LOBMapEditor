@@ -6,6 +6,7 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.DebugTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
@@ -24,8 +25,10 @@ class ToolService(override val di: DI) : DIAware {
     val gridTool = GridTool()
     val refenceOverlayTool = ReferenceOverlayTool()
     val playerTool = PlayerTool()
+    val debugTool = DebugTool()
 
     val tools = listOf(
+        debugTool,
         playerTool,
         HeightTool,
         TerrainTool,

@@ -4,7 +4,9 @@ import com.jogamp.opengl.GL.GL_TRIANGLES
 import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2i
+import org.joml.Vector3f
 import org.joml.Vector4f
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
@@ -50,8 +52,8 @@ class BlobTileStage(
 
         val heightMap = scenario.map.terrainHeight
         val maxTerrain: Int = heightMap.map.flatMap { it }.distinct().max()
-        val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min() + 1
-
+//        val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min() + 1
+        val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min()
         for (heightTile in minTerrain..maxTerrain) {
             blobProcessorProgram.setUpVBO(glCtx, tileMapVertices)
             blobProcessorProgram.setUpVAO(glCtx)
@@ -63,9 +65,24 @@ class BlobTileStage(
                     Vector2i(scenario.map.widthTiles, scenario.map.heightTiles),
                     Vector2i(scenario.map.widthPixels, scenario.map.heightPixels),
                     Vector4f(1f),
+                    BlobProcessorProgram.Uniform.Mask(
+                        textureStorage.heightMaskBlobTexture,
+                        getTintByHeight(heightTile)
+                    )
                 )
             )
             glCtx.glDrawArrays(GL_TRIANGLES, 0, 6)
         }
     }
+
+    private fun RenderContext.getTintByHeight(height: Int): Vector4f {
+        val maxHeight = Terrain.MAX_TERRAIN_HEIGHT
+//        val basicTint = Vector4f(Vector3f(0.1f, 0.2f, 0.1f),0.2f)
+//        val maxTint = Vector4f(Vector3f(0.55f, 0.4f, 0.3f), 0.2f)
+        val basicTint = debugInfo.firstHeightColor
+        val maxTint = debugInfo.secondHeightColor
+        val step = 1f / maxHeight
+        return basicTint.lerp(maxTint, step * height, Vector4f())
+    }
+
 }
