@@ -33,6 +33,9 @@ fun WindowScope.CreateProjectWindow() {
     var form by remember { mutableStateOf(CreateProjectData()) }
     val uiScope = rememberCoroutineScope()
 
+
+    var isCreating by remember { mutableStateOf(false) }
+
     var errors: List<String> by remember { mutableStateOf(emptyList()) }
 
     fun create() {
@@ -119,7 +122,8 @@ fun WindowScope.CreateProjectWindow() {
                             form = form.copy(dir = pickResult.file)
                             folderDirState = TextFieldState(form.dir?.absolutePath!!)
                         }
-                    }
+                    },
+                    enabled = !isCreating
                 )
             },
             modifier = Modifier.fillMaxWidth(),
@@ -134,7 +138,10 @@ fun WindowScope.CreateProjectWindow() {
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            DefaultButton(onClick = { create() }) { Text("Create") }
+            DefaultButton(onClick = {
+                isCreating = true
+                create()
+            }, enabled = !isCreating) { Text("Create") }
         }
 
 

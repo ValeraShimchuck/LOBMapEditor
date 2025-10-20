@@ -21,12 +21,12 @@ data class CreateProjectData(
 
             CreateProjectData::widthPx {
                 minimum(992)
-                maximum(3200)
+                maximum(3200 * 10)
             }
 
             CreateProjectData::heightPx {
                 minimum(896)
-                maximum(2512)
+                maximum(2512 * 10)
             }
         }
 
