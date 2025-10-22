@@ -111,9 +111,35 @@ fun main() {
         }
 
 
+
+
         override fun flush() {
             err.flush()
             buffer.flush()
+        }
+
+    }))
+
+    val logsFile = File("editor.log")
+    val buffer2 = logsFile.printWriter()
+    val out = System.out
+    System.setOut(PrintStream(object : OutputStream() {
+        override fun write(b: Int) {
+            out.print(b.toChar())
+            buffer2.print(b.toChar())
+
+            if (b.toChar() == '\n') {
+                buffer2.flush()
+            }
+
+        }
+
+
+
+
+        override fun flush() {
+            out.flush()
+            buffer2.flush()
         }
 
     }))
@@ -129,6 +155,7 @@ fun main() {
         val lifecycleService by di.instance<LifecycleService>()
         println("Closing application")
         buffer.close()
+        buffer2.close()
         lifecycleService.onClose()
     })
     application {
