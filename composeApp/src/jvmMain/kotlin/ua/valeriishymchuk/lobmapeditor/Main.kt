@@ -149,7 +149,7 @@ fun main() {
 //    System.setProperty("jogl.debug.GLDrawable.PerfStats", "true")
 //    System.setProperty("compose.interop.blending", "true")
 //    System.setProperty("compose.swing.render.on.graphics", "true")
-    loadJogsLibs()
+    loadJoglLibs()
     println("Successfully loaded libs")
     Runtime.getRuntime().addShutdownHook(Thread {
         val lifecycleService by di.instance<LifecycleService>()
@@ -188,7 +188,7 @@ suspend fun unzip(src: String, dst: File) {
     }
 }
 
-fun loadJogsLibs() {
+fun loadJoglLibs() {
     runBlocking {
         val os = System.getProperty("os.name").lowercase()
             .let { if(it.startsWith("win")) "windows" else it  }
@@ -202,9 +202,9 @@ fun loadJogsLibs() {
         if (!folder.exists() || folder.listFiles().isEmpty()) {
             unzip("files/natives/${key}/libs.zip", folder)
         }
-//        folder.listFiles().filter { it.isFile }.forEach {
-//            println("Loading ${it.name}")
-//            System.load(it.absolutePath)
-//        }
+        folder.listFiles().filter { it.isFile }.forEach {
+            println("Loading ${it.name}")
+            System.load(it.absolutePath)
+        }
     }
 }
