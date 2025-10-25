@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -28,17 +29,22 @@ import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.ComboBox
+import org.jetbrains.jewel.ui.component.DefaultButton
 import org.jetbrains.jewel.ui.component.PopupManager
 import org.jetbrains.jewel.ui.component.Slider
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
+import org.jetbrains.jewel.ui.component.styling.ButtonColors
+import org.jetbrains.jewel.ui.component.styling.ButtonStyle
+import org.jetbrains.jewel.ui.theme.defaultButtonStyle
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.getValue
@@ -380,6 +386,41 @@ fun UnitsPropertiesConfig() {
                     valueRange = 0f..(2 * Math.PI).toFloat(),
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+
+            DefaultButton(
+                style = JewelTheme.defaultButtonStyle.let { style ->
+                    val color = Color(196, 27, 27, 255)
+                    val color2 = Color(182, 25, 25, 255)
+                    val color3 = Color(165, 21, 21, 255)
+                    ButtonStyle(
+                        colors = ButtonColors(
+                            Brush.linearGradient(listOf(color, color)),
+                            style.colors.backgroundDisabled,
+                            Brush.linearGradient(listOf(color, color)),
+                            Brush.linearGradient(listOf(color3, color3)),
+                            Brush.linearGradient(listOf(color2, color2)),
+                            style.colors.content,
+                            style.colors.contentDisabled,
+                            style.colors.contentFocused,
+                            style.colors.contentPressed,
+                            style.colors.contentHovered,
+                            style.colors.border,
+                            style.colors.borderDisabled,
+                            style.colors.borderFocused,
+                            style.colors.borderPressed,
+                            style.colors.borderHovered
+                        ),
+                        metrics = style.metrics,
+                        focusOutlineAlignment = style.focusOutlineAlignment
+                    )
+                },
+                onClick = {
+                    editorService.deleteUnits(rawSelection)
+                },
+            ) {
+                Text(if (selection.size > 1) "Delete units" else "Delete unit")
             }
 
         }
