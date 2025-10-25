@@ -879,11 +879,15 @@ private fun PlaceObjectiveToolConfig() {
         )
     }
 
-    LaunchedEffect(objectiveNameTextFieldState) {
-        PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
-            name = objectiveNameTextFieldState.takeIf { it.text.isNotBlank() }?.text?.toString()
-        )
+    LaunchedEffect(Unit) {
+        snapshotFlow { objectiveNameTextFieldState.text.toString() }
+            .collect { text ->
+                PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                    name = text.takeIf { it.isNotBlank() }
+                )
+            }
     }
+
 }
 
 @Composable
