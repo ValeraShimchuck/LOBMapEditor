@@ -9,6 +9,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import kotlin.time.TimeSource
 
 sealed interface GameScenario<T : GameScenario<T>> {
 

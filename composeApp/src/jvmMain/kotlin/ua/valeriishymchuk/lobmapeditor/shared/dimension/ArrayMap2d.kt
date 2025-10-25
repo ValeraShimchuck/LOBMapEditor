@@ -11,16 +11,23 @@ open class ArrayMap2d<T>(
         return _map.map { it.toList() }
     }
 
+    private var cachedSwappedMap: List<List<T>>? = null
+
 
     val map: List<List<T>> get() {
-        val original = _map.map { it.toList() }
-        return if (original.isEmpty()) emptyList() else {
-            List(original[0].size) { col ->
-                List(original.size) { row ->
-                    original[row][col]
+        var map = cachedSwappedMap
+        if (map == null) {
+            val original = _map.map { it.toList() }
+            map = if (original.isEmpty()) emptyList() else {
+                List(original[0].size) { col ->
+                    List(original.size) { row ->
+                        original[row][col]
+                    }
                 }
             }
+            cachedSwappedMap = map
         }
+        return map
     }
 
     val sizeX = _map.size
@@ -49,6 +56,7 @@ open class ArrayMap2d<T>(
         val prevValue = row[y]
         if (prevValue == value) return null
         row[y] = value
+        cachedSwappedMap = null
         return prevValue
     }
 
