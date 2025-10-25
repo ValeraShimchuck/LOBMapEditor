@@ -106,6 +106,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             ColorClosestPointStage(ctx, tileMapVertices),
             ReferenceOverlayStage(ctx, tileMapVertices),
             GridStage(ctx, tileMapVertices),
+            RangeStage(ctx),
             SpriteStage(ctx),
             SelectionStage(ctx)
 

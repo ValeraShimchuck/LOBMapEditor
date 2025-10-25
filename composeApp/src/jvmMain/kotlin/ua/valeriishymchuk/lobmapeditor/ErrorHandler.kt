@@ -14,6 +14,6 @@ object ErrorHandler : Thread.UncaughtExceptionHandler {
             e.printStackTrace(writer)
         }
 
-        originalHandler?.uncaughtException(t, e)
+        originalHandler?.uncaughtException(t, e) ?: e.printStackTrace()
     }
 }
