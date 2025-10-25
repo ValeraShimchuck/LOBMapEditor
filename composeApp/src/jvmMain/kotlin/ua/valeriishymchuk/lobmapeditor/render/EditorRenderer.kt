@@ -24,6 +24,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import java.awt.event.*
 import java.lang.Math
 import java.lang.System
+import kotlin.time.TimeSource
 
 
 class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
@@ -184,13 +185,23 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         )
 
 
-
+        val timeSource = TimeSource.Monotonic
+        val start = timeSource.markNow()
+        val marks = mutableListOf<Pair<String, TimeSource.Monotonic.ValueTimeMark>>()
         renderStages.forEach { stage ->
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
             if (stage is GridStage && !toolService.gridTool.enabled.value) return@forEach
             if (stage is ReferenceOverlayStage && !toolService.refenceOverlayTool.enabled.value) return@forEach
             stage.draw(renderCtx)
+            marks.add(stage::class.simpleName!! to timeSource.markNow())
         }
+        val end = timeSource.markNow()
+//        println("Rendered frame, it took: ${end - start} to render it. Summary for every stage:")
+//        var lastMark = start
+//        marks.forEach { (stage, mark) ->
+//            println("$stage: ${mark - lastMark}")
+//            lastMark = mark
+//        }
 
         ctx.glBindVertexArray(0)
 

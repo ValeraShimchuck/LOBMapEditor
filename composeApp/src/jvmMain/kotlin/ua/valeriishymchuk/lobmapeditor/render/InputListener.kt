@@ -610,7 +610,7 @@ class InputListener(
         val scaleX = newView.m00()
         val scaleY = newView.m11()
 
-        if (scaleX !in 0.08..14.0) return
+        if (scaleX !in 0.03..14.0) return
 
         // Apply translation adjustment (inverse because view matrix is inverse of camera)
         val translation = newView.getColumn(3, Vector4f())

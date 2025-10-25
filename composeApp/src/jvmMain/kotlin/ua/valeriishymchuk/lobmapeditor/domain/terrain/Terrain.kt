@@ -2,14 +2,18 @@ package ua.valeriishymchuk.lobmapeditor.domain.terrain
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import com.jogamp.common.nio.Buffers
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.HeightMap.BlobHeightCachedRenderData
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainMap.BlobCachedRenderData
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.dimension.ArrayMap2d
+import java.nio.IntBuffer
+import java.util.concurrent.ConcurrentHashMap
 
-data class Terrain (
+data class Terrain(
     val terrainMap: TerrainMap,
-    val terrainHeight: ArrayMap2d<Int>
+    val terrainHeight: HeightMap
 ) {
 
     init {
@@ -80,7 +84,6 @@ data class Terrain (
             val cellsY = heightPixels / GameConstants.TILE_SIZE
 
 
-
             // Deserialize terrain types - column-major order
             val terrainsArray = json.getAsJsonArray("terrains")
             val terrainMap2D = Array(cellsX) { x ->
@@ -114,14 +117,14 @@ data class Terrain (
 
             return Terrain(
                 terrainMap = TerrainMap(terrainMap2D),
-                terrainHeight = ArrayMap2d(heightMap2D)
+                terrainHeight = HeightMap(heightMap2D)
             )
         }
 
         fun ofPixels(pixelSizeX: Int = 1504, pixelSizeY: Int = 1312): Terrain {
             return Terrain(
                 TerrainMap.ofPixels(pixelSizeX, pixelSizeY),
-                ArrayMap2d(Array<Array<Int>>(pixelSizeX / GameConstants.TILE_SIZE) {
+                HeightMap(Array<Array<Int>>(pixelSizeX / GameConstants.TILE_SIZE) {
                     Array<Int>(pixelSizeY / GameConstants.TILE_SIZE) {
                         0
                     }
@@ -136,9 +139,175 @@ data class Terrain (
 
 }
 
-class TerrainMap (
+class HeightMap(
+    map: Array<Array<Int>>
+) : ArrayMap2d<Int>(map) {
+
+    data class BlobHeightCachedRenderData(
+        val buffer: IntBuffer
+    )
+
+    private var cachedMaxHeight: Int? = null
+    private var cachedMinHeight: Int? = null
+
+    val maxHeight: Int get() {
+        var height = cachedMaxHeight
+        if (height == null) {
+            height = map.flatMap { it }.distinct().max()
+            cachedMaxHeight = height
+        }
+        return height
+    }
+
+    val minHeight: Int get() {
+        var height = cachedMinHeight
+        if (height == null) {
+            height = map.flatMap { it }.distinct().min()
+            cachedMinHeight = height
+        }
+        return height
+    }
+
+    private val cachedBlobRenderHeights = ConcurrentHashMap<Int, BlobHeightCachedRenderData>()
+
+    fun getHeightBlobMap(height: Int): BlobHeightCachedRenderData {
+        return cachedBlobRenderHeights.computeIfAbsent(height) { _ ->
+            val buffer = Buffers.newDirectIntBuffer(sizeX * sizeY)
+            map.flatMap { it }.forEach {
+                if (height <= it) {
+                    buffer.put(1)
+                } else buffer.put(0)
+            }
+            buffer.flip()
+            BlobHeightCachedRenderData(buffer)
+        }
+    }
+
+    override fun set(x: Int, y: Int, value: Int): Int? {
+        val oldHeight = super.set(x, y, value) ?: return null
+        cachedBlobRenderHeights.clear()
+        cachedMaxHeight = null
+        cachedMinHeight = null
+        return oldHeight
+    }
+
+
+}
+
+class TerrainMap(
     map: Array<Array<TerrainType>>
-): ArrayMap2d<TerrainType>(map) {
+) : ArrayMap2d<TerrainType>(map) {
+
+    private val cachedTerrainRenderTypes = ConcurrentHashMap<TerrainType, TerrainCachedRenderData>()
+    private val cachedBlobRenderTypes = ConcurrentHashMap<TerrainType, BlobCachedRenderData>()
+    private val cachedOverlayRenderTypes = ConcurrentHashMap<TerrainType, OverlayCachedRenderData>()
+
+    data class TerrainCachedRenderData(
+        val buffer: IntBuffer,
+        val shouldRender: Boolean
+    )
+
+    data class BlobCachedRenderData(
+        val buffer: IntBuffer
+    )
+
+    data class OverlayCachedRenderData(
+        val buffer: IntBuffer
+    )
+
+    fun getOverlayRenderMap(type: TerrainType): OverlayCachedRenderData {
+        return cachedOverlayRenderTypes.computeIfAbsent(type) { _ ->
+            val buffer = Buffers.newDirectIntBuffer(sizeX * sizeY)
+            map.flatMap { it }.forEach {
+                if (type == it) {
+                    buffer.put(1)
+                } else buffer.put(0)
+            }
+            buffer.flip()
+            OverlayCachedRenderData(buffer)
+        }
+    }
+
+    fun getBlobRenderMap(type: TerrainType): BlobCachedRenderData {
+        return cachedBlobRenderTypes.computeIfAbsent(type) { _ ->
+            val buffer = Buffers.newDirectIntBuffer(sizeX * sizeY)
+
+            map.flatMap { it }.forEach {
+                if (type == it) {
+                    buffer.put(1)
+                    return@forEach
+                }
+                if (it == TerrainType.BRIDGE && (type == TerrainType.ROAD || type == TerrainType.ROAD_WINTER || type == TerrainType.SUNKEN_ROAD)) {
+                    buffer.put(2)
+                    return@forEach
+                }
+                if (type == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER || it == TerrainType.SUNKEN_ROAD)) {
+                    buffer.put(2)
+                    return@forEach
+                }
+                if (it == TerrainType.SUNKEN_ROAD && type == TerrainType.ROAD || it == TerrainType.ROAD && type == TerrainType.SUNKEN_ROAD ) {
+                    buffer.put(2)
+                    return@forEach
+                }
+                buffer.put(0)
+            }
+
+            buffer.flip()
+
+            BlobCachedRenderData(buffer)
+        }
+    }
+
+    fun getRenderMap(type: TerrainType): TerrainCachedRenderData {
+        return cachedTerrainRenderTypes.computeIfAbsent(type) { _ ->
+            var hasSomethingToRender = false
+
+            val buffer = Buffers.newDirectIntBuffer(sizeX * sizeY)
+            map.flatMap { it }.forEach {
+                if (type == it) {
+                    hasSomethingToRender = true
+                    buffer.put(1)
+                    return@forEach
+                }
+                if (it.isFarm) {
+                    hasSomethingToRender = true
+                    buffer.put(2)
+                    return@forEach
+                }
+                buffer.put(0)
+            }
+            buffer.flip()
+            TerrainCachedRenderData(
+                buffer,
+                hasSomethingToRender
+            )
+
+        }
+    }
+
+    override fun set(x: Int, y: Int, value: TerrainType): TerrainType? {
+        val oldTerrainType = super.set(x, y, value) ?: return null
+//        val isFarm = value.isFarm || oldTerrainType.isFarm
+//        cachedTerrainRenderTypes.keys.toSet().forEach { type ->
+//            if (isFarm && type.isFarm) cachedTerrainRenderTypes.remove(type)
+//            if (value == type || oldTerrainType == value) cachedTerrainRenderTypes.remove(type)
+//        }
+//        val roads = setOf(TerrainType.ROAD, TerrainType.ROAD_WINTER, TerrainType.SUNKEN_ROAD)
+//        val isRoad = roads.contains(value) || roads.contains(oldTerrainType)
+//        cachedBlobRenderTypes.keys.toSet().forEach { type ->
+//            if (isRoad && roads.contains(type)) cachedBlobRenderTypes.remove(type)
+//            if (value == type || oldTerrainType == value) cachedBlobRenderTypes.remove(type)
+//        }
+//        cachedOverlayRenderTypes.keys.forEach { type ->
+//            if (value == type || oldTerrainType == value) cachedOverlayRenderTypes.remove(type)
+//        }
+
+        cachedTerrainRenderTypes.clear()
+        cachedBlobRenderTypes.clear()
+        cachedOverlayRenderTypes.clear()
+
+        return oldTerrainType
+    }
 
     fun serialize(): Array<Array<Int>> {
         return _map.map {

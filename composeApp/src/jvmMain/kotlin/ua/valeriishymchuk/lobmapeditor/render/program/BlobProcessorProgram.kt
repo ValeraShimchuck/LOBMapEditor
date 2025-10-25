@@ -7,6 +7,7 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
 import org.joml.Vector4f
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.HeightMap
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainMap
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.helper.*
@@ -47,24 +48,11 @@ class BlobProcessorProgram(
         textureID.value
     }
 
-    fun loadHeight(ctx: GL3, heightMap: ArrayMap2d<Int>, tileHeight: Int) {
+    fun loadHeight(ctx: GL3, heightMap: HeightMap, tileHeight: Int) {
         ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
         val width = heightMap.sizeX
         val height = heightMap.sizeY
-        val buffer = Buffers.newDirectIntBuffer(width * height)
-
-        val serializedData = heightMap.map.flatMap { it }.map {
-            if (tileHeight <= it) 1 else 0
-        }
-
-        serializedData.forEach {
-            buffer.put(it)
-        }
-//        println("Found ${serializedData.filter { it != 0 }.size} of $terrainType")
-        // Found 4 of SNOW out of thousands, thats fine
-        // but everything is set to snow
-        // something fishy is going on with loading the data
-        buffer.flip()
+        val buffer = heightMap.getHeightBlobMap(tileHeight).buffer
 
 
         ctx.glTexImage2D(
@@ -80,34 +68,13 @@ class BlobProcessorProgram(
         )
     }
 
-    // it will be painfully slow, we've got to change the storage format for the sake of performance
     fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType) {
 
-        // also we might want to use Pixel Buffer Objects
 
         ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
-        val buffer = Buffers.newDirectIntBuffer(width * height)
-
-        val serializedData = terrainMap.map.flatMap { it }.map {
-            if (terrainType == it) return@map 1
-            if (it == TerrainType.BRIDGE && (terrainType == TerrainType.ROAD || terrainType == TerrainType.ROAD_WINTER || terrainType == TerrainType.SUNKEN_ROAD)) return@map 2
-            if (terrainType == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER || it == TerrainType.SUNKEN_ROAD)) return@map 2
-            if (it == TerrainType.SUNKEN_ROAD && terrainType == TerrainType.ROAD || it == TerrainType.ROAD && terrainType == TerrainType.SUNKEN_ROAD ) return@map 2
-            0
-        }
-
-        serializedData.forEach {
-            buffer.put(it)
-        }
-//        println("Found ${serializedData.filter { it != 0 }.size} of $terrainType")
-        // Found 4 of SNOW out of thousands, thats fine
-        // but everything is set to snow
-        // something fishy is going on with loading the data
-        buffer.flip()
-
-
+        val buffer = terrainMap.getBlobRenderMap(terrainType).buffer
         ctx.glTexImage2D(
             GL3.GL_TEXTURE_2D,
             0,
@@ -117,7 +84,7 @@ class BlobProcessorProgram(
             0,
             GL3.GL_RED_INTEGER,
             GL3.GL_UNSIGNED_INT,
-            buffer // Pass the buffer directly instead of null
+            buffer
         )
 
 

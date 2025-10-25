@@ -51,9 +51,8 @@ class BlobTileStage(
 
 
         val heightMap = scenario.map.terrainHeight
-        val maxTerrain: Int = heightMap.map.flatMap { it }.distinct().max()
-//        val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min() + 1
-        val minTerrain: Int = heightMap.map.flatMap { it }.distinct().min()
+        val maxTerrain: Int = heightMap.maxHeight
+        val minTerrain: Int = heightMap.minHeight
         for (heightTile in minTerrain..maxTerrain) {
             blobProcessorProgram.setUpVBO(glCtx, tileMapVertices)
             blobProcessorProgram.setUpVAO(glCtx)

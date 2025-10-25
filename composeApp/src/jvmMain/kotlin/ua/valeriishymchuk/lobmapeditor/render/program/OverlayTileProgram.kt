@@ -47,29 +47,13 @@ class OverlayTileProgram(
         textureID.value
     }
 
-    // it will be panfully slow, we've got to change the storage format for the sake of performance
     fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType) {
 
-        // also we might want to use Pixel Buffer Objects
 
         ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
-        val buffer = Buffers.newDirectIntBuffer(width * height)
-
-        val serializedData = terrainMap.map.flatMap { it }.map {
-            if (terrainType == it) return@map 1
-            0
-        }
-
-        serializedData.forEach {
-            buffer.put(it)
-        }
-//        println("Found ${serializedData.filter { it != 0 }.size} of $terrainType")
-        // Found 4 of SNOW out of thousands, thats fine
-        // but everything is set to snow
-        // something fishy is going on with loading the data
-        buffer.flip()
+        val buffer = terrainMap.getOverlayRenderMap(terrainType).buffer
 
 
         ctx.glTexImage2D(

@@ -50,7 +50,7 @@ open class ArrayMap2d<T>(
 //    }
 
 
-    fun set(x: Int, y: Int, value: T): T? {
+    open fun set(x: Int, y: Int, value: T): T? {
         val row = _map.getOrNull(x) ?: return null
         if (y >= row.size ) return null
         val prevValue = row[y]

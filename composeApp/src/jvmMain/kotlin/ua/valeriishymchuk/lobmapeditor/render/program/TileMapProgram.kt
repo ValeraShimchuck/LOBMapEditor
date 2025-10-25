@@ -48,35 +48,15 @@ class TileMapProgram(
     }
 
     // it will be painfully slow, we've got to change the storage format for the sake of performance
+    // Yes, it is indeed slow
+    // optimized a bit, but for the best perfomance I have to change the whole structure of the map storage, but right now it is an overkill
     fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType): Boolean {
-
-        // also we might want to use Pixel Buffer Objects
-
-
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
-        val buffer = Buffers.newDirectIntBuffer(width * height)
-
-        var hasSomethingToRender = false
-
-        val serializedData = terrainMap.map.flatMap { it }.map {
-            if (terrainType == it) {
-                hasSomethingToRender = true
-                return@map 1
-            }
-            if (it.isFarm) {
-                hasSomethingToRender = true
-                return@map 2
-            }
-            0
-        }
+        val data = terrainMap.getRenderMap(terrainType)
+        val hasSomethingToRender = data.shouldRender
         if (!hasSomethingToRender) return false
-
-        serializedData.forEach {
-            buffer.put(it)
-        }
-        buffer.flip()
-
+        val buffer = data.buffer
         ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
 
         ctx.glTexImage2D(
