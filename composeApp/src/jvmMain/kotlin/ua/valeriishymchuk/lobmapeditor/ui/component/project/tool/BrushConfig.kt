@@ -26,7 +26,7 @@ import org.jetbrains.jewel.ui.component.TextField
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.BrushTool
 import kotlin.math.roundToInt
 
-private val brushRange = 1f..16f
+private val brushRange = 1..16
 
 @Composable
 fun BrushToolConfig(tool: BrushTool) {
@@ -57,17 +57,24 @@ fun BrushToolConfig(tool: BrushTool) {
 
             Spacer(Modifier.width(9.dp))
 
-            var sliderValue by remember { mutableFloatStateOf(tool.brushSize.value.toFloat()) }
+            val availableBrushes = (brushRange).filter { range -> range == 1 || range % 2 == 0 }
+            val amountOfBrushes = availableBrushes.size
+
+            var sliderValue by remember {
+                mutableFloatStateOf( availableBrushes.indexOf(tool.brushSize.value).toFloat() )
+            }
+
 
 
             Slider(
                 value = sliderValue,
                 onValueChange = { newValue ->
-                    sliderValue = newValue              // плавно оновлюємо float
-                    tool.brushSize.value = newValue.roundToInt() // синхронізуємо з int
+                    sliderValue = newValue
+                    tool.brushSize.value = availableBrushes[newValue.roundToInt()]
                 },
+                steps = amountOfBrushes,
 
-                valueRange = brushRange.start..brushRange.endInclusive,
+                valueRange = 0f..(amountOfBrushes -1).toFloat(),
                 modifier = Modifier.weight(1f)
             )
         }
