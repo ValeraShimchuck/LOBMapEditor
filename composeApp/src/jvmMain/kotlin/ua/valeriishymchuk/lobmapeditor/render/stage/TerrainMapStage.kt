@@ -1,17 +1,17 @@
 package ua.valeriishymchuk.lobmapeditor.render.stage
 
 import com.jogamp.opengl.GL.GL_TRIANGLES
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.TileMapProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 
 class TerrainMapStage(
-    ctx: GL3,
+    ctx: CurrentGL,
     private val tileMapVertices: FloatArray
 ): RenderStage {
 

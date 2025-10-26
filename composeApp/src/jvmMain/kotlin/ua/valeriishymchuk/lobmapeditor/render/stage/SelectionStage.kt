@@ -1,16 +1,16 @@
 package ua.valeriishymchuk.lobmapeditor.render.stage
 
 import com.jogamp.opengl.GL.GL_TRIANGLES
-import com.jogamp.opengl.GL3
 import org.joml.Vector2f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.SelectionProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 
 class SelectionStage(
-    ctx: GL3
+    ctx: CurrentGL
 ) : RenderStage {
 
     private val selectionProgram = SelectionProgram(

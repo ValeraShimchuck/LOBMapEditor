@@ -1,7 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.render.stage
 
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Math
 import org.joml.Matrix4f
 import org.joml.Vector2f
@@ -11,13 +10,14 @@ import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.RangeProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.SpriteProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 
 class RangeStage(
-    ctx: GL3
+    ctx: CurrentGL
 ) : RenderStage {
 
     private val rangeProgram = RangeProgram(

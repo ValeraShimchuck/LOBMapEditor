@@ -1,34 +1,35 @@
 package ua.valeriishymchuk.lobmapeditor.render.program
 
-import com.jogamp.opengl.GL3
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
+
 
 interface Program<T, U> {
     val program: Int
     val vao: Int
     val vbo: Int
 
-    fun setUpVBO(ctx: GL3, data: T)
+    fun setUpVBO(ctx: CurrentGL, data: T)
 
-    fun setUpVAO(ctx: GL3)
-
-
+    fun setUpVAO(ctx: CurrentGL)
 
 
-    fun applyUniform(ctx: GL3, data: U)
+
+
+    fun applyUniform(ctx: CurrentGL, data: U)
 
 
     companion object {
-        fun compileShader(ctx: GL3, isVertex: Boolean, source: String): Int {
-            val shaderType: Int = if (isVertex) GL3.GL_VERTEX_SHADER else GL3.GL_FRAGMENT_SHADER
+        fun compileShader(ctx: CurrentGL, isVertex: Boolean, source: String): Int {
+            val shaderType: Int = if (isVertex) CurrentGL.GL_VERTEX_SHADER else CurrentGL.GL_FRAGMENT_SHADER
             val shader = ctx.glCreateShader(shaderType)
             ctx.glShaderSource(shader, 1, arrayOf(source), null)
             ctx.glCompileShader(shader)
             val compilationResultArray: IntArray = IntArray(1)
-            ctx.glGetShaderiv(shader, GL3.GL_COMPILE_STATUS, compilationResultArray, 0)
+            ctx.glGetShaderiv(shader, CurrentGL.GL_COMPILE_STATUS, compilationResultArray, 0)
             val isSuccess = compilationResultArray[0] != 0
             if (!isSuccess) {
                 val logLengthArray: IntArray = IntArray(1)
-                ctx.glGetShaderiv(shader, GL3.GL_INFO_LOG_LENGTH, logLengthArray, 0)
+                ctx.glGetShaderiv(shader, CurrentGL.GL_INFO_LOG_LENGTH, logLengthArray, 0)
                 val logLength = logLengthArray[0]
                 val logs: ByteArray = ByteArray(logLength)
                 ctx.glGetShaderInfoLog(shader, logLength, null, 0, logs, 0)
@@ -39,7 +40,7 @@ interface Program<T, U> {
             return shader
         }
 
-        fun compileProgram(ctx: GL3, vertexSource: String, fragmentSource: String): Int {
+        fun compileProgram(ctx: CurrentGL, vertexSource: String, fragmentSource: String): Int {
             val vertexShader = compileShader(ctx, true, vertexSource)
             val fragmentShader = compileShader(ctx, false, fragmentSource)
 
@@ -49,11 +50,11 @@ interface Program<T, U> {
             ctx.glLinkProgram(program)
 
             val linkingResultArray: IntArray = IntArray(1)
-            ctx.glGetProgramiv(program, GL3.GL_LINK_STATUS, linkingResultArray, 0)
+            ctx.glGetProgramiv(program, CurrentGL.GL_LINK_STATUS, linkingResultArray, 0)
             val isSuccess = linkingResultArray[0] != 0
             if (!isSuccess) {
                 val logLengthArray: IntArray = IntArray(1)
-                ctx.glGetProgramiv(program, GL3.GL_INFO_LOG_LENGTH, logLengthArray, 0)
+                ctx.glGetProgramiv(program, CurrentGL.GL_INFO_LOG_LENGTH, logLengthArray, 0)
                 val logLength = logLengthArray[0]
                 val logs: ByteArray = ByteArray(logLength)
                 ctx.glGetProgramInfoLog(program, logLength, null, 0, logs, 0)

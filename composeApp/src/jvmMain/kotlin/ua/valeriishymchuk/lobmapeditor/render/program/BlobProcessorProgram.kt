@@ -2,7 +2,6 @@ package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -15,7 +14,7 @@ import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.shared.dimension.ArrayMap2d
 
 class BlobProcessorProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String
 ): Program<FloatArray, BlobProcessorProgram.Uniform> {
@@ -38,52 +37,52 @@ class BlobProcessorProgram(
 
         val textureID = IntPointer()
         ctx.glGenTextures(1, textureID.array, 0)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, textureID.value)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, textureID.value)
 
 
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_NEAREST)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MIN_FILTER, CurrentGL.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MAG_FILTER, CurrentGL.GL_NEAREST)
         textureID.value
     }
 
-    fun loadHeight(ctx: GL3, heightMap: HeightMap, tileHeight: Int) {
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
+    fun loadHeight(ctx: CurrentGL, heightMap: HeightMap, tileHeight: Int) {
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, tileMapTexture)
         val width = heightMap.sizeX
         val height = heightMap.sizeY
         val buffer = heightMap.getHeightBlobMap(tileHeight).buffer
 
 
         ctx.glTexImage2D(
-            GL3.GL_TEXTURE_2D,
+            CurrentGL.GL_TEXTURE_2D,
             0,
-            GL3.GL_R32UI,
+            CurrentGL.GL_R32UI,
             width,
             height,
             0,
-            GL3.GL_RED_INTEGER,
-            GL3.GL_UNSIGNED_INT,
+            CurrentGL.GL_RED_INTEGER,
+            CurrentGL.GL_UNSIGNED_INT,
             buffer // Pass the buffer directly instead of null
         )
     }
 
-    fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType) {
+    fun loadMap(ctx: CurrentGL, terrainMap: TerrainMap, terrainType: TerrainType) {
 
 
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, tileMapTexture)
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
         val buffer = terrainMap.getBlobRenderMap(terrainType).buffer
         ctx.glTexImage2D(
-            GL3.GL_TEXTURE_2D,
+            CurrentGL.GL_TEXTURE_2D,
             0,
-            GL3.GL_R32UI,
+            CurrentGL.GL_R32UI,
             width,
             height,
             0,
-            GL3.GL_RED_INTEGER,
-            GL3.GL_UNSIGNED_INT,
+            CurrentGL.GL_RED_INTEGER,
+            CurrentGL.GL_UNSIGNED_INT,
             buffer
         )
 
@@ -91,7 +90,7 @@ class BlobProcessorProgram(
     }
 
 
-    override fun setUpVBO(ctx: GL3, data: FloatArray) {
+    override fun setUpVBO(ctx: CurrentGL, data: FloatArray) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
@@ -99,7 +98,7 @@ class BlobProcessorProgram(
         ctx.glVBOData(data.size * Float.SIZE_BYTES, buffer)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0.toLong())
@@ -107,20 +106,20 @@ class BlobProcessorProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)
         ctx.applyTexture(tileMapLocation, 0, tileMapTexture)
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 1)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.blobTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, data.blobTexture)
         ctx.glUniform1i(blobTextureLocation, 1)
 
         val mask = data.mask
         ctx.glUniform1i(shouldDrawMaskLocation, if(mask != null ) 1 else 0)
         if (mask != null) {
             ctx.glActiveTexture(GL.GL_TEXTURE0 + 2)
-            ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, mask.blobMask)
+            ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, mask.blobMask)
             ctx.glUniform1i(blobMaskTextureLocation, 2)
             ctx.glUniform4fv(maskColorLocation, 1, floatArrayOf(mask.maskColor.x, mask.maskColor.y, mask.maskColor.z, mask.maskColor.w), 0)
         }
@@ -143,9 +142,9 @@ class BlobProcessorProgram(
 
     }
 
-    private fun GL3.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
+    private fun CurrentGL.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
         glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
-        glBindTexture(GL3.GL_TEXTURE_2D, textureId)
+        glBindTexture(CurrentGL.GL_TEXTURE_2D, textureId)
         glUniform1i(uniformLocation, textureUnit)
     }
 

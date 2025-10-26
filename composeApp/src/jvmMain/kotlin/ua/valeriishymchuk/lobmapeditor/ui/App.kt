@@ -40,6 +40,9 @@ import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import ua.valeriishymchuk.lobmapeditor.render.InputListener
+import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE
+import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE_FALLBACK
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -157,10 +160,10 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
         println("Initializing factory")
         var profile: GLProfile
         try {
-            profile = GLProfile.get(GLProfile.GL3)
+            profile = GLProfile.get(CURRENT_GL_PROFILE)
         } catch (e: GLException) {
-            println("GL3 is not available, trying to use GL3bc")
-            profile = GLProfile.get(GLProfile.GL3bc)
+            println("$CURRENT_GL_PROFILE is not available, trying to use $CURRENT_GL_PROFILE_FALLBACK")
+            profile = GLProfile.get(CURRENT_GL_PROFILE_FALLBACK)
         }
         val capabilities = GLCapabilities(profile)
 //        capabilities.isPBuffer = true

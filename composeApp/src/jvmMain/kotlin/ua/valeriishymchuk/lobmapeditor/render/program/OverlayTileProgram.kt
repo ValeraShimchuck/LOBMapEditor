@@ -1,8 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.render.program
 
-import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -13,7 +11,7 @@ import ua.valeriishymchuk.lobmapeditor.render.helper.*
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 
 class OverlayTileProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String
 ): Program<FloatArray, OverlayTileProgram.Uniform> {
@@ -37,34 +35,34 @@ class OverlayTileProgram(
 
         val textureID = IntPointer()
         ctx.glGenTextures(1, textureID.array, 0)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, textureID.value)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, textureID.value)
 
 
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_NEAREST)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MIN_FILTER, CurrentGL.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MAG_FILTER, CurrentGL.GL_NEAREST)
         textureID.value
     }
 
-    fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType) {
+    fun loadMap(ctx: CurrentGL, terrainMap: TerrainMap, terrainType: TerrainType) {
 
 
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, tileMapTexture)
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
         val buffer = terrainMap.getOverlayRenderMap(terrainType).buffer
 
 
         ctx.glTexImage2D(
-            GL3.GL_TEXTURE_2D,
+            CurrentGL.GL_TEXTURE_2D,
             0,
-            GL3.GL_R32UI,
+            CurrentGL.GL_R32UI,
             width,
             height,
             0,
-            GL3.GL_RED_INTEGER,
-            GL3.GL_UNSIGNED_INT,
+            CurrentGL.GL_RED_INTEGER,
+            CurrentGL.GL_UNSIGNED_INT,
             buffer // Pass the buffer directly instead of null
         )
 
@@ -72,7 +70,7 @@ class OverlayTileProgram(
     }
 
 
-    override fun setUpVBO(ctx: GL3, data: FloatArray) {
+    override fun setUpVBO(ctx: CurrentGL, data: FloatArray) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
@@ -80,7 +78,7 @@ class OverlayTileProgram(
         ctx.glVBOData(data.size * Float.SIZE_BYTES, buffer)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0.toLong())
@@ -88,14 +86,14 @@ class OverlayTileProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)
         ctx.applyTexture(tileMapLocation, 0, tileMapTexture)
 
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 1)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.overlayTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, data.overlayTexture)
         ctx.glUniform1i(overlayLocation, 1)
 
         ctx.glUniform2fv(tileUnitLocation, 1, floatArrayOf(data.tileUnit.x, data.tileUnit.y), 0)
@@ -118,9 +116,9 @@ class OverlayTileProgram(
 
     }
 
-    private fun GL3.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
+    private fun CurrentGL.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
         glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
-        glBindTexture(GL3.GL_TEXTURE_2D, textureId)
+        glBindTexture(CurrentGL.GL_TEXTURE_2D, textureId)
         glUniform1i(uniformLocation, textureUnit)
     }
 

@@ -1,6 +1,5 @@
 package ua.valeriishymchuk.lobmapeditor.render.context
 
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -8,10 +7,11 @@ import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 
 data class RenderContext(
-    val glCtx: GL3,
+    val glCtx: CurrentGL,
     val windowDimensions: Vector2i,
     val textureStorage: TextureStorage,
     val viewMatrix: Matrix4f,

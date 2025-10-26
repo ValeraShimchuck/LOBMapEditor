@@ -2,7 +2,6 @@ package ua.valeriishymchuk.lobmapeditor.render.stage
 
 import androidx.compose.ui.graphics.Color
 import com.jogamp.opengl.GL.GL_TRIANGLES
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
@@ -15,6 +14,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMEN
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.SpriteProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
@@ -27,7 +27,7 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
 
 class SpriteStage(
-    ctx: GL3
+    ctx: CurrentGL
 ): RenderStage {
 
     private val spriteProgram = SpriteProgram(

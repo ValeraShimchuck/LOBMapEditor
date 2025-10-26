@@ -1,16 +1,16 @@
 package ua.valeriishymchuk.lobmapeditor.render.stage
 
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector3f
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.GridProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 import kotlin.math.max
 
 class GridStage(
-    ctx: GL3,
+    ctx: CurrentGL,
     private val mapVertices: FloatArray
 ) : RenderStage {
 
@@ -43,7 +43,7 @@ class GridStage(
             mvpMatrix
         ))
 
-        glCtx.glDrawArrays(GL3.GL_TRIANGLES, 0, 6)
+        glCtx.glDrawArrays(CurrentGL.GL_TRIANGLES, 0, 6)
 
     }
 }

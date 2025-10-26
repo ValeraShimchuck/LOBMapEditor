@@ -1,11 +1,11 @@
 package ua.valeriishymchuk.lobmapeditor.render.texture
 
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.render.RGBAImage
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader
 import java.awt.Graphics2D
@@ -77,7 +77,7 @@ class TextureStorage {
         }
     var referenceIsLoaded: Boolean = false
 
-    fun loadReference(ctx: GL3): Boolean {
+    fun loadReference(ctx: CurrentGL): Boolean {
         if (referenceIsLoaded) return false
         val referenceFile = this.referenceFile ?: return false
         referenceIsLoaded = true
@@ -96,7 +96,7 @@ class TextureStorage {
         return false
     }
 
-    fun loadTextures(ctx: GL3) {
+    fun loadTextures(ctx: CurrentGL) {
 
         loadInternalTexture(ctx, "wood")
         TerrainType.MAIN_TERRAIN.forEach { terrain ->
@@ -206,7 +206,7 @@ class TextureStorage {
     )
 
     fun loadTexture(
-        ctx: GL3,
+        ctx: CurrentGL,
         inputStream: InputStream,
         useNearest: Boolean = true,
         useClamp: Boolean = false,
@@ -233,7 +233,7 @@ class TextureStorage {
             GL.GL_UNSIGNED_BYTE,
             image.image
         )
-//        ctx.glTexParameteri(GL.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAX_LEVEL, 4);
+//        ctx.glTexParameteri(GL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MAX_LEVEL, 4);
         ctx.glGenerateMipmap(GL.GL_TEXTURE_2D)
 
         if (useClamp) {
@@ -258,7 +258,7 @@ class TextureStorage {
     }
 
     private fun loadInternalTexture(
-        ctx: GL3,
+        ctx: CurrentGL,
         key: String,
         useNearest: Boolean = true,
         useClamp: Boolean = false,
@@ -334,7 +334,7 @@ class TextureStorage {
     }
 
     fun loadAtlas(
-        ctx: GL3,
+        ctx: CurrentGL,
         key: String,
         tileSize: Vector2i, // size of a tile
         tileDimensions: Vector2i, // amount of tiles
@@ -351,13 +351,13 @@ class TextureStorage {
         ctx.glGenTextures(1, texturePointer.array, 0)
         val textureId = texturePointer.value
 
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, textureId)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, textureId)
 
         // Allocate storage for the texture array
         ctx.glTexStorage3D(
-            GL3.GL_TEXTURE_2D_ARRAY,
+            CurrentGL.GL_TEXTURE_2D_ARRAY,
             1, // Mipmap levels
-            GL3.GL_RGBA8,
+            CurrentGL.GL_RGBA8,
             tileSize.x,
             tileSize.y,
             tiles
@@ -421,12 +421,12 @@ class TextureStorage {
 
                 // Upload tile to texture array layer
                 ctx.glTexSubImage3D(
-                    GL3.GL_TEXTURE_2D_ARRAY,
+                    CurrentGL.GL_TEXTURE_2D_ARRAY,
                     0, // Mipmap level
                     0, 0, layer, // x, y, z offsets
                     tileSize.x, tileSize.y, 1, // width, height, depth
-                    GL3.GL_RGBA,
-                    GL3.GL_UNSIGNED_BYTE,
+                    CurrentGL.GL_RGBA,
+                    CurrentGL.GL_UNSIGNED_BYTE,
                     buffer
                 )
             }
@@ -439,32 +439,32 @@ class TextureStorage {
 
         // Set texture parameters based on filter settings
         val minFilter = if (filter.useMipmaps) {
-            if (filter.useLinear) GL3.GL_LINEAR_MIPMAP_LINEAR else GL3.GL_NEAREST_MIPMAP_NEAREST
+            if (filter.useLinear) CurrentGL.GL_LINEAR_MIPMAP_LINEAR else CurrentGL.GL_NEAREST_MIPMAP_NEAREST
         } else {
-            if (filter.useLinear) GL3.GL_LINEAR else GL3.GL_NEAREST
+            if (filter.useLinear) CurrentGL.GL_LINEAR else CurrentGL.GL_NEAREST
         }
 
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_MIN_FILTER, minFilter)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_MIN_FILTER, minFilter)
         ctx.glTexParameteri(
-            GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_MAG_FILTER,
-            if (filter.useLinear) GL3.GL_LINEAR else GL3.GL_NEAREST
+            CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_MAG_FILTER,
+            if (filter.useLinear) CurrentGL.GL_LINEAR else CurrentGL.GL_NEAREST
         )
 
         if (filter.useClamp) {
-            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
-            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
+            ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_CLAMP_TO_EDGE)
+            ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_CLAMP_TO_EDGE)
         } else {
-            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_S, GL3.GL_REPEAT)
-            ctx.glTexParameteri(GL3.GL_TEXTURE_2D_ARRAY, GL3.GL_TEXTURE_WRAP_T, GL3.GL_REPEAT)
+            ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_REPEAT)
+            ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D_ARRAY, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_REPEAT)
         }
 
         // Generate mipmaps if requested
         if (filter.useMipmaps) {
-            ctx.glGenerateMipmap(GL3.GL_TEXTURE_2D_ARRAY)
+            ctx.glGenerateMipmap(CurrentGL.GL_TEXTURE_2D_ARRAY)
         }
 
         // Unbind texture
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, 0)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, 0)
 
         textures[key] = texturePointer.value
 

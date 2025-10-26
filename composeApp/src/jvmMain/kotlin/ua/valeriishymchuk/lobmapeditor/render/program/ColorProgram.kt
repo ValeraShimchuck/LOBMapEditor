@@ -1,17 +1,17 @@
 package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.render.helper.BufferHelper
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenBuffer
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import java.nio.FloatBuffer
 
 class ColorProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String,
 ): Program<ColorProgram.Data, ColorProgram.Uniform> {
@@ -35,7 +35,7 @@ class ColorProgram(
     }
 
     override fun setUpVBO(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Data
     ) {
         ctx.glBindVertexArray(vao)
@@ -45,7 +45,7 @@ class ColorProgram(
         ctx.glBufferData(GL.GL_ARRAY_BUFFER, data.vertices.size * Float.SIZE_BYTES.toLong(), buffer, GL.GL_STATIC_DRAW)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0)
@@ -53,7 +53,7 @@ class ColorProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)

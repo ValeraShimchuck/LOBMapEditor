@@ -1,8 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL.*
-import com.jogamp.opengl.GL3
-import com.jogamp.opengl.GL4
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLDebugMessage
 import com.jogamp.opengl.GLEventListener
@@ -92,8 +90,6 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         ctx.glEnable(GL_BLEND)
         ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-//        val ctx = TraceGL3(drawable.gl.gL3, System.out)
-//        drawable.gl = ctx
 
         textureStorage.loadTextures(ctx)
 

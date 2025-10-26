@@ -2,12 +2,12 @@ package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.BufferHelper
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenBuffer
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenVAO
@@ -18,7 +18,7 @@ import java.lang.IllegalStateException
 import java.util.Arrays
 
 class RangeProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String
 ): Program<List<RangeProgram.VertexBuffer>, RangeProgram.Uniform> {
@@ -29,7 +29,7 @@ class RangeProgram(
     val viewLocation = ctx.glGetUniformLocation(program, "uView")
 
     override fun setUpVBO(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: List<VertexBuffer>
     ) {
 
@@ -95,7 +95,7 @@ class RangeProgram(
 
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
 
@@ -137,7 +137,7 @@ class RangeProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)

@@ -1,16 +1,16 @@
 package ua.valeriishymchuk.lobmapeditor.render.stage
 
 import com.jogamp.opengl.GL.GL_TRIANGLES
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.ColorProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 
 class ColorStage(
-    ctx: GL3,
+    ctx: CurrentGL,
     private val frameVertices: FloatArray,
     private val color: Vector4f
 ): RenderStage {

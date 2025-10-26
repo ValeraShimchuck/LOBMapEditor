@@ -2,7 +2,6 @@ package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -13,7 +12,7 @@ import ua.valeriishymchuk.lobmapeditor.render.helper.*
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 
 class TileMapProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String
 ): Program<FloatArray, TileMapProgram.Uniform> {
@@ -37,37 +36,37 @@ class TileMapProgram(
 
         val textureID = IntPointer()
         ctx.glGenTextures(1, textureID.array, 0)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, textureID.value)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, textureID.value)
 
 
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_NEAREST)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MIN_FILTER, CurrentGL.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MAG_FILTER, CurrentGL.GL_NEAREST)
         textureID.value
     }
 
     // it will be painfully slow, we've got to change the storage format for the sake of performance
     // Yes, it is indeed slow
     // optimized a bit, but for the best perfomance I have to change the whole structure of the map storage, but right now it is an overkill
-    fun loadMap(ctx: GL3, terrainMap: TerrainMap, terrainType: TerrainType): Boolean {
+    fun loadMap(ctx: CurrentGL, terrainMap: TerrainMap, terrainType: TerrainType): Boolean {
         val width = terrainMap.sizeX
         val height = terrainMap.sizeY
         val data = terrainMap.getRenderMap(terrainType)
         val hasSomethingToRender = data.shouldRender
         if (!hasSomethingToRender) return false
         val buffer = data.buffer
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, tileMapTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, tileMapTexture)
 
         ctx.glTexImage2D(
-            GL3.GL_TEXTURE_2D,
+            CurrentGL.GL_TEXTURE_2D,
             0,
-            GL3.GL_R32UI,
+            CurrentGL.GL_R32UI,
             width,
             height,
             0,
-            GL3.GL_RED_INTEGER,
-            GL3.GL_UNSIGNED_INT,
+            CurrentGL.GL_RED_INTEGER,
+            CurrentGL.GL_UNSIGNED_INT,
             buffer // Pass the buffer directly instead of null
         )
 
@@ -76,7 +75,7 @@ class TileMapProgram(
     }
 
 
-    override fun setUpVBO(ctx: GL3, data: FloatArray) {
+    override fun setUpVBO(ctx: CurrentGL, data: FloatArray) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
@@ -84,7 +83,7 @@ class TileMapProgram(
         ctx.glVBOData(data.size * Float.SIZE_BYTES, buffer)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0.toLong())
@@ -92,7 +91,7 @@ class TileMapProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)
@@ -101,12 +100,12 @@ class TileMapProgram(
         ctx.applyTexture(tileTextureLocation, 1, data.tileTexture)
 
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 2)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.maskTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, data.maskTexture)
         ctx.glUniform1i(maskTextureLocation, 2)
 
 
         ctx.glActiveTexture(GL.GL_TEXTURE0 + 3)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D_ARRAY, data.overlayTexture)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D_ARRAY, data.overlayTexture)
         ctx.glUniform1i(overlayLocation, 3)
 //        if (maskTextureLocation >= 0) // handling the fact that mask texute location can be discarded by compiler because its not being used
 //            ctx.applyTexture(maskTextureLocation, 2, data.maskTexture)
@@ -128,9 +127,9 @@ class TileMapProgram(
 
     }
 
-    private fun GL3.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
+    private fun CurrentGL.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
         glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
-        glBindTexture(GL3.GL_TEXTURE_2D, textureId)
+        glBindTexture(CurrentGL.GL_TEXTURE_2D, textureId)
         glUniform1i(uniformLocation, textureUnit)
     }
 

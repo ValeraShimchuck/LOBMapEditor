@@ -1,18 +1,18 @@
 package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.render.helper.BufferHelper
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenBuffer
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenVAO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glVBOData
 
 class GridProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String,
 ) : Program<FloatArray, GridProgram.Uniform> {
@@ -26,7 +26,7 @@ class GridProgram(
     val gridThicknessLocation = ctx.glGetUniformLocation(program, "uGridThickness")
     val colorLocation = ctx.glGetUniformLocation(program, "uGridColor")
 
-    override fun setUpVBO(ctx: GL3, data: FloatArray) {
+    override fun setUpVBO(ctx: CurrentGL, data: FloatArray) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
@@ -34,7 +34,7 @@ class GridProgram(
         ctx.glVBOData(data.size * Float.SIZE_BYTES, buffer)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0.toLong())
@@ -42,7 +42,7 @@ class GridProgram(
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)

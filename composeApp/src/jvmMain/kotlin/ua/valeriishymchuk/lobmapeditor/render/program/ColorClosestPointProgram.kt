@@ -2,11 +2,11 @@ package ua.valeriishymchuk.lobmapeditor.render.program
 
 import com.jogamp.common.nio.Buffers
 import com.jogamp.opengl.GL
-import com.jogamp.opengl.GL3
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.render.helper.BufferHelper
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenBuffer
 import ua.valeriishymchuk.lobmapeditor.render.helper.glGenVAO
@@ -14,7 +14,7 @@ import ua.valeriishymchuk.lobmapeditor.render.helper.glVBOData
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 
 class ColorClosestPointProgram(
-    ctx: GL3,
+    ctx: CurrentGL,
     vertexSource: String,
     fragmentSource: String
 ): Program<FloatArray, ColorClosestPointProgram.Uniform> {
@@ -31,17 +31,17 @@ class ColorClosestPointProgram(
 
         val textureID = IntPointer()
         ctx.glGenTextures(1, textureID.array, 0)
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, textureID.value)
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, textureID.value)
 
 
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_S, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_WRAP_T, GL3.GL_CLAMP_TO_EDGE)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MIN_FILTER, GL3.GL_NEAREST)
-        ctx.glTexParameteri(GL3.GL_TEXTURE_2D, GL3.GL_TEXTURE_MAG_FILTER, GL3.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_S, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_WRAP_T, CurrentGL.GL_CLAMP_TO_EDGE)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MIN_FILTER, CurrentGL.GL_NEAREST)
+        ctx.glTexParameteri(CurrentGL.GL_TEXTURE_2D, CurrentGL.GL_TEXTURE_MAG_FILTER, CurrentGL.GL_NEAREST)
         textureID.value
     }
 
-    override fun setUpVBO(ctx: GL3, data: FloatArray) {
+    override fun setUpVBO(ctx: CurrentGL, data: FloatArray) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         val buffer = BufferHelper.wrapDirect(data)
@@ -49,15 +49,15 @@ class ColorClosestPointProgram(
         ctx.glVBOData(data.size * Float.SIZE_BYTES, buffer)
     }
 
-    override fun setUpVAO(ctx: GL3) {
+    override fun setUpVAO(ctx: CurrentGL) {
         ctx.glBindVertexArray(vao)
         ctx.glBindVBO(vbo)
         ctx.glVertexAttribPointer(0, 2, GL.GL_FLOAT, false, 2 * Float.SIZE_BYTES, 0.toLong())
         ctx.glEnableVertexAttribArray(0)
     }
 
-    private fun loadPoints(ctx: GL3, uniform: Uniform) {
-        ctx.glBindTexture(GL3.GL_TEXTURE_2D, pointMapTexture)
+    private fun loadPoints(ctx: CurrentGL, uniform: Uniform) {
+        ctx.glBindTexture(CurrentGL.GL_TEXTURE_2D, pointMapTexture)
 
         val width = uniform.points.entries.sumOf { it.value.size }
         val buffer = Buffers.newDirectFloatBuffer(width * 4)
@@ -73,20 +73,20 @@ class ColorClosestPointProgram(
         buffer.flip()
 
         ctx.glTexImage2D(
-            GL3.GL_TEXTURE_2D,
+            CurrentGL.GL_TEXTURE_2D,
             0,
-            GL3.GL_RGBA32F,
+            CurrentGL.GL_RGBA32F,
             width,
             1,
             0,
-            GL3.GL_RGBA,
-            GL3.GL_FLOAT,
+            CurrentGL.GL_RGBA,
+            CurrentGL.GL_FLOAT,
             buffer // Pass the buffer directly instead of null
         )
     }
 
     override fun applyUniform(
-        ctx: GL3,
+        ctx: CurrentGL,
         data: Uniform
     ) {
         ctx.glUseProgram(program)
@@ -101,9 +101,9 @@ class ColorClosestPointProgram(
 
     }
 
-    private fun GL3.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
+    private fun CurrentGL.applyTexture(uniformLocation: Int, textureUnit: Int, textureId: Int) {
         glActiveTexture(GL.GL_TEXTURE0 + textureUnit)
-        glBindTexture(GL3.GL_TEXTURE_2D, textureId)
+        glBindTexture(CurrentGL.GL_TEXTURE_2D, textureId)
         glUniform1i(uniformLocation, textureUnit)
     }
 
