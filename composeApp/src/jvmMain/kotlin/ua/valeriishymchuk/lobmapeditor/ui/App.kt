@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import cafe.adriel.voyager.navigator.CurrentScreen
 import com.jogamp.opengl.GLCapabilities
+import com.jogamp.opengl.GLException
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import com.jogamp.opengl.util.FPSAnimator
@@ -154,7 +155,13 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
 
     val canvas = remember {
         println("Initializing factory")
-        val profile = GLProfile.get(GLProfile.GL3)
+        var profile: GLProfile
+        try {
+            profile = GLProfile.get(GLProfile.GL3)
+        } catch (e: GLException) {
+            println("GL3 is not available, trying to use GL3bc")
+            profile = GLProfile.get(GLProfile.GL3bc)
+        }
         val capabilities = GLCapabilities(profile)
 //        capabilities.isPBuffer = true
         capabilities.apply {

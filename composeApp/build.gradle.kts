@@ -3,11 +3,14 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
+
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinSerialization)
+//    alias(libs.plugins.composeDesktop)
+//    alias(libs.plugins.compose.compiler)
 }
 
 kotlin {
@@ -80,6 +83,8 @@ kotlin {
                 implementation("io.github.vinceglb:filekit-coil:${fileKitVersion}")
 
                 implementation("com.github.skydoves:colorpicker-compose:1.1.2")
+
+
 
 //            val currentOS = DefaultNativePlatform.getCurrentOperatingSystem()
 //            when {
