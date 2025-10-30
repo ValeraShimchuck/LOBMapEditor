@@ -47,6 +47,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
                             add("player", JsonPrimitive(index + 1))
                             add("team", JsonPrimitive(player.team.id))
                             add("ammoReserve", JsonPrimitive(player.ammo))
+                            add("baseAmmoReserve", JsonPrimitive(player.baseAmmo))
                         })
                     }
                 })
@@ -157,7 +158,9 @@ sealed interface GameScenario<T : GameScenario<T>> {
                         val teamId = playerObj.getAsJsonPrimitive("team").asInt
                         Player(
                             team = PlayerTeam.fromId(teamId),
-                            playerObj.getAsJsonPrimitive("ammoReserve").asInt
+                            playerObj.getAsJsonPrimitive("ammoReserve")?.asInt ?: 500,
+                            playerObj.getAsJsonPrimitive("baseAmmoReserve")?.asInt
+                                ?: playerObj.getAsJsonPrimitive("ammoReserve")?.asInt ?: 500
                         )
                     }.toList()
 

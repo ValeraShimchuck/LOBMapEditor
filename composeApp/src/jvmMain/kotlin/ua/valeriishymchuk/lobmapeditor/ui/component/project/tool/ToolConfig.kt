@@ -281,10 +281,28 @@ private fun PlayerToolConfig() {
         )
     }
 
+
+
     LaunchedEffect(currentPlayerReference) {
 //        println("Changed currentPlayerReference to ${currentPlayerReference.key}")
 //        val textValue = ammoTextFieldValue.text.toIntOrNull() ?: return@LaunchedEffect
         ammoTextFieldValue = ammoTextFieldValue.copy(text = currentPlayer.ammo.toString())
+    }
+
+    var baseAmmoTextFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = currentPlayer.baseAmmo.toString(),
+                selection = TextRange(currentPlayer.baseAmmo.toString().length)
+            )
+        )
+    }
+
+
+    LaunchedEffect(currentPlayerReference) {
+//        println("Changed currentPlayerReference to ${currentPlayerReference.key}")
+//        val textValue = ammoTextFieldValue.text.toIntOrNull() ?: return@LaunchedEffect
+        baseAmmoTextFieldValue = baseAmmoTextFieldValue.copy(text = currentPlayer.baseAmmo.toString())
     }
 
     val playerPopupManager = remember { PopupManager() }
@@ -398,6 +416,51 @@ private fun PlayerToolConfig() {
         }
     )
 
+    Spacer(Modifier.height(10.dp))
+
+    Text("Base ammo:")
+
+    TextField(
+        value = baseAmmoTextFieldValue,
+        onValueChange = { newValue ->
+            baseAmmoTextFieldValue = newValue
+            baseAmmoTextFieldValue = baseAmmoTextFieldValue.copy(
+                text = newValue.text
+                    .replace(Regex("[^0-9]"), "").let { str ->
+                        val value = str.toFloatOrNull() ?: return@let str
+                        val coercedValue = max(value, 0f)
+                        if (coercedValue == value) return@let str
+                        coercedValue.toString()
+                    }
+            )
+
+
+            val finalText: Int = baseAmmoTextFieldValue.text.ifEmpty { "0" }.toIntOrNull() ?: 0
+
+            val oldList = scenario!!.players
+            val newList = scenario!!.players.mapIndexed { id, player ->
+                if (currentPlayerReference.key != id) return@mapIndexed player
+                player.copy(baseAmmo = finalText)
+            }
+            val command = UpdatePlayerListCommand(
+                oldList,
+                newList
+            )
+            editorService.executeCompound(command)
+        },
+        modifier = Modifier.onFocusChanged { focus ->
+            if (!focus.isFocused) {
+                editorService.flushCompound()
+            }
+        },
+        leadingIcon = {
+            Row {
+                Text("Base ammo", color = JewelTheme.globalColors.text.info)
+                Spacer(Modifier.width(4.dp))
+            }
+        }
+    )
+
 
     data class PlayerMapping(
         val player: Player,
@@ -476,7 +539,7 @@ private fun PlayerToolConfig() {
             onClick = {
                 val oldList = scenario!!.players
                 val newList = scenario!!.players.toMutableList()
-                newList.add(Player(PlayerTeam.RED, 500))
+                newList.add(Player(PlayerTeam.RED, 500, 500))
                 val command = UpdatePlayerListCommand(
                     oldList,
                     newList

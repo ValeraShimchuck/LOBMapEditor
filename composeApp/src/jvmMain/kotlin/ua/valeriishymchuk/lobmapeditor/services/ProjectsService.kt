@@ -77,8 +77,8 @@ class ProjectsService(override val di: DI) : DIAware {
                 ),
                 units = emptyList(),
                 players = listOf(
-                    Player(PlayerTeam.RED, 500),
-                    Player(PlayerTeam.BLUE, 500),
+                    Player(PlayerTeam.RED, 500, 500),
+                    Player(PlayerTeam.BLUE, 500, 500),
                 ),
             ),
             File(dir, "map.json")
