@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.shared.dimension
 
+import org.joml.Vector2i
 import java.util.Arrays
 
 
@@ -39,16 +40,12 @@ open class ArrayMap2d<T>(
             )
         _map.first().size
     }
-//    val sizeY = _map.size
-//    val sizeX = let {
-//        if (sizeY == 0) return@let 0
-//        if (_map.map { it.size }.distinct().size != 1)
-//            throw IllegalStateException(
-//                "All arrays in _map should be the same in size, but got ${_map.map { it.size }.distinct()}"
-//            )
-//        _map.first().size
-//    }
 
+    fun forEach(visitor: (Vector2i, T) -> Unit) {
+        for (x in 0..<sizeX)
+            for (y in 0..<sizeY)
+                visitor(Vector2i(x, y), get(x, y)!!)
+    }
 
     open fun set(x: Int, y: Int, value: T): T? {
         val row = _map.getOrNull(x) ?: return null

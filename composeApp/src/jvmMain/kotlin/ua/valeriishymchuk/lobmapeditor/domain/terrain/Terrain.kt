@@ -27,6 +27,17 @@ data class Terrain(
     val widthTiles: Int get() = terrainHeight.sizeX
     val heightTiles: Int get() = terrainHeight.sizeY
 
+    fun resize(newPixelX: Int, newPixelY: Int): Terrain {
+        val newTerrain = ofPixels(newPixelX, newPixelY)
+        terrainMap.forEach { pos, terrain ->
+            newTerrain.terrainMap.set(pos.x, pos.y, terrain)
+        }
+        terrainHeight.forEach { pos, height ->
+            newTerrain.terrainHeight.set(pos.x, pos.y, height)
+        }
+        return newTerrain
+    }
+
     fun serialize(): JsonObject {
         return JsonObject().apply {
             val sizeX = terrainHeight.sizeX
@@ -72,6 +83,10 @@ data class Terrain(
     companion object {
 
         const val MAX_TERRAIN_HEIGHT = 7;
+        const val MAX_TERRAIN_MAP_X = 3200 * 10;
+        const val MIN_TERRAIN_MAP_X = 992;
+        const val MAX_TERRAIN_MAP_Y = 2512 * 10;
+        const val MIN_TERRAIN_MAP_Y = 896;
 
         fun deserialize(json: JsonObject): Terrain {
             // Extract dimensions in pixels

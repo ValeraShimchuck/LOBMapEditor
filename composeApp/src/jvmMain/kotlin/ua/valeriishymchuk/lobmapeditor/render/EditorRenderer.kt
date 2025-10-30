@@ -14,6 +14,7 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.currentGl
 import ua.valeriishymchuk.lobmapeditor.render.stage.*
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -85,7 +86,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     private lateinit var renderStages: List<RenderStage>
 
     override fun init(drawable: GLAutoDrawable) {
-        val ctx = drawable.gl.gL3
+        val ctx = drawable.gl.currentGl()
         textureStorage.referenceFile = projectRef.referenceFile
 
         ctx.glEnable(GL_BLEND)
@@ -129,7 +130,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     override fun display(drawable: GLAutoDrawable) {
         editorService.save()
-        val ctx = drawable.gl.gL3
+        val ctx = drawable.gl.currentGl()
         textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
         ctx.glClear(GL_COLOR_BUFFER_BIT)

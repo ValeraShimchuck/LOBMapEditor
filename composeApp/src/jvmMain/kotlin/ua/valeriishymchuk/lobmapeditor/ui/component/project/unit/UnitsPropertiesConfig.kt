@@ -1,23 +1,9 @@
 package ua.valeriishymchuk.lobmapeditor.ui.component.project.unit
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -25,16 +11,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
-import org.jetbrains.jewel.ui.component.ComboBox
-import org.jetbrains.jewel.ui.component.DefaultButton
-import org.jetbrains.jewel.ui.component.PopupManager
-import org.jetbrains.jewel.ui.component.Slider
-import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.component.TextField
-import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
+import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.component.styling.ButtonColors
 import org.jetbrains.jewel.ui.component.styling.ButtonStyle
 import org.jetbrains.jewel.ui.theme.defaultButtonStyle
@@ -47,7 +26,6 @@ import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
-import kotlin.getValue
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -110,7 +88,7 @@ fun UnitsPropertiesConfig() {
         )
     }
 
-    LaunchedEffect(rawSelection) {
+    LaunchedEffect(selection) {
 
         val textValue = xPositionTextFieldValue.text.toFloatOrNull()
         val xValue = selection.map { it.position.x }.distinct().firstOrNull()
@@ -138,7 +116,7 @@ fun UnitsPropertiesConfig() {
         )
     }
 
-    LaunchedEffect(rawSelection) {
+    LaunchedEffect(selection) {
 
         val textValue = yPositionTextFieldValue.text.toFloatOrNull()
         val yValue = selection.map { it.position.y }.distinct().firstOrNull()
@@ -152,24 +130,47 @@ fun UnitsPropertiesConfig() {
     var rotationTextFieldValue by remember {
         mutableStateOf(
             Unit.let {
-                val currentValue: Float? = when {
-                    selection.isEmpty() -> null
-                    isRotationMixed -> null
-                    else -> selection.map { it.rotationRadians }.distinct().first()
+//                val currentValue: Float? = when {
+//                    selection.isEmpty() -> null
+//                    isRotationMixed -> null
+//                    else -> selection.map { it.rotationRadians }.distinct().first()
+//                }
+//                currentValue
+
+                val currentText = when {
+                    selection.isEmpty() -> ""
+                    isRotationMixed -> ""
+                    else -> selection.map {
+                        org.joml.Math.toDegrees(it.rotationRadians)
+                    }.distinct().first().toString()
                 }
-                currentValue
+
+                TextFieldValue(
+                    text = currentText,
+                    selection = TextRange(currentText.length) // Or calculate appropriate position
+                )
             }
         )
     }
 
-    LaunchedEffect(rawSelection) {
+    LaunchedEffect(selection) {
 
-        val textValue = rotationTextFieldValue
-        val rotationValue = selection.map { it.rotationRadians }.distinct().firstOrNull()
-        if (textValue != rotationValue || (textValue != null && isRotationMixed)) {
-            val finalValue: Float? = if (rotationValue != null && !isRotationMixed) rotationValue
-            else null
-            rotationTextFieldValue = finalValue
+//        val textValue = rotationTextFieldValue
+//        val rotationValue = selection.map { it.rotationRadians }.distinct().firstOrNull()
+//        if (textValue != rotationValue || (textValue != null && isRotationMixed)) {
+//            val finalValue: Float? = if (rotationValue != null && !isRotationMixed) rotationValue
+//            else null
+//            rotationTextFieldValue = finalValue
+//        }
+
+        val textValue = rotationTextFieldValue.text.toFloatOrNull()
+        val rotation = selection.map {
+            org.joml.Math.toDegrees(it.rotationRadians)
+        }.distinct().firstOrNull()
+        if (textValue != rotation || (textValue != null && isRotationMixed)) {
+            val finalValue: String = if (rotation != null && !isRotationMixed) rotation.toString()
+            else ""
+            rotationTextFieldValue = rotationTextFieldValue.copy(text = finalValue)
         }
     }
 
@@ -365,7 +366,7 @@ fun UnitsPropertiesConfig() {
             Text("Rotation:")
             Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                 AngleDial(
-                    rotationTextFieldValue ?: 0f,
+                    org.joml.Math.toRadians(rotationTextFieldValue.text.toFloatOrNull() ?: 0f),
                     color = Color(230, 230, 230),
                     modifier = Modifier.size(200.dp)
                 )
@@ -376,12 +377,45 @@ fun UnitsPropertiesConfig() {
                     Spacer(Modifier.height(4.dp))
                 }
 
+                TextField(
+                    value = rotationTextFieldValue,
+                    onValueChange = { newValue ->
+                        // Simply update the state with the complete new value
+                        rotationTextFieldValue = newValue
+                        rotationTextFieldValue = rotationTextFieldValue.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    val coercedValue = value.coerceIn(0f, 359f)
+                                    if (coercedValue == value) return@let str
+                                    coercedValue.toString()
+                                }
+                        )
+
+
+                        val finalText: Float = org.joml.Math.toRadians(
+                            rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                        )
+                        updateSelectedUnits { it.copy(rotationRadians = finalText) }
+                    },
+                    modifier = Modifier.onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompound()
+                        }
+                    },
+                    placeholder = { Text(if (isRotationMixed) "Mixed" else "0") },
+
+                )
+
                 Slider(
-                    value = rotationTextFieldValue ?: 0f,
+                    value = org.joml.Math.toRadians(rotationTextFieldValue.text.toFloatOrNull() ?: 0f),
                     onValueChange = { newRotation ->
 
-                        rotationTextFieldValue = newRotation
-                        updateSelectedUnits { it.copy(rotationRadians = rotationTextFieldValue ?: 0f) }
+//                        rotationTextFieldValue = newRotation
+                        rotationTextFieldValue = rotationTextFieldValue.copy(
+                            text = org.joml.Math.toDegrees(newRotation).coerceIn(0f, 359f).toString()
+                        )
+                        updateSelectedUnits { it.copy(rotationRadians = org.joml.Math.toRadians(rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f)) }
                     },
                     valueRange = 0f..(2 * Math.PI).toFloat(),
                     modifier = Modifier.fillMaxWidth()

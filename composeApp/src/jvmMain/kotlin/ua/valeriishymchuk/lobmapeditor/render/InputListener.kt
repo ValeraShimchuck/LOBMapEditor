@@ -1,6 +1,7 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 
+import org.joml.Math
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -236,7 +237,10 @@ class InputListener(
         val draggedPos = editorService.fromScreenToWorldSpace(e.x, e.y)
         val differenceVector = draggedPos.sub(unitPos, Vector2f())
         val unitVector = Vector2f(1f, 0f)
-        val newRotation = unitVector.angle(differenceVector)
+        var newRotation = unitVector.angle(differenceVector)
+        if (newRotation < 0f) {
+            newRotation += 2 * Math.PI_f
+        }
         val oldRotation = unit.rotationRadians
         val differenceRotation = newRotation - oldRotation
         editorService.executeCompound(

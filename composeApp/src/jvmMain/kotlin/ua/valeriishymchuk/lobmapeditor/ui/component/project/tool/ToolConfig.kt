@@ -7,8 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.*
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,13 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import com.github.skydoves.colorpicker.compose.AlphaSlider
-import com.github.skydoves.colorpicker.compose.AlphaTile
-import com.github.skydoves.colorpicker.compose.BrightnessSlider
-import com.github.skydoves.colorpicker.compose.ColorEnvelope
-import com.github.skydoves.colorpicker.compose.HsvColorPicker
-import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-import com.jogamp.opengl.awt.GLCanvas
+import com.github.skydoves.colorpicker.compose.*
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
@@ -40,11 +32,7 @@ import org.jetbrains.jewel.ui.theme.defaultButtonStyle
 import org.joml.Vector2f
 import org.joml.Vector4f
 import org.kodein.di.compose.rememberInstance
-import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
-import ua.valeriishymchuk.lobmapeditor.commands.UpdatePlayerListCommand
-import ua.valeriishymchuk.lobmapeditor.commands.WrapCommonToPresetCommand
+import ua.valeriishymchuk.lobmapeditor.commands.*
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
@@ -56,21 +44,12 @@ import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.DebugTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceUnitTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlayerTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.*
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
-import kotlin.getValue
 import kotlin.math.max
 import kotlin.math.roundToInt
-import kotlin.text.ifEmpty
 
 @Composable
 fun ToolConfig(modifier: Modifier = Modifier) {
@@ -134,11 +113,12 @@ private fun DebugToolConfig() {
         Spacer(Modifier.height(4.dp))
         let {
             Text("First height color:")
-            Text("Value: " +
-                    "${debugInfo.firstHeightColor.x} " +
-                    "${debugInfo.firstHeightColor.y} " +
-                    "${debugInfo.firstHeightColor.z} " +
-                    "${debugInfo.firstHeightColor.w} "
+            Text(
+                "Value: " +
+                        "${debugInfo.firstHeightColor.x} " +
+                        "${debugInfo.firstHeightColor.y} " +
+                        "${debugInfo.firstHeightColor.z} " +
+                        "${debugInfo.firstHeightColor.w} "
             )
             HsvColorPicker(
                 modifier = Modifier
@@ -202,11 +182,12 @@ private fun DebugToolConfig() {
 
         let {
             Text("Second height color:")
-            Text("Value: " +
-                    "${debugInfo.secondHeightColor.x} " +
-                    "${debugInfo.secondHeightColor.y} " +
-                    "${debugInfo.secondHeightColor.z} " +
-                    "${debugInfo.secondHeightColor.w} "
+            Text(
+                "Value: " +
+                        "${debugInfo.secondHeightColor.x} " +
+                        "${debugInfo.secondHeightColor.y} " +
+                        "${debugInfo.secondHeightColor.z} " +
+                        "${debugInfo.secondHeightColor.w} "
             )
             HsvColorPicker(
                 modifier = Modifier
@@ -271,8 +252,6 @@ private fun DebugToolConfig() {
     }
 
 
-
-
 }
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
@@ -297,7 +276,7 @@ private fun PlayerToolConfig() {
         mutableStateOf(
             TextFieldValue(
                 text = currentPlayer.ammo.toString(),
-                selection = TextRange(currentPlayer.ammo.toString().length) // Or calculate appropriate position
+                selection = TextRange(currentPlayer.ammo.toString().length)
             )
         )
     }
@@ -436,7 +415,6 @@ private fun PlayerToolConfig() {
             PlayerMapping(player, oldIndex, id)
         }
         val newList = preparedNewList.map { it.player }
-
 
 
         val oldUnitList = scenario!!.units
@@ -623,7 +601,72 @@ private fun TerrainToolConfig() {
 
     val currentTerrain by TerrainTool.terrain.collectAsState()
 
+
+    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val scenario by editorService.scenario.collectAsState()
+
+    if (scenario == null) return
+
     val popupManager = remember { PopupManager() }
+
+    var confirmFlow by remember(scenario) { mutableStateOf(false) }
+
+
+//    val scenarioDimensionX = rememberTextFieldState(scenario!!.map.widthPixels.toString())
+    var scenarioDimensionX by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = scenario!!.map.widthPixels.toString(),
+                selection = TextRange(scenario!!.map.widthPixels.toString().length)
+            )
+        )
+    }
+//    val scenarioDimensionY = rememberTextFieldState(scenario!!.map.heightPixels.toString())
+    var scenarioDimensionY by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = scenario!!.map.heightPixels.toString(),
+                selection = TextRange(scenario!!.map.heightPixels.toString().length)
+            )
+        )
+    }
+
+
+//    LaunchedEffect(scenarioDimensionX) {
+//        snapshotFlow { scenarioDimensionX.text }
+//            .collect { rawText ->
+//                val newText = (rawText
+//                    .replace(Regex("[^0-9]"), "")
+//                    .toIntOrNull() ?: 0
+//                        ).coerceIn(
+//                        Terrain.MIN_TERRAIN_MAP_X..Terrain.MAX_TERRAIN_MAP_X
+//                    ).toString()
+//                if (newText == rawText) return@collect
+//                scenarioDimensionX.edit {
+//                    replace(
+//                        0, rawText.length, newText
+//                    )
+//                }
+//            }
+//    }
+//
+//    LaunchedEffect(scenarioDimensionY) {
+//        snapshotFlow { scenarioDimensionY.text }
+//            .collect { rawText ->
+//                val newText = (rawText
+//                    .replace(Regex("[^0-9]"), "")
+//                    .toIntOrNull() ?: 0
+//                        ).coerceIn(
+//                        Terrain.MIN_TERRAIN_MAP_Y..Terrain.MAX_TERRAIN_MAP_Y
+//                    ).toString()
+//                if (newText == rawText) return@collect
+//                scenarioDimensionY.edit {
+//                    replace(
+//                        0, rawText.length, newText
+//                    )
+//                }
+//            }
+//    }
 
     BrushToolConfig(TerrainTool)
 
@@ -648,6 +691,110 @@ private fun TerrainToolConfig() {
                 }
             }
         })
+
+
+    Spacer(Modifier.height(50.dp))
+
+    Text("Map dimensions")
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextField(
+            value = scenarioDimensionX,
+            onValueChange = { newValue ->
+                scenarioDimensionX = newValue
+                confirmFlow = false
+            },
+            modifier = Modifier.widthIn(max = 80.dp).onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    scenarioDimensionX = scenarioDimensionX.copy(
+                        text = scenarioDimensionX.text
+                            .replace(Regex("[^0-9]"), "").let { str ->
+                                val value = str.toIntOrNull() ?: 0
+                                val coercedValue = value.coerceIn(
+                                    Terrain.MIN_TERRAIN_MAP_X..Terrain.MAX_TERRAIN_MAP_X
+                                )
+                                if (coercedValue == value) return@let str
+                                coercedValue.toString()
+                            }
+                    )
+                }
+            },
+            leadingIcon = { Text("X") }
+        )
+        Spacer(Modifier.height(4.dp))
+
+
+        TextField(
+            value = scenarioDimensionY,
+            onValueChange = { newValue ->
+                scenarioDimensionY = newValue
+                confirmFlow = false
+            },
+            modifier = Modifier.widthIn(max = 80.dp).onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    scenarioDimensionY = scenarioDimensionY.copy(
+                        text = scenarioDimensionY.text
+                            .replace(Regex("[^0-9]"), "").let { str ->
+                                val value = str.toIntOrNull() ?: 0
+                                val coercedValue = value.coerceIn(
+                                    Terrain.MIN_TERRAIN_MAP_Y..Terrain.MAX_TERRAIN_MAP_Y
+                                )
+                                if (coercedValue == value) return@let str
+                                coercedValue.toString()
+                            }
+                    )
+                }
+            },
+            leadingIcon = { Text("Y") }
+        )
+    }
+    Spacer(Modifier.height(4.dp))
+
+
+
+    if (confirmFlow) {
+        Text("It is an irreversible action, are you sure?")
+        Row {
+            DefaultButton(
+                onClick = {
+                    val newX = scenarioDimensionX.text.toInt()
+                    val newY = scenarioDimensionY.text.toInt()
+
+                    editorService.importScenario(
+                        scenario!!.copy(
+                            commonData = scenario!!.commonData.copy(
+                                map = scenario!!.commonData.map.resize(newX, newY)
+                            )
+                        )
+                    )
+                    confirmFlow = false
+
+                },
+            ) {
+                Text("Confirm")
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            OutlinedButton(
+                onClick = {
+                    confirmFlow = false
+                },
+            ) {
+                Text("Cancel")
+            }
+        }
+
+
+    } else {
+        DefaultButton(
+            onClick = {
+                confirmFlow = true
+            },
+        ) {
+            Text("Resize map")
+        }
+    }
+
 
 }
 
@@ -808,7 +955,8 @@ private fun PlaceObjectiveToolConfig() {
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        ComboBox(labelText = playerIndex?.let { "${playerIndex + 1} ${scenario!!.players[playerIndex].team}" } ?: "No one",
+        ComboBox(labelText = playerIndex?.let { "${playerIndex + 1} ${scenario!!.players[playerIndex].team}" }
+            ?: "No one",
             popupManager = playerTeamPopupManager,
             popupContent = {
                 VerticallyScrollableContainer {

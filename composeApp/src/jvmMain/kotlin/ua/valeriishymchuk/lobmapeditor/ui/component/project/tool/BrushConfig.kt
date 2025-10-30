@@ -30,13 +30,11 @@ private val brushRange = 1..16
 
 @Composable
 fun BrushToolConfig(tool: BrushTool) {
-    val brushSize by tool.brushSize.collectAsState() // одне джерело правди
+    val brushSize by tool.brushSize.collectAsState()
     val shape by tool.brushShape.collectAsState()
 
-    // Текстове поле
     val sizeTextFieldState = rememberTextFieldState(brushSize.toString())
 
-    // Якщо brushSize змінюється – оновлюємо текст у полі
     LaunchedEffect(brushSize) {
         val asString = brushSize.toString()
         if (sizeTextFieldState.text != asString) {
@@ -49,7 +47,6 @@ fun BrushToolConfig(tool: BrushTool) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Brush size (diameter)")
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Jewel TextField працює напряму з state
             TextField(
                 sizeTextFieldState,
                 modifier = Modifier.widthIn(max = 60.dp)
@@ -96,7 +93,6 @@ fun BrushToolConfig(tool: BrushTool) {
         )
     }
 
-    // Окремо слідкуємо за текстовим інпутом і оновлюємо brushSize
     LaunchedEffect(sizeTextFieldState) {
         snapshotFlow { sizeTextFieldState.text }
             .collect { rawText ->

@@ -1,16 +1,16 @@
 package ua.valeriishymchuk.lobmapeditor.render.helper
 
 import com.jogamp.opengl.GL
+import com.jogamp.opengl.GL2ES3
 import com.jogamp.opengl.GL3
-import com.jogamp.opengl.GL3ES3
 import com.jogamp.opengl.GLProfile
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import java.nio.Buffer
 
+
+
 typealias CurrentGL = GL3
 const val CURRENT_GL_PROFILE = GLProfile.GL3
-const val CURRENT_GL_PROFILE_FALLBACK = GLProfile.GL3bc
-//const val CURRENT_GL_PROFILE_FALLBACK2 = GLProfile.GL
 
 
 fun CurrentGL.glGenBuffer(): Int {

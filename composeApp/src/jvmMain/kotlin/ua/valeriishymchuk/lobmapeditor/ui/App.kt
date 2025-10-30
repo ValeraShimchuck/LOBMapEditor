@@ -21,9 +21,6 @@ import com.jogamp.opengl.GLException
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import com.jogamp.opengl.util.FPSAnimator
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.jetbrains.jewel.foundation.Stroke
 import org.jetbrains.jewel.foundation.modifier.border
@@ -32,17 +29,13 @@ import org.jetbrains.jewel.ui.component.OutlinedButton
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextArea
 import org.jetbrains.jewel.ui.theme.popupContainerStyle
-import org.kodein.di.bindProvider
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
-import org.kodein.di.compose.withDI
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
 import ua.valeriishymchuk.lobmapeditor.render.InputListener
 import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE
-import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE_FALLBACK
-import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -158,13 +151,8 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
 
     val canvas = remember {
         println("Initializing factory")
-        var profile: GLProfile
-        try {
-            profile = GLProfile.get(CURRENT_GL_PROFILE)
-        } catch (e: GLException) {
-            println("$CURRENT_GL_PROFILE is not available, trying to use $CURRENT_GL_PROFILE_FALLBACK")
-            profile = GLProfile.get(CURRENT_GL_PROFILE_FALLBACK)
-        }
+        val profile: GLProfile = GLProfile.get(CURRENT_GL_PROFILE)
+
         val capabilities = GLCapabilities(profile)
 //        capabilities.isPBuffer = true
         capabilities.apply {

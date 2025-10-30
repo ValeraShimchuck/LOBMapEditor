@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.services.dto
 
 import io.konform.validation.Validation
 import io.konform.validation.constraints.*
+import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import java.io.File
 
 data class CreateProjectData(
@@ -20,13 +21,13 @@ data class CreateProjectData(
             CreateProjectData::dir required {}
 
             CreateProjectData::widthPx {
-                minimum(992)
-                maximum(3200 * 10)
+                minimum(Terrain.MIN_TERRAIN_MAP_X)
+                maximum(Terrain.MAX_TERRAIN_MAP_X)
             }
 
             CreateProjectData::heightPx {
-                minimum(896)
-                maximum(2512 * 10)
+                minimum(Terrain.MIN_TERRAIN_MAP_Y)
+                maximum(Terrain.MAX_TERRAIN_MAP_Y)
             }
         }
 
