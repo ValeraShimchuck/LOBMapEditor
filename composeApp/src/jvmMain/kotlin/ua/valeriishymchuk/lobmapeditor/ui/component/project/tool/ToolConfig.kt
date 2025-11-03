@@ -110,6 +110,32 @@ private fun DebugToolConfig() {
 
 
     Column {
+
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Text("Measure render performance GPU")
+            Spacer(Modifier.width(4.dp))
+            Checkbox(debugInfo.measurePerformanceGPU, onCheckedChange = {
+                toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                    measurePerformanceGPU = it
+                )
+            })
+        }
+
+
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Text("Measure render performance CPU")
+            Spacer(Modifier.width(4.dp))
+            Checkbox(debugInfo.measurePerformanceCPU, onCheckedChange = {
+                toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                    measurePerformanceCPU = it
+                )
+            })
+        }
+
         Spacer(Modifier.height(4.dp))
         let {
             Text("First height color:")

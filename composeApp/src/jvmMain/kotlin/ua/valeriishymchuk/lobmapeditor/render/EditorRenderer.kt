@@ -1,8 +1,8 @@
 package ua.valeriishymchuk.lobmapeditor.render
 
 import com.jogamp.opengl.GL.*
+import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
-import com.jogamp.opengl.GLDebugMessage
 import com.jogamp.opengl.GLEventListener
 import org.joml.Matrix4f
 import org.joml.Vector2f
@@ -15,14 +15,13 @@ import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.helper.currentGl
+import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
 import ua.valeriishymchuk.lobmapeditor.render.stage.*
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
-import java.awt.event.*
 import java.lang.Math
-import java.lang.System
 import kotlin.time.TimeSource
 
 
@@ -72,18 +71,33 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
 
     private val tileMapVertices = floatArrayOf(
-        0f, editorService.scenario.value!!.map.heightPixels.toFloat(),
-        editorService.scenario.value!!.map.widthPixels.toFloat(), 0f,
-        0f, 0f,
+        0f,
+        editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(),
+        0f,
+        0f,
+        0f,
 
-        0f, editorService.scenario.value!!.map.heightPixels.toFloat(),
-        editorService.scenario.value!!.map.widthPixels.toFloat(), editorService.scenario.value!!.map.heightPixels.toFloat(),
-        editorService.scenario.value!!.map.widthPixels.toFloat(), 0f,
+        0f,
+        editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(),
+        editorService.scenario.value!!.map.heightPixels.toFloat(),
+        editorService.scenario.value!!.map.widthPixels.toFloat(),
+        0f,
     )
 
+    class PerformanceQueries(
+        val map: Map<RenderStage, Int>,
+        var available: IntPointer,
+        var shouldStartCounter: Boolean
+    ) {
+        val queryPointers: IntArray = IntArray(map.size + 1)
+        val disabledRenderStages: MutableSet<RenderStage> = mutableSetOf()
+    }
 
     // Order matters
     private lateinit var renderStages: List<RenderStage>
+    private lateinit var performanceQueries: PerformanceQueries
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.currentGl()
@@ -107,8 +121,17 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             RangeStage(ctx),
             SpriteStage(ctx),
             SelectionStage(ctx)
-
         )
+
+        var queryIndex = 0;
+
+        performanceQueries = PerformanceQueries(
+            renderStages.associateWith { queryIndex++ },
+            IntPointer(),
+            true
+        )
+
+        ctx.glGenQueries(performanceQueries.queryPointers.size, performanceQueries.queryPointers, 0)
 
         editorService.projectionMatrix.setOrtho(
             0f,
@@ -124,13 +147,72 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         println("GL initialized")
 
 
-
     }
 
 
     override fun display(drawable: GLAutoDrawable) {
         editorService.save()
         val ctx = drawable.gl.currentGl()
+
+        if (!performanceQueries.shouldStartCounter) {
+            ctx.glGetQueryObjectuiv(
+                performanceQueries.queryPointers.last(),
+                GL3.GL_QUERY_RESULT_AVAILABLE,
+                performanceQueries.available.array,
+                0
+            )
+            if (performanceQueries.available.value != 0) {
+                performanceQueries.shouldStartCounter = true
+                val startedQuery = LongArray(1)
+                ctx.glGetQueryObjectui64v(
+                    performanceQueries.queryPointers.last(),
+                    GL3.GL_QUERY_RESULT,
+                    startedQuery,
+                    0
+                )
+                var lastTimeStamp = startedQuery[0]
+                val elapsedTimes =
+                    performanceQueries.map.filterNot { (key, _) -> performanceQueries.disabledRenderStages.contains(key) }
+                        .mapValues { (_, value) ->
+                            val longArray = LongArray(1)
+                            ctx.glGetQueryObjectui64v(
+                                performanceQueries.queryPointers[value],
+                                GL3.GL_QUERY_RESULT,
+                                longArray,
+                                0
+                            )
+                            val elapsed = longArray[0] - lastTimeStamp
+                            lastTimeStamp = longArray[0]
+                            return@mapValues elapsed
+                        }
+
+                val divider = 1_000_000.0
+                val totalElapsed = lastTimeStamp - startedQuery[0]
+                println("Finished render GPU SIDE measurements, total elapsed: ${totalElapsed / divider} millis")
+                elapsedTimes.forEach { (key, value) ->
+                    println("Elapsed for ${key::class.simpleName} - ${value / divider} millis")
+                }
+                performanceQueries.available.array[0] = 0
+            }
+
+        }
+
+        val shouldQueryTimer = toolService.debugTool.debugInfo.value.measurePerformanceGPU
+                && performanceQueries.shouldStartCounter
+        if (shouldQueryTimer) performanceQueries.shouldStartCounter = false
+
+        fun queryTimer(index: Int) {
+            if (!shouldQueryTimer) return
+            ctx.glQueryCounter(performanceQueries.queryPointers[index], GL3.GL_TIMESTAMP)
+        }
+
+        fun queryTimer(stage: RenderStage) {
+            queryTimer(performanceQueries.map[stage]!!)
+
+        }
+
+        queryTimer(performanceQueries.queryPointers.size - 1)
+
         textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
         ctx.glClear(GL_COLOR_BUFFER_BIT)
@@ -186,21 +268,39 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         val start = timeSource.markNow()
         val marks = mutableListOf<Pair<String, TimeSource.Monotonic.ValueTimeMark>>()
         renderStages.forEach { stage ->
-            if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) return@forEach
-            if (stage is GridStage && !toolService.gridTool.enabled.value) return@forEach
-            if (stage is ReferenceOverlayStage && !toolService.refenceOverlayTool.enabled.value) return@forEach
+            if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+            if (stage is GridStage && !toolService.gridTool.enabled.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+            if (stage is ReferenceOverlayStage && !toolService.refenceOverlayTool.enabled.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
             stage.draw(renderCtx)
+            queryTimer(stage)
+            performanceQueries.disabledRenderStages.remove(stage)
             marks.add(stage::class.simpleName!! to timeSource.markNow())
         }
+
         val end = timeSource.markNow()
-//        println("Rendered frame, it took: ${end - start} to render it. Summary for every stage:")
-//        var lastMark = start
-//        marks.forEach { (stage, mark) ->
-//            println("$stage: ${mark - lastMark}")
-//            lastMark = mark
-//        }
+        if (toolService.debugTool.debugInfo.value.measurePerformanceCPU) {
+            println("Prepared frame on CPU SIDE, it took: ${end - start} to render it. Summary for every stage:")
+            var lastMark = start
+            marks.forEach { (stage, mark) ->
+                println("$stage: ${mark - lastMark}")
+                lastMark = mark
+            }
+        }
 
         ctx.glBindVertexArray(0)
+        val error = ctx.glGetError()
+        if (error != GL_NO_ERROR) {
+            System.err.println("OpenGL error $error")
+        }
 
 
     }

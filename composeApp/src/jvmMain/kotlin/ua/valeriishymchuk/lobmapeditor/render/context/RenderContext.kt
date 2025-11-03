@@ -50,7 +50,9 @@ data class RenderContext(
 
     data class DebugInfo(
         val firstHeightColor: Vector4f,
-        val secondHeightColor: Vector4f
+        val secondHeightColor: Vector4f,
+        val measurePerformanceCPU: Boolean,
+        val measurePerformanceGPU: Boolean
     )
 
 

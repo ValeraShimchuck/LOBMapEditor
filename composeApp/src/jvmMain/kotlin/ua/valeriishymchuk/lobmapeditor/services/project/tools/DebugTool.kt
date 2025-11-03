@@ -19,7 +19,9 @@ class DebugTool: PresetTool() {
 
     val debugInfo: MutableStateFlow<RenderContext.DebugInfo> = MutableStateFlow(RenderContext.DebugInfo(
         Vector4f(0f),
-        Vector4f(0f)
+        Vector4f(0f),
+        false,
+        false
     ))
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {
