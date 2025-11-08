@@ -28,7 +28,9 @@ import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.withLock
 
 class EditorService<T : GameScenario<T>>(
@@ -149,6 +151,8 @@ class EditorService<T : GameScenario<T>>(
         }
     }
 
+    private val saveCount = AtomicInteger()
+
     fun save(forceSave: Boolean = false, blocking: Boolean = false) {
         if (savingJob?.isActive == true) return
         if (!forceSave) {
@@ -159,6 +163,9 @@ class EditorService<T : GameScenario<T>>(
         suspend fun save0() {
             lastSave = System.currentTimeMillis()
             lastHashCode = scenario.value!!.hashCode()
+            val backupId = saveCount.incrementAndGet() % 10
+            val backupFile = projectRef.getBackupFile(backupId)
+            projectRef.mapFile.copyTo(backupFile, overwrite = true)
             scenarioIOService.save(scenario.value!!, projectRef.mapFile)
             println("Saved map")
         }

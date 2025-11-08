@@ -10,5 +10,8 @@ data class ProjectRef(
     val dirFile: File get() = File(path)
     val projectFile: File get() = File(path, "project.json")
     val mapFile: File get() = File(path, "map.json")
+    fun getBackupFile(id: Int): File {
+        return File(path, "map_backup${id}.json")
+    }
     val referenceFile: File get() = File(path, "reference.png")
 }
