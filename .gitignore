@@ -22,3 +22,5 @@ captures
 /composeApp/natives/
 /composeApp/projects.json
 /composeApp/testreference.png
+/composeApp/editor.log
+/composeApp/error2.log

@@ -1,6 +1,6 @@
 #version 330 core
 
-const int MAX_OVERLAYS = 16;
+const int MAX_OVERLAYS = 2;
 const int NEIGHBORS_SIZE = 9;
 const int OVERLAY_NEIGHBORS_SIZE = MAX_OVERLAYS * NEIGHBORS_SIZE;
 const ivec2 OVERLAY_NEIGHBORS_DIMENSIONS = ivec2(NEIGHBORS_SIZE, MAX_OVERLAYS);
@@ -52,8 +52,6 @@ int getIndex2d(ivec2 pos, ivec2 dimensions) {
 vec4 getPixel(vec2 texCord) {
     // 0 - nothing
     // 1 - current tile to be drawn
-//    uint tileValue = texture(uTileMap, texCord).r;
-//    bool isSet = tileValue == 1u;
     vec2 tileMapCoordinates = texCord / uTileUnit;
     vec2 tileCoordinates = fract(tileMapCoordinates);// [0..1] within a tile
 
@@ -111,12 +109,10 @@ vec4 getPixel(vec2 texCord) {
     for (int i = 0; i < 9; i++) {
         ivec2 offset = offsets[i];
         neighborTileStatus[i] = texture(uTileMap, texCord + vec2(offset) * uTileUnit).r == 1u;
-//        if (neighborTileStatus[i]) debugPixels[i] = vec4(1.0);
     }
 
 
 
-//    float[9][MAX_OVERLAYS] tileIndecies;
     float[OVERLAY_NEIGHBORS_SIZE] tileIndecies;
 
 
@@ -128,7 +124,6 @@ vec4 getPixel(vec2 texCord) {
         }
     }
 
-//    vec2[9][MAX_OVERLAYS] randomOffsets;
     vec2[OVERLAY_NEIGHBORS_SIZE] randomOffsets;
 
     float doubleRandomRange = uRandomRange * 2;

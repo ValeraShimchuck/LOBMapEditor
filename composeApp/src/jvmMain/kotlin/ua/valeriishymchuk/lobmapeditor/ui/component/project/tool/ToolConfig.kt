@@ -286,9 +286,10 @@ private fun PlayerToolConfig() {
     val toolService by rememberInstance<ToolService>()
     val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
     val scenario by editorService.scenario.collectAsState()
+    scenario ?: return
     val tool = toolService.playerTool
     val currentPlayerReference by tool.currentPlayer.collectAsState()
-    var playerToMoveOwnership by remember(scenario!!, currentPlayerReference) {
+    var playerToMoveOwnership by remember(scenario, currentPlayerReference) {
         mutableStateOf(Reference<Int, Player>(scenario!!.players.indices.first { currentPlayerReference.key != it }))
     }
     val currentPlayer = currentPlayerReference.getValueOrNull(scenario!!.players::getOrNull) ?: Unit.let {
@@ -310,8 +311,6 @@ private fun PlayerToolConfig() {
 
 
     LaunchedEffect(currentPlayerReference) {
-//        println("Changed currentPlayerReference to ${currentPlayerReference.key}")
-//        val textValue = ammoTextFieldValue.text.toIntOrNull() ?: return@LaunchedEffect
         ammoTextFieldValue = ammoTextFieldValue.copy(text = currentPlayer.ammo.toString())
     }
 

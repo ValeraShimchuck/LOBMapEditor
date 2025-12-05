@@ -154,19 +154,20 @@ class EditorService<T : GameScenario<T>>(
     private val saveCount = AtomicInteger()
 
     fun save(forceSave: Boolean = false, blocking: Boolean = false) {
+        val scenario = scenario.value ?: return
         if (savingJob?.isActive == true) return
         if (!forceSave) {
             if (System.currentTimeMillis() - lastSave < 30000 && System.currentTimeMillis() - lastAction < 5000) return
         }
-        if (scenario.value!!.hashCode() == lastHashCode) return
+        if (scenario.hashCode() == lastHashCode) return
 
         suspend fun save0() {
             lastSave = System.currentTimeMillis()
-            lastHashCode = scenario.value!!.hashCode()
+            lastHashCode = scenario.hashCode()
             val backupId = saveCount.incrementAndGet() % 10
             val backupFile = projectRef.getBackupFile(backupId)
             projectRef.mapFile.copyTo(backupFile, overwrite = true)
-            scenarioIOService.save(scenario.value!!, projectRef.mapFile)
+            scenarioIOService.save(scenario, projectRef.mapFile)
             println("Saved map")
         }
 
