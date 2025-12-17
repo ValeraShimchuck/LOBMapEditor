@@ -78,7 +78,7 @@ fun UnitsPropertiesConfig() {
                 val currentText = when {
                     selection.isEmpty() -> ""
                     isXPositionMixed -> ""
-                    else -> selection.map { it.position.x }.distinct().first().toString()
+                    else -> selection.map { it.position.x }.distinct().firstOrNull()?.toString() ?: ""
                 }
                 TextFieldValue(
                     text = currentText,
@@ -106,7 +106,7 @@ fun UnitsPropertiesConfig() {
                 val currentText = when {
                     selection.isEmpty() -> ""
                     isYPositionMixed -> ""
-                    else -> selection.map { it.position.y }.distinct().first().toString()
+                    else -> selection.map { it.position.y }.distinct().firstOrNull()?.toString() ?: ""
                 }
                 TextFieldValue(
                     text = currentText,
@@ -142,7 +142,7 @@ fun UnitsPropertiesConfig() {
                     isRotationMixed -> ""
                     else -> selection.map {
                         org.joml.Math.toDegrees(it.rotationRadians)
-                    }.distinct().first().toString()
+                    }.distinct().firstOrNull()?.toString() ?: ""
                 }
 
                 TextFieldValue(
@@ -182,7 +182,7 @@ fun UnitsPropertiesConfig() {
                 val currentText = when {
                     selection.isEmpty() -> ""
                     selection.map { it.name }.distinct().size > 1 -> ""
-                    else -> selection.map { it.name }.distinct().first() ?: ""
+                    else -> selection.map { it.name }.distinct().firstOrNull() ?: ""
                 }
                 TextFieldValue(
                     text = currentText,
@@ -220,7 +220,7 @@ fun UnitsPropertiesConfig() {
             Text("Owner:")
             ComboBox(
                 labelText = if (isOwnerMixed) "Mixed" else let {
-                    val owner = selection.map { it.owner }.distinct().first()
+                    val owner = selection.map { it.owner }.distinct().firstOrNull() ?: return@let ""
                     "${owner.key + 1} ${scenario!!.players[owner.key].team}"
                 },
                 popupManager = ownerPopupManager,
@@ -258,7 +258,7 @@ fun UnitsPropertiesConfig() {
             Text("Type:")
             ComboBox(
                 labelText = if (isUnitTypeMixed) "Mixed" else let {
-                    val unityType = selection.map { it.type }.distinct().first()
+                    val unityType = selection.map { it.type }.distinct().firstOrNull() ?: return@let ""
                     "$unityType"
                 },
                 popupManager = unityTypePopupManager,
