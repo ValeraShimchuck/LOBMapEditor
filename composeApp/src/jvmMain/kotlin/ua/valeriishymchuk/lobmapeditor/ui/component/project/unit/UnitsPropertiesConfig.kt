@@ -265,9 +265,7 @@ fun UnitsPropertiesConfig() {
                 popupContent = {
                     VerticallyScrollableContainer {
                         Column {
-                            GameUnitType.entries.sortedByDescending {
-                                it.ordinal
-                            }.forEach { item ->
+                            GameUnitType.entries.forEach { item ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                         updateSelectedUnits { unit ->

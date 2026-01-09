@@ -30,34 +30,37 @@ enum class GameUnitType(
         "infantry1",
         shootingRange = INFANTRY_SHOOTING_RANGE
     ),
-    GUARDS_INFANTRY(GameUnitCategory.INFANTRY, 4, "infantry", "guards"), LIGHT_INFANTRY(
+    LIGHT_INFANTRY(
         GameUnitCategory.INFANTRY,
         7,
         "infantry",
         "chasseurs",
         shootingRange = INFANTRY_SHOOTING_RANGE
     ),
-    MILITIA(GameUnitCategory.INFANTRY, 10, "militia", "militia1"), GRENADIERS(
+    GRENADIERS(
         GameUnitCategory.INFANTRY,
         14,
         "infantry",
         "grenadiers",
         shootingRange = INFANTRY_SHOOTING_RANGE
     ),
-
+    GUARDS_INFANTRY(GameUnitCategory.INFANTRY, 4, "infantry", "guards"),
+    MILITIA(GameUnitCategory.INFANTRY, 10, "militia", "militia1"),
     // Cavalry
-    DRAGOONS(GameUnitCategory.CAVALRY, 2, "cavalry", "dragoons"), LANCERS(
-        GameUnitCategory.CAVALRY,
-        5,
-        "cavalry",
-        "lancers"
-    ),
-    CUIRASSIERS(GameUnitCategory.CAVALRY, 8, "cavalry", "cuirassiers"), HUSSARS(
+    HUSSARS(
         GameUnitCategory.CAVALRY,
         11,
         "cavalry",
         "cavalry1"
     ),
+    LANCERS(
+        GameUnitCategory.CAVALRY,
+        5,
+        "cavalry",
+        "lancers"
+    ),
+    DRAGOONS(GameUnitCategory.CAVALRY, 2, "cavalry", "dragoons"),
+    CUIRASSIERS(GameUnitCategory.CAVALRY, 8, "cavalry", "cuirassiers"),
     HORSE_ARCHERS(
         GameUnitCategory.CAVALRY,
         13,
@@ -72,52 +75,6 @@ enum class GameUnitType(
 
     // Artillery
 
-    EIGHT_LB_FOOT_ARTILLERY(
-        GameUnitCategory.ARTILLERY,
-        3,
-        "artillery",
-        shootingRange = ShootingRange.getRanges(60f) {
-            closeRange(69)
-            closeRange(135)
-            defaultRange(240)
-            defaultRange(435)
-        }
-    ),
-    SIX_LB_HORSE_ARTILLERY(
-        GameUnitCategory.ARTILLERY,
-        6,
-        "horse-artillery",
-        "horse-artillery1",
-        shootingRange = SIX_LB_CANNON_RANGE
-    ),
-    SIX_LB_FOOT_ARTILLERY(
-        GameUnitCategory.ARTILLERY,
-        18,
-        "6lb-artillery",
-        shootingRange = SIX_LB_CANNON_RANGE
-    ),
-    SIX_IN_HOWITZER(
-        GameUnitCategory.ARTILLERY,
-        9,
-        "howitzers",
-        shootingRange = ShootingRange.getRanges(60f) {
-            closeRange(69)
-            defaultRange(200)
-            defaultRange(340)
-
-        }
-        ),
-    TWELVE_LB_FOOT_ARTILLERY(
-        GameUnitCategory.ARTILLERY,
-        12,
-        "heavy-artillery",
-        shootingRange = ShootingRange.getRanges(60f) {
-            closeRange(69)
-            closeRange(145)
-            defaultRange(250)
-            defaultRange(500)
-        }
-    ),
     FOUR_LB_FOOT_ARTILLERY(
         GameUnitCategory.ARTILLERY,
         15,
@@ -129,15 +86,28 @@ enum class GameUnitType(
             defaultRange(375)
         }
     ),
-    ROCKETS(
+    SIX_LB_FOOT_ARTILLERY(
         GameUnitCategory.ARTILLERY,
-        19,
-        "rockets",
-        "rockets1",
+        18,
+        "6lb-artillery",
+        shootingRange = SIX_LB_CANNON_RANGE
+    ),
+    SIX_LB_HORSE_ARTILLERY(
+        GameUnitCategory.ARTILLERY,
+        6,
+        "horse-artillery",
+        "horse-artillery1",
+        shootingRange = SIX_LB_CANNON_RANGE
+    ),
+    EIGHT_LB_FOOT_ARTILLERY(
+        GameUnitCategory.ARTILLERY,
+        3,
+        "artillery",
         shootingRange = ShootingRange.getRanges(60f) {
-            closeRange(150)
-            closeRange(270)
-            closeRange(450)
+            closeRange(69)
+            closeRange(135)
+            defaultRange(240)
+            defaultRange(435)
         }
     ),
     TEN_LB_LICORNE(
@@ -151,6 +121,18 @@ enum class GameUnitType(
             defaultRange(425)
         }
     ),
+    TWELVE_LB_FOOT_ARTILLERY(
+        GameUnitCategory.ARTILLERY,
+        12,
+        "heavy-artillery",
+        shootingRange = ShootingRange.getRanges(60f) {
+            closeRange(69)
+            closeRange(145)
+            defaultRange(250)
+            defaultRange(500)
+        }
+    ),
+
     EIGHTEEN_LB_LICORNE(
         GameUnitCategory.ARTILLERY,
         25,
@@ -160,6 +142,28 @@ enum class GameUnitType(
             closeRange(110)
             defaultRange(310)
             defaultRange(550)
+        }
+    ),
+    SIX_IN_HOWITZER(
+        GameUnitCategory.ARTILLERY,
+        9,
+        "howitzers",
+        shootingRange = ShootingRange.getRanges(60f) {
+            closeRange(69)
+            defaultRange(200)
+            defaultRange(340)
+
+        }
+        ),
+    ROCKETS(
+        GameUnitCategory.ARTILLERY,
+        19,
+        "rockets",
+        "rockets1",
+        shootingRange = ShootingRange.getRanges(60f) {
+            closeRange(150)
+            closeRange(270)
+            closeRange(450)
         }
     ),
 

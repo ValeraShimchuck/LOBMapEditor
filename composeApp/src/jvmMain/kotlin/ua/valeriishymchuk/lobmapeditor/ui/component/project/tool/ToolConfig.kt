@@ -977,9 +977,7 @@ private fun PlaceUnitToolConfig() {
         labelText = currentUnit.type.name, popupManager = unitPopupManager, popupContent = {
             VerticallyScrollableContainer {
                 Column {
-                    GameUnitType.entries.sortedByDescending {
-                        it.ordinal
-                    }.forEach { item ->
+                    GameUnitType.entries.forEach { item ->
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                 PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
