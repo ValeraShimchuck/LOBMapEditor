@@ -16,7 +16,8 @@ object PlaceObjectiveTool : PresetTool() {
         null,
         null,
         Position(0f, 0f),
-        ObjectiveType.SMALL
+        ObjectiveType.SMALL,
+        ObjectiveType.SMALL.defaultVictoryPoints
     ))
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {

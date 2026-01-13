@@ -252,18 +252,24 @@ class TerrainMap(
                     buffer.put(1)
                     return@forEach
                 }
-                if (it == TerrainType.BRIDGE && (type == TerrainType.ROAD || type == TerrainType.ROAD_WINTER || type == TerrainType.SUNKEN_ROAD)) {
+
+                if (type.blobCompatibility.value.contains(it)) {
                     buffer.put(2)
                     return@forEach
                 }
-                if (type == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER || it == TerrainType.SUNKEN_ROAD)) {
-                    buffer.put(2)
-                    return@forEach
-                }
-                if (it == TerrainType.SUNKEN_ROAD && type == TerrainType.ROAD || it == TerrainType.ROAD && type == TerrainType.SUNKEN_ROAD ) {
-                    buffer.put(2)
-                    return@forEach
-                }
+
+//                if (it == TerrainType.BRIDGE && (type == TerrainType.ROAD || type == TerrainType.ROAD_WINTER || type == TerrainType.SUNKEN_ROAD)) {
+//                    buffer.put(2)
+//                    return@forEach
+//                }
+//                if (type == TerrainType.BRIDGE && (it == TerrainType.ROAD || it == TerrainType.ROAD_WINTER || it == TerrainType.SUNKEN_ROAD)) {
+//                    buffer.put(2)
+//                    return@forEach
+//                }
+//                if (it == TerrainType.SUNKEN_ROAD && type == TerrainType.ROAD || it == TerrainType.ROAD && type == TerrainType.SUNKEN_ROAD ) {
+//                    buffer.put(2)
+//                    return@forEach
+//                }
                 buffer.put(0)
             }
 

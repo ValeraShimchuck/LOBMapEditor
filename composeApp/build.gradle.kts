@@ -72,7 +72,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
                 implementation("io.konform:konform-jvm:0.11.1")
-                implementation("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
+                implementation("com.twelvemonkeys.imageio:imageio-webp:3.13.0")
                 implementation("org.joml:joml:1.10.8")
 
 

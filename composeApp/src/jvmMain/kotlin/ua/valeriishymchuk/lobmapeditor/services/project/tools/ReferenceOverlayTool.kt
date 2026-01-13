@@ -16,6 +16,8 @@ class ReferenceOverlayTool : PresetTool() {
     )
 
     val enabled = MutableStateFlow(true)
+    val hideSprites = MutableStateFlow(false)
+    val hideRange = MutableStateFlow(false)
     val scale = MutableStateFlow( Vector2f(1f, 1f)) // just scale
     val offset = MutableStateFlow(Vector2f(0f)) // from -1 to 1
     val rotation = MutableStateFlow(0f) // radians

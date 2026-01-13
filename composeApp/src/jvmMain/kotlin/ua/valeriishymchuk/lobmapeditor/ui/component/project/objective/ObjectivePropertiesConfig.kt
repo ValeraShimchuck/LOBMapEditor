@@ -285,7 +285,50 @@ fun ObjectivePropertiesConfig() {
                 )
             }
 
+            Spacer(Modifier.height(4.dp))
 
+
+            Text("Position:")
+            // Victory Points
+            var victoryPointsTextValue by remember {
+                mutableStateOf(
+                    TextFieldValue(
+                        text = selection!!.victoryPoints.toString(),
+                        selection = TextRange(selection!!.victoryPoints.toString().length) // Or calculate appropriate position
+                    )
+                )
+            }
+            TextField(
+                value = victoryPointsTextValue,
+                modifier = Modifier.fillMaxWidth(),
+                onValueChange = { newValue ->
+                    victoryPointsTextValue = newValue
+                    victoryPointsTextValue = victoryPointsTextValue.copy(
+                        text = newValue.text
+                            .replace(Regex("[^0-9]"), "").let { str ->
+                                val value = str.toIntOrNull() ?: return@let str
+                                val coercedValue = max(value, Objective.MIN_VICTORY_POINTS)
+                                if (coercedValue == value) return@let str
+                                coercedValue.toString()
+                            }
+                    )
+
+                    val finalText: Int = victoryPointsTextValue.text.ifEmpty { Objective.MIN_VICTORY_POINTS.toString() }.toIntOrNull() ?: Objective.MIN_VICTORY_POINTS
+
+                    updateObjective { it.copy(victoryPoints = finalText) }
+
+
+                },
+
+                leadingIcon = {
+                    Row {
+                        Text("Victory Points", color = JewelTheme.globalColors.text.info)
+                        Spacer(Modifier.width(4.dp))
+                    }
+                }
+            )
+
+            // Delete objective button
             DefaultButton(
                 style = JewelTheme.defaultButtonStyle.let { style ->
                     val color = Color(196, 27, 27, 255)

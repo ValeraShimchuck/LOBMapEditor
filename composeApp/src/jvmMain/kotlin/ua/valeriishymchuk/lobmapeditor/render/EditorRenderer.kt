@@ -120,7 +120,8 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
             GridStage(ctx, tileMapVertices),
             RangeStage(ctx),
             SpriteStage(ctx),
-            SelectionStage(ctx)
+            SelectionStage(ctx),
+            UnitBarsStage(ctx)
         )
 
         var queryIndex = 0;
@@ -268,6 +269,17 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         val start = timeSource.markNow()
         val marks = mutableListOf<Pair<String, TimeSource.Monotonic.ValueTimeMark>>()
         renderStages.forEach { stage ->
+
+            if (stage is SpriteStage && toolService.refenceOverlayTool.hideSprites.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+
+            if (stage is RangeStage && (toolService.refenceOverlayTool.hideSprites.value || toolService.refenceOverlayTool.hideRange.value)) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+
             if (stage is ColorClosestPointStage && !editorService.enableColorClosestPoint) {
                 performanceQueries.disabledRenderStages.add(stage)
                 return@forEach

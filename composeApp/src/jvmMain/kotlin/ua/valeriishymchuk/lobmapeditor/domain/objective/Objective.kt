@@ -10,7 +10,8 @@ data class Objective(
     val owner: Reference<Int, Player>?,
     val name: String?,
     val position: Position,
-    val type: ObjectiveType
+    val type: ObjectiveType,
+    val victoryPoints: Int
 ) {
     fun serialize(): JsonObject {
         return JsonObject().apply {
@@ -22,10 +23,15 @@ data class Objective(
             }
             add("pos", position.serialize())
             add("type", JsonPrimitive(type.id))
+            if (victoryPoints != type.defaultVictoryPoints) {
+                add("vp", JsonPrimitive(victoryPoints))
+            }
         }
     }
 
     companion object {
+        const val MIN_VICTORY_POINTS = 1
+
         fun deserialize(json: JsonObject): Objective {
             val owner: Reference<Int, Player>? = if (json.has("player")) {
                 Reference(json.getAsJsonPrimitive("player").asInt - 1)
@@ -38,11 +44,17 @@ data class Objective(
                 json.getAsJsonPrimitive("type").asInt
             else 1
             val objectiveType = ObjectiveType.getTypeById(type)
+
+            val victoryPoints = if (json.has("vp")) {
+                json.getAsJsonPrimitive("vp").asInt
+            } else objectiveType
+                .defaultVictoryPoints
             return Objective(
                 owner,
                 name,
                 pos,
-                objectiveType
+                objectiveType,
+                victoryPoints
             )
         }
     }

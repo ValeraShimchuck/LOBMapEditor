@@ -2,11 +2,14 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
+import org.joml.Math
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
@@ -16,8 +19,13 @@ object PlaceUnitTool : PresetTool() {
         null,
         Reference(0),
         Position(0f, 0f),
-        0f,
-        GameUnitType.LINE_INFANTRY
+        Math.toRadians(90f),
+        GameUnitType.LINE_INFANTRY,
+        UnitStatus.STANDING,
+        UnitFormation.MASS,
+        GameUnitType.LINE_INFANTRY.defaultHealth,
+        GameUnitType.LINE_INFANTRY.defaultOrganization,
+        GameUnitType.LINE_INFANTRY.defaultStamina
     ))
 
     override fun flush(editorService: EditorService<GameScenario.Preset>) {

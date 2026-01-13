@@ -34,7 +34,7 @@ void main() {
 
     bool inAngleRange = angle >= vStartAngle || angle <= vEndAngle;
     bool inRadialRange = dist <= vRadius && dist >= vInnerRadius;
-    bool withinMainSector = inAngleRange && inRadialRange;
+    bool withinMainSector = inAngleRange && inRadialRange ;
 
     vec2 startEdgePoint = vec2(
         vCenter.x + vRadius * cos(vStartAngle),
@@ -47,17 +47,7 @@ void main() {
     );
 
 
-//    vec2 coord2 = vPos - (vCenter + vec2(2.0, 0.0) );
-//    float dist2 = length(coord2);
-//    float angle2 = atan(coord2.y, coord2.x);
-//
-//    if (angle2 < 0.0) {
-//        angle2 += PI_2;
-//    }
-//
-//    bool inAngleRange2 = angle2 >= vStartAngle || angle2 <= vEndAngle;
-//    bool withinExclusionSector = inAngleRange2 && dist2 <= vRadius && !inRadialRange;
-
+//    FragColor = vec4(angle / PI_2, angle / PI_2, angle / PI_2, 1.0);
 
     if (withinMainSector) {
          FragColor = vColor;
@@ -66,7 +56,8 @@ void main() {
             distanceToLine(vPos, vCenter, startEdgePoint),
             distanceToLine(vPos, vCenter, endEdgePoint)
         );
-        if (distance < uThickness && dist <= vRadius) FragColor = vColor;
+        bool isRange360Deg = abs(vStartAngle - vEndAngle) < 0.1; // error here
+        if (distance < uThickness && dist <= vRadius && !isRange360Deg) FragColor = vColor;
         else discard;
     }
 
