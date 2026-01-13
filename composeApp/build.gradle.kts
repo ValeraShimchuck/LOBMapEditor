@@ -150,7 +150,8 @@ compose.desktop {
             }
             includeAllModules = true
             packageName = "LobMapEditor"
-            packageVersion = System.getenv("GITHUB_REF")?.removePrefix("refs/tags/v") ?: "1.0.0"
+            val regex = Regex("refs\\/tags\\/\\w(.*)")
+            packageVersion = System.getenv("GITHUB_REF")?.let { regex.matchEntire(it)?.groupValues?.get(1) } ?: "1.0.0"
         }
 
 
