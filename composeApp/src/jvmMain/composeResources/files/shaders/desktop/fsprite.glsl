@@ -36,7 +36,13 @@ void main() {
     FragColor = vec4(-1); // ignore the default value, its fine
 
     if (uDrawMask) FragColor = texture(uMask, vTexCoord) * uMaskColor;
-    if (uDrawOverlay && uDrawMask) FragColor = blendPixels(texture(uOverlay, vTexCoord), FragColor);
+    if (uDrawOverlay && uDrawMask) {
+        FragColor = blendPixels(texture(uOverlay, vTexCoord), FragColor);
+        if (FragColor.a > 0.0) {
+            FragColor = vec4(FragColor.rgb, uMaskColor.a);
+        }
+//        FragColor = vec4(FragColor.rgb, uMaskColor.a);
+    }
     else if (uDrawOverlay) {
         FragColor = texture(uOverlay, vTexCoord);
 //        FragColor = vec4(1.0, 0.0, 0.0, 1.0);

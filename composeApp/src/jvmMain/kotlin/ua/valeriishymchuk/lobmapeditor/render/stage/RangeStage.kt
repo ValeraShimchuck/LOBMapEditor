@@ -15,6 +15,7 @@ import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.RangeProgram
 import ua.valeriishymchuk.lobmapeditor.render.program.SpriteProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
+import ua.valeriishymchuk.lobmapeditor.shared.range.ShootingRange
 
 class RangeStage(
     ctx: CurrentGL
@@ -42,9 +43,12 @@ class RangeStage(
 
             val range = unit.type.shootingRange!!
 
-            val shootingAngleRadians = Math.toRadians(range.angle)
+            val shootingAngleRadians = Math.toRadians(when(range) {
+                is ShootingRange.Default -> range.angle
+                is ShootingRange.Formation -> range.angles[unit.formation]!!
+            })
 
-            range.ranges.map { (color, radius) ->
+            range.ranges.ranges.map { (color, radius) ->
                 val adjustedRadius = radius + 8f
                 RangeProgram.VertexBuffer(
                     RectanglePoints.fromPoints(

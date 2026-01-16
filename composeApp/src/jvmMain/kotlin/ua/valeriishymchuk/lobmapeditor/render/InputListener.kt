@@ -384,7 +384,12 @@ class InputListener(
 
     private fun checkStartOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
-
+        if (toolService.refenceOverlayTool.hideSprites.value) {
+            editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
+            editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
+            isSelectionDragging = true
+            return
+        }
 
         val objective = getClickedObjective(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
@@ -474,9 +479,9 @@ class InputListener(
 
     private fun getClickedUnits(e: MouseEvent): List<GameUnit> {
         val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
-        val unitDimensionsMin = UNIT_DIMENSIONS.div(-2f, Vector2f())
-        val unitDimensionsMax = UNIT_DIMENSIONS.div(2f, Vector2f())
         return editorService.scenario.value!!.units.filter { unit ->
+            val unitDimensionsMin = (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(-2f, Vector2f())
+            val unitDimensionsMax = (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(2f, Vector2f())
             val positionMatrix = Matrix4f()
             positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
             positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
@@ -490,6 +495,7 @@ class InputListener(
     }
 
     private fun checkSingleSelection(e: MouseEvent) {
+        if (toolService.refenceOverlayTool.hideSprites.value) return
         val objective = getClickedObjective(e)
         if (objective != null) {
             editorService.selectedUnits.value = setOf()
@@ -512,6 +518,11 @@ class InputListener(
 
     private fun checkEndOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
+        if (toolService.refenceOverlayTool.hideSprites.value) {
+            isSelectionDragging = false
+            editorService.selectionEnabled = false
+            return
+        }
 
         if (rotatableUnit != null) {
             rotatableUnit = null
@@ -536,6 +547,7 @@ class InputListener(
         val worldPosEnd = editorService.fromNDCToWorldSpace(editorService.selectionEnd)
         val worldPosMin = worldPosStart.min(worldPosEnd, Vector2f())
         val worldPosMax = worldPosStart.max(worldPosEnd, Vector2f())
+
         val selectedUnits = editorService.scenario.value!!.units.filter { unit ->
             val pos = unit.position
             worldPosMin.x < pos.x && pos.x < worldPosMax.x &&
@@ -545,7 +557,7 @@ class InputListener(
             Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
         }
         if (newSelectedUnits.isNotEmpty()) editorService.selectedObjectives.value = null
-        if (!isShiftPressed && !isCtrlPressed) editorService.selectedUnits.value = setOf()
+        if (!isShiftPressed && !isCtrlPressed && !toolService.refenceOverlayTool.hideSprites.value) editorService.selectedUnits.value = setOf()
         if (!isCtrlPressed) editorService.selectedUnits.value += newSelectedUnits
         else editorService.selectedUnits.value -= newSelectedUnits.toSet()
     }

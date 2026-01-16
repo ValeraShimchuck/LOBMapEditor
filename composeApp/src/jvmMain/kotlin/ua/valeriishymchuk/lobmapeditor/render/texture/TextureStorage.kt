@@ -4,6 +4,7 @@ import com.jogamp.opengl.GL
 import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
 import ua.valeriishymchuk.lobmapeditor.render.RGBAImage
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
@@ -13,12 +14,10 @@ import java.awt.image.BufferedImage
 import java.awt.image.DataBufferByte
 import java.io.File
 import java.io.InputStream
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
-import kotlin.collections.set
 
 class TextureStorage {
 
@@ -84,7 +83,8 @@ class TextureStorage {
         if (referenceFile.exists() && referenceFile.isFile) {
             println("Found reference overlay image, loading...")
             try {
-                refenceOverlayTexture = loadTexture(ctx, referenceFile.inputStream(), useNearest = false, useClamp = true )
+                refenceOverlayTexture =
+                    loadTexture(ctx, referenceFile.inputStream(), useNearest = false, useClamp = true)
                 println("Loaded refence overlay image successfully")
                 return true
             } catch (e: Throwable) {
@@ -113,8 +113,21 @@ class TextureStorage {
         }
 
         GameUnitType.entries.forEach { unitType ->
-            loadInternalTexture(ctx, unitType.maskTexture)
-            unitType.overlayTexture?.let { loadInternalTexture(ctx, it) }
+            when (val texture = unitType.texture) {
+                is UnitTypeTexture.Formation -> {
+                    texture.map.values.forEach { formationTexture ->
+                        loadInternalTexture(ctx, formationTexture.maskTexture)
+                        loadInternalTexture(ctx, formationTexture.overlayTexture)
+                    }
+                }
+
+                is UnitTypeTexture.MaskAndOverlay -> {
+                    loadInternalTexture(ctx, texture.maskTexture)
+                    loadInternalTexture(ctx, texture.overlayTexture)
+                }
+
+                is UnitTypeTexture.MaskOnly -> loadInternalTexture(ctx, texture.maskTexture)
+            }
         }
 
         loadInternalTexture(ctx, "objectives/default", useNearest = false, useClamp = true)
@@ -269,7 +282,9 @@ class TextureStorage {
 
         val textureId = loadTexture(
             ctx,
-            ResourceLoader.loadResource("drawable/images/${key}.webp").inputStream(),
+            ResourceLoader.loadResource("drawable/images/${key}.webp")?.inputStream()
+                ?: ResourceLoader.loadResource("drawable/images/${key}.png")?.inputStream()
+                ?: throw IllegalArgumentException("Can't find drawable/images/${key}.webp/.png!"),
             useNearest,
             useClamp,
             offset,
@@ -327,7 +342,9 @@ class TextureStorage {
         imageSize: Vector2i? = null
     ): RGBAImage {
         return loadTextureData(
-            ResourceLoader.loadResource("drawable/images/${path}.webp").inputStream(),
+            ResourceLoader.loadResource("drawable/images/${path}.webp")?.inputStream()
+                ?: ResourceLoader.loadResource("drawable/images/${path}.png")?.inputStream()
+                ?: throw IllegalArgumentException("Can't find drawable/images/${path}.webp/.png!"),
             offset,
             imageSize
         )
@@ -411,11 +428,11 @@ class TextureStorage {
                         }
                     }
                 }
-//                val location = "${key}/${layer}.png"
-//                val file = File(location)
-//                file.parentFile.mkdirs()
-//                ImageIO.write(bufferImage, "PNG", file)
-//                println("Storing image at ${file.absolutePath} ${bufferImage.width}x${bufferImage.height}")
+                val location = "${key}/${layer}.png"
+                val file = File(location)
+                file.parentFile.mkdirs()
+                ImageIO.write(bufferImage, "PNG", file)
+                println("Storing image at ${file.absolutePath} ${bufferImage.width}x${bufferImage.height}")
                 // Flip buffer for OpenGL
                 buffer.flip()
 

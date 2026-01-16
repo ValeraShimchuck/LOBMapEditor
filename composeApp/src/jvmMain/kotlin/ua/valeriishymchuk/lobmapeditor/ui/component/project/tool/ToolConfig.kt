@@ -34,12 +34,17 @@ import org.joml.Vector4f
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.*
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
@@ -922,9 +927,11 @@ private fun PlaceUnitToolConfig() {
     val playerIndex = currentUnit.owner.key
     val teamPopupManager = remember { PopupManager() }
     val unitPopupManager = remember { PopupManager() }
+    val statusPopupManager = remember { PopupManager() }
+    val formationPopupManager = remember { PopupManager() }
 
 
-
+    // Player
     ComboBox(
         labelText = "${playerIndex + 1} ${scenario!!.players[playerIndex].team}",
         popupManager = teamPopupManager,
@@ -952,9 +959,10 @@ private fun PlaceUnitToolConfig() {
             }
         })
 
+    Spacer(Modifier.height(4.dp))
 
+    // Name
     val nameFieldState by remember { mutableStateOf(TextFieldState(currentUnit.name ?: "")) }
-
     LaunchedEffect(Unit) {
         snapshotFlow { nameFieldState.text.toString() }
             .collect { text ->
@@ -963,16 +971,20 @@ private fun PlaceUnitToolConfig() {
                 )
             }
     }
-
-
-    Spacer(Modifier.height(4.dp))
-
     TextField(
-        nameFieldState, Modifier.fillMaxWidth(), placeholder = { Text("Unit name... (Blank - default name)") })
+        nameFieldState, Modifier.fillMaxWidth(), placeholder = { Text("Unit name... (Blank - default name)") },
+
+        leadingIcon = {
+            Row {
+                Text("Name", color = JewelTheme.globalColors.text.info)
+                Spacer(Modifier.width(4.dp))
+            }
+        }
+    )
 
     Spacer(Modifier.height(4.dp))
 
-
+    // Unit Type
     ComboBox(
         labelText = currentUnit.type.name, popupManager = unitPopupManager, popupContent = {
             VerticallyScrollableContainer {
@@ -981,7 +993,15 @@ private fun PlaceUnitToolConfig() {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                 PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
-                                    type = item
+                                    type = item,
+                                    formation = Unit.let {
+                                        if (item.hasFormation) {
+                                            currentUnit.formation ?: UnitFormation.MASS
+                                        } else null
+                                    },
+                                    stamina = item.defaultStamina,
+                                    health = item.defaultHealth,
+                                    organization = item.defaultOrganization
                                 )
                                 unitPopupManager.setPopupVisible(false)
                             }) {
@@ -995,17 +1015,15 @@ private fun PlaceUnitToolConfig() {
             }
         })
 
-    var angle by remember { mutableStateOf(0f) }
+    Spacer(Modifier.height(4.dp))
 
+    // angle
+    var angle by remember { mutableStateOf(currentUnit.rotationRadians) }
     LaunchedEffect(angle) {
         PlaceUnitTool.currentUnit.value = currentUnit.copy(
             rotationRadians = angle
         )
     }
-
-    Spacer(Modifier.height(4.dp))
-
-
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         AngleDial(
             angle,
@@ -1020,6 +1038,190 @@ private fun PlaceUnitToolConfig() {
             modifier = Modifier.fillMaxWidth()
         )
     }
+
+    Spacer(Modifier.height(4.dp))
+    // status
+    ComboBox(
+        labelText = currentUnit.status.name, popupManager = statusPopupManager, popupContent = {
+            VerticallyScrollableContainer {
+                Column {
+                    UnitStatus.entries.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
+                                    status = item
+                                )
+                                statusPopupManager.setPopupVisible(false)
+                            }) {
+                            Text(
+                                text = item.name,
+                            )
+                        }
+
+                    }
+                }
+            }
+        })
+
+    // formation
+    if (currentUnit.type.texture is UnitTypeTexture.Formation) {
+        Spacer(Modifier.height(4.dp))
+
+        ComboBox(
+            labelText = (currentUnit.formation?.name ?: UnitFormation.MASS.name),
+            popupManager = formationPopupManager,
+            popupContent = {
+                VerticallyScrollableContainer {
+                    Column {
+                        UnitFormation.entries.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                    PlaceUnitTool.currentUnit.value = PlaceUnitTool.currentUnit.value.copy(
+                                        formation = item
+                                    )
+                                    formationPopupManager.setPopupVisible(false)
+                                }) {
+                                Text(
+                                    text = item.name,
+                                )
+                            }
+
+                        }
+                    }
+                }
+            })
+    }
+
+    Spacer(Modifier.height(4.dp))
+
+    //health
+    var healthTextValue by remember(currentUnit) {
+        mutableStateOf(
+            TextFieldValue(
+                text = currentUnit.health.toString(),
+                selection = TextRange(currentUnit.health.toString().length) // Or calculate appropriate position
+            )
+        )
+    }
+    TextField(
+        value = healthTextValue,
+        modifier =Modifier.fillMaxWidth(),
+        onValueChange = { newValue ->
+            // Simply update the state with the complete new value
+            healthTextValue = newValue
+            healthTextValue = healthTextValue.copy(
+                text = newValue.text
+                    .replace(Regex("[^0-9]"), "").let { str ->
+                        val value = str.toIntOrNull() ?: return@let str
+                        val coercedValue = max(value, GameUnit.MIN_HEALTH)
+                        if (coercedValue == value) return@let str
+                        coercedValue.toString()
+                    }
+            )
+
+            val finalText: Int = healthTextValue.text.ifEmpty { GameUnit.MIN_HEALTH.toString() }.toIntOrNull() ?: GameUnit.MIN_HEALTH
+
+            PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                health = finalText
+            )
+
+        },
+
+        leadingIcon = {
+            Row {
+                Text("Health", color = JewelTheme.globalColors.text.info)
+                Spacer(Modifier.width(4.dp))
+            }
+        }
+    )
+
+    Spacer(Modifier.height(4.dp))
+
+    //organization
+    var organizationTextValue by remember(currentUnit) {
+        mutableStateOf(
+            TextFieldValue(
+                text = currentUnit.organization.toString(),
+                selection = TextRange(currentUnit.organization.toString().length) // Or calculate appropriate position
+            )
+        )
+    }
+    TextField(
+        value = organizationTextValue,
+        modifier =Modifier.fillMaxWidth(),
+        onValueChange = { newValue ->
+            organizationTextValue = newValue
+            organizationTextValue = organizationTextValue.copy(
+                text = newValue.text
+                    .replace(Regex("[^0-9]"), "").let { str ->
+                        val value = str.toIntOrNull() ?: return@let str
+                        val coercedValue = max(value, GameUnit.MIN_ORGANIZATION)
+                        if (coercedValue == value) return@let str
+                        coercedValue.toString()
+                    }
+            )
+
+            val finalText: Int = organizationTextValue.text.ifEmpty { GameUnit.MIN_ORGANIZATION.toString() }.toIntOrNull() ?: GameUnit.MIN_ORGANIZATION
+
+            PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                organization = finalText
+            )
+
+        },
+
+        leadingIcon = {
+            Row {
+                Text("Organization", color = JewelTheme.globalColors.text.info)
+                Spacer(Modifier.width(4.dp))
+            }
+        }
+    )
+
+    Spacer(Modifier.height(4.dp))
+
+    //Stamina
+    if (currentUnit.stamina != null) {
+        var staminaTextValue by remember(currentUnit) {
+            mutableStateOf(
+                TextFieldValue(
+                    text = currentUnit.stamina.toString(),
+                    selection = TextRange(currentUnit.stamina.toString().length) // Or calculate appropriate position
+                )
+            )
+        }
+        TextField(
+            value = staminaTextValue,
+            modifier =Modifier.fillMaxWidth(),
+            onValueChange = { newValue ->
+                staminaTextValue = newValue
+                staminaTextValue = staminaTextValue.copy(
+                    text = newValue.text
+                        .replace(Regex("[^0-9]"), "").let { str ->
+                            val value = str.toIntOrNull() ?: return@let str
+                            val coercedValue = max(value, GameUnit.MIN_STAMINA)
+                            if (coercedValue == value) return@let str
+                            coercedValue.toString()
+                        }
+                )
+
+                val finalText: Int = staminaTextValue.text.ifEmpty { GameUnit.MIN_STAMINA.toString() }.toIntOrNull() ?: GameUnit.MIN_STAMINA
+
+                PlaceUnitTool.currentUnit.value = currentUnit.copy(
+                    stamina = finalText
+                )
+
+            },
+
+            leadingIcon = {
+                Row {
+                    Text("Stamina", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
+        )
+    }
+
+
 
 }
 
@@ -1041,6 +1243,7 @@ private fun PlaceObjectiveToolConfig() {
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // owner
         ComboBox(labelText = playerIndex?.let { "${playerIndex + 1} ${scenario!!.players[playerIndex].team}" }
             ?: "No one",
             popupManager = playerTeamPopupManager,
@@ -1080,6 +1283,7 @@ private fun PlaceObjectiveToolConfig() {
                 }
             })
 
+        // type
         ComboBox(
             labelText = "${currentObjective.type}",
             popupManager = objectiveTypePopupManager,
@@ -1091,7 +1295,8 @@ private fun PlaceObjectiveToolConfig() {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                     PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
-                                        type = item
+                                        type = item,
+                                        victoryPoints = item.defaultVictoryPoints
                                     )
                                     objectiveTypePopupManager.setPopupVisible(false)
                                 }) {
@@ -1105,11 +1310,51 @@ private fun PlaceObjectiveToolConfig() {
                 }
             })
 
-
+        // name
         TextField(
             objectiveNameTextFieldState,
             Modifier.fillMaxWidth(),
             placeholder = { Text("Objective name... (Blank - default name)") }
+        )
+
+        // Victory Points
+        var victoryPointsTextValue by remember(currentObjective) {
+            mutableStateOf(
+                TextFieldValue(
+                    text = currentObjective.victoryPoints.toString(),
+                    selection = TextRange(currentObjective.victoryPoints.toString().length) // Or calculate appropriate position
+                )
+            )
+        }
+        TextField(
+            value = victoryPointsTextValue,
+            modifier = Modifier.fillMaxWidth(),
+            onValueChange = { newValue ->
+                victoryPointsTextValue = newValue
+                victoryPointsTextValue = victoryPointsTextValue.copy(
+                    text = newValue.text
+                        .replace(Regex("[^0-9]"), "").let { str ->
+                            val value = str.toIntOrNull() ?: return@let str
+                            val coercedValue = max(value, Objective.MIN_VICTORY_POINTS)
+                            if (coercedValue == value) return@let str
+                            coercedValue.toString()
+                        }
+                )
+
+                val finalText: Int = victoryPointsTextValue.text.ifEmpty { Objective.MIN_VICTORY_POINTS.toString() }.toIntOrNull() ?: Objective.MIN_VICTORY_POINTS
+
+                PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                    victoryPoints = finalText
+                )
+
+            },
+
+            leadingIcon = {
+                Row {
+                    Text("Victory Points", color = JewelTheme.globalColors.text.info)
+                    Spacer(Modifier.width(4.dp))
+                }
+            }
         )
     }
 
@@ -1353,11 +1598,14 @@ private fun GridToolConfig() {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun ReferenceOverlayToolConfig() {
     val toolService by rememberInstance<ToolService>()
+    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
     val projectService by rememberInstance<ProjectsService>()
     val projectRef by rememberInstance<ProjectRef>()
     val textureStorage by rememberInstance<TextureStorage>()
 
     val enabled by toolService.refenceOverlayTool.enabled.collectAsState();
+    val hideSprites by toolService.refenceOverlayTool.hideSprites.collectAsState();
+    val hideRange by toolService.refenceOverlayTool.hideRange.collectAsState();
     val scale by toolService.refenceOverlayTool.scale.collectAsState()
     val offset by toolService.refenceOverlayTool.offset.collectAsState()
     val transparency by toolService.refenceOverlayTool.transparency.collectAsState()
@@ -1381,6 +1629,33 @@ private fun ReferenceOverlayToolConfig() {
         )
         Spacer(Modifier.width(4.dp))
         Text("Show reference")
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            hideSprites,
+            onCheckedChange = {
+                toolService.refenceOverlayTool.hideSprites.value = it
+                editorService.selectedUnits.value = emptySet()
+                editorService.selectedObjectives.value = null
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Hide sprites")
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            hideRange,
+            onCheckedChange = {
+                toolService.refenceOverlayTool.hideRange.value = it
+            }
+        )
+        Spacer(Modifier.width(4.dp))
+        Text("Hide range")
     }
 
     LaunchedEffect(Unit) {

@@ -12,6 +12,9 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
@@ -42,10 +45,10 @@ class SpriteStage(
         glCtx.glBindVBO(spriteProgram.vbo)
 
 
-        val unitsToRender: Map<PlayerTeam, Map<GameUnitType, List<GameUnit>>> = scenario.units
+        val unitsToRender: Map<PlayerTeam, Map<Pair<GameUnitType, UnitFormation?> , List<GameUnit>>> = scenario.units
             .groupBy { it.owner.getValue(scenario.players::get).team }
             .mapValues { (_, value) ->
-                value.groupBy { it.type }
+                value.groupBy { it.type to it.formation }
             }
 
         // rendering selection
@@ -171,13 +174,22 @@ class SpriteStage(
 
 
         val unitShadowsToRender: MutableMap<String, MutableList<GameUnit>> = mutableMapOf()
-        val preparedUnitsToRender: MutableMap<Pair<PlayerTeam, GameUnitType>, MutableList<GameUnit>> = mutableMapOf()
+        val preparedUnitsToRender: MutableMap<Triple<PlayerTeam, GameUnitType, UnitFormation?>, MutableList<GameUnit>> = mutableMapOf()
 
 
         unitsToRender.forEach { (team, units) ->
-            units.forEach { (unitType, unitInfo) ->
-                unitShadowsToRender.computeIfAbsent(unitType.maskTexture) { mutableListOf() }.addAll(unitInfo)
-                preparedUnitsToRender.computeIfAbsent(team to unitType) { mutableListOf() }.addAll(unitInfo)
+            units.forEach { (pair, unitInfo) ->
+                val unitType = pair.first
+                val formation = pair.second
+                val maskTexture = when(val texture = unitType.texture) {
+                    is UnitTypeTexture.Formation -> {
+                        texture.map[formation]!!.maskTexture
+                    }
+                    is UnitTypeTexture.MaskAndOverlay -> texture.maskTexture
+                    is UnitTypeTexture.MaskOnly -> texture.maskTexture
+                }
+                unitShadowsToRender.computeIfAbsent(maskTexture) { mutableListOf() }.addAll(unitInfo)
+                preparedUnitsToRender.computeIfAbsent(Triple(team, unitType, formation)) { mutableListOf() }.addAll(unitInfo)
             }
         }
 
@@ -194,14 +206,14 @@ class SpriteStage(
                     -1
                 )
             )
-            val vbo = it.value.map { unit ->
+            val vbo = it.value.filter { unit -> unit.status != UnitStatus.ROUTING }.map { unit ->
                 val positionMatrix = Matrix4f()
                 positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
                 positionMatrix.setTranslation(Vector3f(unit.position.x + 2, unit.position.y + 2, 0f))
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
-                        UNIT_DIMENSIONS.div(-2f, Vector2f()),
-                        UNIT_DIMENSIONS.div(2f, Vector2f()),
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(-2f, Vector2f()),
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(2f, Vector2f()),
                     ),
                     RectanglePoints.TEXTURE_CORDS,
                     positionMatrix
@@ -215,42 +227,100 @@ class SpriteStage(
 
         }
 
-        preparedUnitsToRender.forEach { (teamUnitType, units) ->
+        preparedUnitsToRender.forEach { (triple, units) ->
+            val unitType = triple.second
+            val team = triple.first
+            val formation = triple.third
+            val overlayTexture = when(val texture = unitType.texture) {
+                is UnitTypeTexture.Formation -> texture.map[formation]!!.overlayTexture
+                is UnitTypeTexture.MaskAndOverlay -> texture.overlayTexture
+                is UnitTypeTexture.MaskOnly -> null
+            }
+
+            val maskTexture = when(val texture = unitType.texture) {
+                is UnitTypeTexture.Formation -> texture.map[formation]!!.maskTexture
+                is UnitTypeTexture.MaskAndOverlay -> texture.maskTexture
+                is UnitTypeTexture.MaskOnly -> texture.maskTexture
+            }
+
+            // not routing
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
                 glCtx, SpriteProgram.Uniform(
                     projectionMatrix,
                     viewMatrix,
                     true,
-                    teamUnitType.second.overlayTexture != null,
+                    overlayTexture != null,
                     Vector4f(
-                        teamUnitType.first.color.red,
-                        teamUnitType.first.color.green,
-                        teamUnitType.first.color.blue,
+                        team.color.red,
+                        team.color.green,
+                        team.color.blue,
                         1f
                     ),
-                    textureStorage.textures[teamUnitType.second.maskTexture]!!,
-                    teamUnitType.second.overlayTexture?.let { textureStorage.textures[it]!! } ?: -1
+                    textureStorage.textures[maskTexture]!!,
+                    overlayTexture?.let { textureStorage.textures[it]!! } ?: -1
                 ))
 
-            val vboInput = units.map { unit ->
+            val vboInput = units.filter { it.status != UnitStatus.ROUTING }.map { unit ->
                 val positionMatrix = Matrix4f()
                 positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
-                        UNIT_DIMENSIONS.div(-2f, Vector2f()),
-                        UNIT_DIMENSIONS.div(2f, Vector2f()),
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(-2f, Vector2f()),
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(2f, Vector2f()),
                     ),
                     RectanglePoints.TEXTURE_CORDS,
                     positionMatrix
                 )
             }
 
+            if (!vboInput.isEmpty()) {
+                spriteProgram.setUpVBO(glCtx, vboInput)
 
-            spriteProgram.setUpVBO(glCtx, vboInput)
+                glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+            }
 
-            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+
+
+
+            // routing
+            spriteProgram.applyUniform(
+                glCtx, SpriteProgram.Uniform(
+                    projectionMatrix,
+                    viewMatrix,
+                    true,
+                    overlayTexture != null,
+                    Vector4f(
+                        team.color.red,
+                        team.color.green,
+                        team.color.blue,
+                        0.5f
+                    ),
+                    textureStorage.textures[maskTexture]!!,
+                    overlayTexture?.let { textureStorage.textures[it]!! } ?: -1
+                ))
+
+            val vboInput2 = units.filter { it.status == UnitStatus.ROUTING }.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
+                SpriteProgram.BufferData(
+                    RectanglePoints.fromPoints(
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(-2f, Vector2f()),
+                        (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(2f, Vector2f()),
+                    ),
+                    RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+            if (!vboInput2.isEmpty()) {
+                spriteProgram.setUpVBO(glCtx, vboInput2)
+
+                glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput2.size)
+            }
+
+
         }
 
         val objectiveShadowsToRender: List<Objective> = scenario.objectives
