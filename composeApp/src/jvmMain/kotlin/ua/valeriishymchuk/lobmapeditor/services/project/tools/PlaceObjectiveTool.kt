@@ -7,10 +7,10 @@ import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
-object PlaceObjectiveTool : PresetTool() {
+object PlaceObjectiveTool : Tool() {
     var currentObjective = MutableStateFlow(Objective(
 //        Reference(0),
         null,
@@ -20,7 +20,7 @@ object PlaceObjectiveTool : PresetTool() {
         ObjectiveType.SMALL.defaultVictoryPoints
     ))
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
         editorService.flushCompoundCommon()
     }
 
@@ -30,8 +30,8 @@ object PlaceObjectiveTool : PresetTool() {
         "Place objective: place an objective on map"
     )
 
-    override fun useToolAt(
-        editorService: EditorService<GameScenario.Preset>,
+    override fun useToolAtGeneric(
+        editorService: EditorService<*>,
         x: Float,
         y: Float,
         flushCompoundCommands: Boolean,

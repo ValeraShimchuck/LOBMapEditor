@@ -23,7 +23,7 @@ class ScenarioIOService(override val di: DI) : DIAware {
         return@withContext GameScenario.deserialize(jsonObject)
     }
 
-    suspend fun <T: GameScenario<T>> save(scenario: T, file: File) = withContext(Dispatchers.IO) {
+    suspend fun save(scenario: GameScenario<*>, file: File) = withContext(Dispatchers.IO) {
         val jsonElement = scenario.serialize()
         val jsonString = try {
             gson.toJson(jsonElement)

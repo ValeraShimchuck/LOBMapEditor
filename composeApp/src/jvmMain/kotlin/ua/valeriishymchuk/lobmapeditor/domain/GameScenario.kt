@@ -22,6 +22,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
     val objectives: List<Objective> get() = commonData.objectives
     val triggers: List<GameTrigger> get() = commonData.triggers
 
+
     fun serialize(): JsonObject
 
     fun withCommonData(newCommonData: CommonData): T
@@ -59,7 +60,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
                 })
                 add("objectives", JsonArray().apply {
                     objectives.forEach {
-                        add(it.serialize())
+                        add(it.serialize(true))
                     }
                 })
 
@@ -100,7 +101,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
                 })
                 add("objectives", JsonArray().apply {
                     objectives.forEach {
-                        add(it.serialize())
+                        add(it.serialize(false))
                     }
                 })
 
@@ -130,9 +131,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
 
             // Deserialize objectives
             val objectivesArray = json.getAsJsonArray("objectives") ?: JsonArray()
-            val objectives = objectivesArray.map { element ->
-                Objective.deserialize(element.asJsonObject)
-            }.toList()
+
 
             // Deserialize triggers
             val triggersArray = json.getAsJsonArray("triggers") ?: JsonArray()
@@ -143,6 +142,12 @@ sealed interface GameScenario<T : GameScenario<T>> {
             // Deserialize map
             val mapJson = json.getAsJsonObject("map")
             val map = Terrain.deserialize(mapJson)
+
+
+
+            val objectives = objectivesArray.map { element ->
+                Objective.deserialize(element.asJsonObject, type == "preset")
+            }.toList()
 
             val commonData = CommonData(name, description, map, objectives, triggers)
 

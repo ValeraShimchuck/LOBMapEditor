@@ -6,10 +6,10 @@ import org.joml.Vector2f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
-class DebugTool: PresetTool() {
+class DebugTool: Tool() {
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
         AllIconsKeys.Toolwindows.ToolWindowDebugger,
@@ -24,7 +24,7 @@ class DebugTool: PresetTool() {
         false
     ))
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
     }
 
 }

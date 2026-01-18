@@ -19,13 +19,12 @@ import org.jetbrains.jewel.ui.component.styling.ButtonStyle
 import org.jetbrains.jewel.ui.theme.defaultButtonStyle
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 import kotlin.math.max
@@ -34,7 +33,9 @@ import kotlin.math.max
 @Composable
 fun UnitsPropertiesConfig() {
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>()
+    val editorService = diEditorService as? PresetEditorService ?: return
+
     val scenario by editorService.scenario.collectAsState()
     val rawSelection by editorService.selectedUnits.collectAsState()
 

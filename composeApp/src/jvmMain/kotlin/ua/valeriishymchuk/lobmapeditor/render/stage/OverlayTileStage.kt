@@ -22,7 +22,7 @@ class OverlayTileStage(
         loadShaderSource("foverlaytile")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         val model = Matrix4f().identity()
         val mvpMatrix = getMvp(model)
         glCtx.glUseProgram(overlayTileProgram.program)

@@ -10,14 +10,42 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 
-data class RenderContext(
+class PresetRenderContext(
+    glCtx: CurrentGL,
+    windowDimensions: Vector2i,
+    textureStorage: TextureStorage,
+    viewMatrix: Matrix4f,
+    projectionMatrix: Matrix4f,
+    scenario: GameScenario.Preset,
+    val selectedUnits: List<GameUnit>,
+    selectedObjectives: List<Objective>,
+    selection: SelectionContext,
+    gridContext: GridContext,
+    overlayReferenceContext: OverlayReferenceContext,
+    debugInfo: DebugInfo
+) : RenderContext<GameScenario.Preset>(
+    glCtx,
+    windowDimensions,
+    textureStorage,
+    viewMatrix,
+    projectionMatrix,
+    scenario,
+    selectedObjectives,
+    selection,
+    gridContext,
+    overlayReferenceContext,
+    debugInfo
+) {
+
+}
+
+abstract class RenderContext<T: GameScenario<T>>(
     val glCtx: CurrentGL,
     val windowDimensions: Vector2i,
     val textureStorage: TextureStorage,
     val viewMatrix: Matrix4f,
     val projectionMatrix: Matrix4f,
-    val scenario: GameScenario.Preset,
-    val selectedUnits: List<GameUnit>,
+    val scenario: T,
     val selectedObjectives: List<Objective>,
     val selection: SelectionContext,
     val gridContext: GridContext,
@@ -54,6 +82,4 @@ data class RenderContext(
         val measurePerformanceCPU: Boolean,
         val measurePerformanceGPU: Boolean
     )
-
-
 }

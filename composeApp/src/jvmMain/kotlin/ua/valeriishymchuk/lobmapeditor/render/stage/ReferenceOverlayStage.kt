@@ -34,7 +34,7 @@ class ReferenceOverlayStage(
         tileMapVertices[10], tileMapVertices[11], 1f, applyYFlip(1f),
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         val textureId = textureStorage.refenceOverlayTexture
         if (textureId < 0) return
         glCtx.glUseProgram(program.program)

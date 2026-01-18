@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.services.project
+package ua.valeriishymchuk.lobmapeditor.services.project.editor
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,6 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
@@ -30,41 +29,47 @@ import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.withLock
 
-class EditorService<T : GameScenario<T>>(
+abstract class EditorService<T : GameScenario<T>>(
     override val di: DI,
 ): DIAware {
 
-    val throwTestError: MutableStateFlow<Boolean>  = MutableStateFlow(false)
-    private val scenarioIOService by di.instance<ScenarioIOService>()
-    private val projectRef by di.instance<ProjectRef>()
-    private val lifecycleService by di.instance<LifecycleService>()
+    val throwTestError: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    protected val scenarioIOService by di.instance<ScenarioIOService>()
+    protected val projectRef by di.instance<ProjectRef>()
+    protected val lifecycleService by di.instance<LifecycleService>()
 
-    private val lock = ReentrantLock()
+    protected val lock = ReentrantLock()
 
-    private var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
+    protected var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
 
     var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
-    val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
-    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?>  = MutableStateFlow(null)
+    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?> = MutableStateFlow(null)
 
-    private val scenarioSetter: (T) -> Unit = {
+    var lastSave: Long = 0
+        protected set
+    var lastHashCode: Int = 0
+        protected set
+    var lastAction: Long = 0
+        protected set
+    protected var savingJob: Job? = null
+
+    protected val scenarioSetter: (T) -> Unit = {
         this.scenario.value = it
     }
 
-    private val commonDataSetter: (GameScenario.CommonData) -> Unit = {
+    protected val commonDataSetter: (GameScenario.CommonData) -> Unit = {
         this.scenario.value = this.scenario.value!!.withCommonData(it)
     }
 
-    private val commonDataGetter: () -> GameScenario.CommonData = {
+    protected val commonDataGetter: () -> GameScenario.CommonData = {
         this.scenario.value!!.commonData
     }
 
-    private val scenarioGetter: () -> T = {
+    protected val scenarioGetter: () -> T = {
         scenario.value!!
     }
 
@@ -77,12 +82,13 @@ class EditorService<T : GameScenario<T>>(
     var enableColorClosestPoint = false
 
     val projectionMatrix = Matrix4f()
-    val viewMatrix = Matrix4f().identity()
+    val viewMatrix = Matrix4f().identity()!!
 
-    private val undoStack = ArrayDeque<CommandWrapper<*>>()
-    private val redoStack = ArrayDeque<CommandWrapper<*>>()
+    protected val undoStack = ArrayDeque<CommandWrapper<*>>()
+    protected val redoStack = ArrayDeque<CommandWrapper<*>>()
 
-    var cameraPosition: Vector2f get() {
+    var cameraPosition: Vector2f
+        get() {
         val centerX = width / 2
         val centerY = height / 2
         return fromScreenToWorldSpace(centerX, centerY)
@@ -113,19 +119,13 @@ class EditorService<T : GameScenario<T>>(
             viewMatrix.setColumn(3, vector4)
         }
 
-    private fun checkComposedCommandsIntegrity(typeChecker: (Command<*>) -> Boolean) {
+    protected fun checkComposedCommandsIntegrity(typeChecker: (Command<*>) -> Boolean) {
         if (composedCommands.isEmpty()) return
         if (!composedCommands.all { typeChecker(it.command) })
             throw IllegalStateException("The composed commands list doesn't have integrity: ${composedCommands}")
     }
 
-    var lastSave: Long = 0
-        private set
-    var lastHashCode: Int = 0
-        private set
-    var lastAction: Long = 0
-        private set
-    private var savingJob: Job? = null
+
 
 
     init {
@@ -136,22 +136,9 @@ class EditorService<T : GameScenario<T>>(
         }
     }
 
-    fun importScenario(scenario: T) {
-        lock {
-            undoStack.clear()
-            redoStack.clear()
-            composedCommands.clear()
-            selectedObjectives.value = null
-            selectedUnits.value = setOf()
-            this.scenario.value = scenario
-            openglUpdateState.value++
-            println("Importing project ${openglUpdateState.value}")
-            savingJob = null
-            save(true)
-        }
-    }
+    abstract fun importScenario(scenario: T)
 
-    private val saveCount = AtomicInteger()
+    protected val saveCount = AtomicInteger()
 
     fun save(forceSave: Boolean = false, blocking: Boolean = false) {
         val scenario = scenario.value ?: return
@@ -205,7 +192,7 @@ class EditorService<T : GameScenario<T>>(
         }
     }
 
-    private fun lock(handler: () -> Unit) {
+    protected fun lock(handler: () -> Unit) {
         lock.withLock {
             handler()
         }
@@ -263,7 +250,7 @@ class EditorService<T : GameScenario<T>>(
         }
     }
 
-    private class CommandWrapper<T>(
+    protected class CommandWrapper<T>(
         val valueGetter: () -> T,
         val valueSetter: (T) -> Unit,
         val command: Command<T>
@@ -325,31 +312,6 @@ class EditorService<T : GameScenario<T>>(
         )
     }
 
-    @ApiStatus.Experimental
-    fun fromWorldSpaceToNDC(x: Float, y: Float): Vector2f {
-        val profView = viewMatrix.mul(projectionMatrix, Matrix4f())
-        val cords = Vector4f(x, y, 0f, 1f)
-        cords.mul(profView)
-        return Vector2f(cords.x, cords.y)
-    }
-
-    @ApiStatus.Experimental
-    fun fromNDCToScreen(ndc: Vector2f): Vector2i {
-        val x = (ndc.x + 1f) / 2f
-        val y = (ndc.y + 1f) / -2f
-        return Vector2i(x.toInt(), y.toInt())
-    }
-
-    // wasn't used anywhere so far, so it might break
-    @ApiStatus.Experimental
-    fun fromWorldSpaceToScreen(
-        x: Float,
-        y: Float
-    ): Vector2i {
-        return fromNDCToScreen(fromWorldSpaceToNDC(x, y))
-    }
-
-
 
     fun getTileCordsFromScreenClamp(cursorX: Int, cursorY: Int): Vector2i {
         val worldCoordinates = fromScreenToWorldSpace(cursorX, cursorY)
@@ -380,22 +342,5 @@ class EditorService<T : GameScenario<T>>(
         }
         selectedObjectives.value = newSelectedList.firstOrNull()
     }
-
-    companion object {
-        fun EditorService<GameScenario.Preset>.deleteUnits(map: Set<Reference<Int, GameUnit>>) {
-            selectedUnits.value -= map
-            val oldSelectedUnits = selectedUnits.value.map { it.getValue(scenario.value!!.units::get) }
-            val oldList = scenario.value!!.units
-            val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
-            execute(UpdateGameUnitListCommand(oldList, newList))
-            val newSelectedList = scenario.value!!.units.mapIndexedNotNull { index, unit ->
-                if (oldSelectedUnits.contains(unit)) return@mapIndexedNotNull Reference<Int, GameUnit>(index)
-                null
-            }
-            selectedUnits.value = newSelectedList.toSet()
-        }
-    }
-
-
 
 }

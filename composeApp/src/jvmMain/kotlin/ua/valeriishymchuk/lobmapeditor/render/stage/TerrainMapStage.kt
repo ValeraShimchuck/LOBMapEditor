@@ -21,7 +21,7 @@ class TerrainMapStage(
         loadShaderSource("ftilemap")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         glCtx.glUseProgram(tileMapProgram.program)
         glCtx.glBindVertexArray(tileMapProgram.vao)
         glCtx.glBindVBO(tileMapProgram.vbo)

@@ -19,7 +19,7 @@ class SelectionStage(
         loadShaderSource("fselection")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         if (selection.enabled) {
             glCtx.glUseProgram(selectionProgram.program)
             glCtx.glBindVertexArray(selectionProgram.vao)

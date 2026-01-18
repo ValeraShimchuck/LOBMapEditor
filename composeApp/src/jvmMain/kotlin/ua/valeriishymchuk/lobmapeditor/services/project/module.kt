@@ -9,6 +9,10 @@ import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.PresetToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import java.io.File
@@ -17,11 +21,11 @@ fun <T: GameScenario<T>> setupProjectScopeDiModule(
     ref: ProjectRef
 ) = DI.Module("project scope module") {
     bindEagerSingleton {
-        EditorService<GameScenario.Preset>(
+        PresetEditorService(
             di
         )
     }
-    bindSingleton { ToolService(di) }
+    bindSingleton { PresetToolService(di) }
     bindInstance<ProjectRef> { ref }
     bindEagerSingleton<ProjectData> {
         runBlocking { directDI.instance<ProjectsService>().loadProject(ref) }

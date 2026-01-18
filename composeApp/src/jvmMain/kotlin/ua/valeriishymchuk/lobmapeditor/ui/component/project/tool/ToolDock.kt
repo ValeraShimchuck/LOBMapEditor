@@ -16,13 +16,13 @@ import org.jetbrains.jewel.ui.component.Icon
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.kodein.di.compose.rememberInstance
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
 import kotlin.getValue
 
 @Composable
 fun ToolDock() {
-    val toolService by rememberInstance<ToolService>()
+    val toolService by rememberInstance<ToolService<*>>()
     val currentTool by toolService.currentTool.collectAsState()
 
     DockContainer(

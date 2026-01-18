@@ -37,7 +37,7 @@ class BackgroundStage(
         it.setUpVAO(ctx)
     }
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         glCtx.glUseProgram(backgroundProgram.program)
         glCtx.glBindVertexArray(backgroundProgram.vao)
         glCtx.glBindVBO(backgroundProgram.vbo)

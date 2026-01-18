@@ -7,6 +7,7 @@ import org.joml.Vector2f
 import org.joml.Vector3f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
+import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
@@ -25,7 +26,8 @@ class UnitBarsStage(
         loadShaderSource("fmanycolor")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
+        if (this !is PresetRenderContext) return
         glCtx.glUseProgram(program.program)
         glCtx.glBindVertexArray(program.vao)
         glCtx.glBindVBO(program.vbo)

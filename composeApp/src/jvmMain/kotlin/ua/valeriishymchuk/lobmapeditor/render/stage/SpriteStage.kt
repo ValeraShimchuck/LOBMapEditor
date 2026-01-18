@@ -15,6 +15,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
+import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
@@ -26,6 +27,7 @@ import java.util.Optional
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.forEach
+import kotlin.collections.getValue
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
 
@@ -39,20 +41,12 @@ class SpriteStage(
         loadShaderSource("fsprite")
     )
 
-    override fun RenderContext.draw0() {
-        glCtx.glUseProgram(spriteProgram.program)
-        glCtx.glBindVertexArray(spriteProgram.vao)
-        glCtx.glBindVBO(spriteProgram.vbo)
-
-
+    private fun PresetRenderContext.renderUnit() {
         val unitsToRender: Map<PlayerTeam, Map<Pair<GameUnitType, UnitFormation?> , List<GameUnit>>> = scenario.units
             .groupBy { it.owner.getValue(scenario.players::get).team }
             .mapValues { (_, value) ->
                 value.groupBy { it.type to it.formation }
             }
-
-        // rendering selection
-
 
         also {
             val selectionsToRender = selectedUnits.toList()
@@ -322,11 +316,26 @@ class SpriteStage(
 
 
         }
+    }
+
+    override fun RenderContext<*>.draw0() {
+        glCtx.glUseProgram(spriteProgram.program)
+        glCtx.glBindVertexArray(spriteProgram.vao)
+        glCtx.glBindVBO(spriteProgram.vbo)
+
+
+        if (this is PresetRenderContext) {
+            renderUnit()
+        }
 
         val objectiveShadowsToRender: List<Objective> = scenario.objectives
 
         val objectivesToRender: Map<Optional<PlayerTeam>, List<Objective>> = objectiveShadowsToRender.groupBy {
-            Optional.ofNullable(it.owner?.getValue(scenario.players::get)?.team)
+            Optional.ofNullable(it.owner?.let { owner ->
+                if (this is PresetRenderContext) {
+                    this.scenario.players[owner].team
+                } else PlayerTeam.entries[owner]
+            })
         }
 
 

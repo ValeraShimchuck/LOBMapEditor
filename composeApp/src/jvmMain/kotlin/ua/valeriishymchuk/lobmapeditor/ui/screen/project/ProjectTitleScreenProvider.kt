@@ -29,7 +29,8 @@ import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import ua.valeriishymchuk.lobmapeditor.ui.screen.TitleBarScreen
@@ -39,7 +40,7 @@ import kotlin.getValue
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TitleBarScreen.ProjectTitleScreenProvider() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>()
     val scenarioIO by rememberInstance<ScenarioIOService>()
     val toastService by rememberInstance<ToastService>()
     val ref by rememberInstance<ProjectRef>()
@@ -130,11 +131,14 @@ fun TitleBarScreen.ProjectTitleScreenProvider() {
 
                             val file = FileKit.openFilePicker(type = FileKitType.File("json")) ?: return@launch
 
-                            val newScenario = scenarioIO.load(file.file) as? GameScenario.Preset ?: return@launch
-
-                            editorService.importScenario(newScenario)
-//                            editorService.scenario.value = newScenario
-//                            editorService.save(true)
+                            val newScenario = scenarioIO.load(file.file)
+                            (editorService as? PresetEditorService)?.let { presetEditorService ->
+                                if (newScenario is GameScenario.Preset) {
+                                    presetEditorService.importScenario(newScenario)
+                                } else {
+                                    System.err.println("I forgot to handle this edge case, oopsy")
+                                }
+                            }
 
                             toastService.toast() {
                                 SuccessInlineBanner(

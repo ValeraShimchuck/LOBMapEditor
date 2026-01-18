@@ -47,8 +47,10 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.PresetToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.*
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -58,7 +60,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun ToolConfig(modifier: Modifier = Modifier) {
-    val toolService by rememberInstance<ToolService>()
+    val toolService by rememberInstance<ToolService<*>>()
     val currentTool by toolService.currentTool.collectAsState()
 
 
@@ -107,7 +109,7 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DebugToolConfig() {
-    val toolService by rememberInstance<ToolService>()
+    val toolService by rememberInstance<ToolService<*>>()
     val debugInfo by toolService.debugTool.debugInfo.collectAsState()
     val controller = rememberColorPickerController()
     val controller2 = rememberColorPickerController()
@@ -288,8 +290,9 @@ private fun DebugToolConfig() {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun PlayerToolConfig() {
-    val toolService by rememberInstance<ToolService>()
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diToolService by rememberInstance<ToolService<*>>()
+    val toolService = diToolService as? PresetToolService ?: return
+    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
     scenario ?: return
     val tool = toolService.playerTool
@@ -525,13 +528,13 @@ private fun PlayerToolConfig() {
 
         val newObjectivesList = oldObjectivesList.mapNotNull { objective ->
             if (objective.owner == null) return@mapNotNull objective
-            if (objective.owner == currentPlayerReference) {
+            if (objective.owner == currentPlayerReference.key) {
                 if (newOwner == null) return@mapNotNull null
-                return@mapNotNull objective.copy(owner = newOwner)
+                return@mapNotNull objective.copy(owner = newOwner.key)
             }
-            val oldIndex = objective.owner.key
+            val oldIndex = objective.owner
             val newIndex = preparedNewList.first { it.oldIndex == oldIndex }.newIndex
-            return@mapNotNull objective.copy(owner = Reference(newIndex))
+            return@mapNotNull objective.copy(owner = newIndex)
         }
 
         editorService.selectedUnits.value = mutableSetOf()
@@ -630,7 +633,7 @@ private fun PlayerToolConfig() {
                 if (showDialog) showDialog = false
                 else {
                     val anyRelatedUnits = scenario!!.units.any { it.owner == currentPlayerReference }
-                    val anyRelatedObjectives = scenario!!.objectives.any { it.owner == currentPlayerReference }
+                    val anyRelatedObjectives = scenario!!.objectives.any { it.owner == currentPlayerReference.key }
                     if (anyRelatedUnits || anyRelatedObjectives) {
                         showDialog = true
                     } else {
@@ -695,7 +698,7 @@ private fun TerrainToolConfig() {
     val currentTerrain by TerrainTool.terrain.collectAsState()
 
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>();
     val scenario by editorService.scenario.collectAsState()
 
     if (scenario == null) return
@@ -705,7 +708,6 @@ private fun TerrainToolConfig() {
     var confirmFlow by remember(scenario) { mutableStateOf(false) }
 
 
-//    val scenarioDimensionX = rememberTextFieldState(scenario!!.map.widthPixels.toString())
     var scenarioDimensionX by remember {
         mutableStateOf(
             TextFieldValue(
@@ -714,7 +716,6 @@ private fun TerrainToolConfig() {
             )
         )
     }
-//    val scenarioDimensionY = rememberTextFieldState(scenario!!.map.heightPixels.toString())
     var scenarioDimensionY by remember {
         mutableStateOf(
             TextFieldValue(
@@ -723,43 +724,6 @@ private fun TerrainToolConfig() {
             )
         )
     }
-
-
-//    LaunchedEffect(scenarioDimensionX) {
-//        snapshotFlow { scenarioDimensionX.text }
-//            .collect { rawText ->
-//                val newText = (rawText
-//                    .replace(Regex("[^0-9]"), "")
-//                    .toIntOrNull() ?: 0
-//                        ).coerceIn(
-//                        Terrain.MIN_TERRAIN_MAP_X..Terrain.MAX_TERRAIN_MAP_X
-//                    ).toString()
-//                if (newText == rawText) return@collect
-//                scenarioDimensionX.edit {
-//                    replace(
-//                        0, rawText.length, newText
-//                    )
-//                }
-//            }
-//    }
-//
-//    LaunchedEffect(scenarioDimensionY) {
-//        snapshotFlow { scenarioDimensionY.text }
-//            .collect { rawText ->
-//                val newText = (rawText
-//                    .replace(Regex("[^0-9]"), "")
-//                    .toIntOrNull() ?: 0
-//                        ).coerceIn(
-//                        Terrain.MIN_TERRAIN_MAP_Y..Terrain.MAX_TERRAIN_MAP_Y
-//                    ).toString()
-//                if (newText == rawText) return@collect
-//                scenarioDimensionY.edit {
-//                    replace(
-//                        0, rawText.length, newText
-//                    )
-//                }
-//            }
-//    }
 
     BrushToolConfig(TerrainTool)
 
@@ -852,13 +816,11 @@ private fun TerrainToolConfig() {
                     val newX = scenarioDimensionX.text.toInt()
                     val newY = scenarioDimensionY.text.toInt()
 
-                    editorService.importScenario(
-                        scenario!!.copy(
-                            commonData = scenario!!.commonData.copy(
-                                map = scenario!!.commonData.map.resize(newX, newY)
-                            )
-                        )
-                    )
+                    val newScenario = scenario!!.withCommonData(scenario!!.commonData.copy(
+                        map = scenario!!.commonData.map.resize(newX, newY)
+                    ))
+                    val method = editorService.javaClass.getMethod("importScenario", GameScenario::class.java)
+                    method.invoke(editorService,newScenario)
                     confirmFlow = false
 
                 },
@@ -920,7 +882,7 @@ private fun HeightToolConfig() {
 private fun PlaceUnitToolConfig() {
     val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
 
 
@@ -1228,11 +1190,11 @@ private fun PlaceUnitToolConfig() {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun PlaceObjectiveToolConfig() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
 
 
     val currentObjective by PlaceObjectiveTool.currentObjective.collectAsState()
-    var playerIndex = currentObjective.owner?.key
+    var playerIndex = currentObjective.owner
     val scenario by editorService.scenario.collectAsState()
     if (playerIndex != null && !scenario!!.players.indices.contains(playerIndex)) playerIndex = null
     val playerTeamPopupManager = remember { PopupManager() }
@@ -1269,7 +1231,7 @@ private fun PlaceObjectiveToolConfig() {
                                 modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
 
                                     PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
-                                        owner = Reference(item.index)
+                                        owner = item.index
                                     )
                                     playerTeamPopupManager.setPopupVisible(false)
                                 }) {
@@ -1372,10 +1334,8 @@ private fun PlaceObjectiveToolConfig() {
 @Composable
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun GridToolConfig() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-    val toolService by rememberInstance<ToolService>()
-//    val canvas by rememberInstance<GLCanvas>()
 
+    val toolService by rememberInstance<ToolService<*>>()
 
     val size by toolService.gridTool.size.collectAsState()
     val offset by toolService.gridTool.offset.collectAsState()
@@ -1597,8 +1557,9 @@ private fun GridToolConfig() {
 @Composable
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun ReferenceOverlayToolConfig() {
-    val toolService by rememberInstance<ToolService>()
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>()
+    val toolService by rememberInstance<ToolService<*>>()
+
     val projectService by rememberInstance<ProjectsService>()
     val projectRef by rememberInstance<ProjectRef>()
     val textureStorage by rememberInstance<TextureStorage>()
@@ -1638,7 +1599,9 @@ private fun ReferenceOverlayToolConfig() {
             hideSprites,
             onCheckedChange = {
                 toolService.refenceOverlayTool.hideSprites.value = it
-                editorService.selectedUnits.value = emptySet()
+                (editorService as? PresetEditorService)?.let { presetEditorService ->
+                    presetEditorService.selectedUnits.value = emptySet()
+                }
                 editorService.selectedObjectives.value = null
             }
         )

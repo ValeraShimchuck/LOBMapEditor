@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import cafe.adriel.voyager.navigator.CurrentScreen
 import com.jogamp.opengl.GLCapabilities
-import com.jogamp.opengl.GLException
 import com.jogamp.opengl.GLProfile
 import com.jogamp.opengl.awt.GLCanvas
 import com.jogamp.opengl.util.FPSAnimator
@@ -31,14 +30,14 @@ import org.jetbrains.jewel.ui.component.TextArea
 import org.jetbrains.jewel.ui.theme.popupContainerStyle
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
-import org.kodein.di.instance
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.render.EditorRenderer
-import ua.valeriishymchuk.lobmapeditor.render.InputListener
 import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE
+import ua.valeriishymchuk.lobmapeditor.render.input.PresetInputListener
+import ua.valeriishymchuk.lobmapeditor.render.renderer.EditorRenderer
+import ua.valeriishymchuk.lobmapeditor.render.renderer.PresetEditorRenderer
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import java.awt.Dimension
 
 
@@ -137,11 +136,14 @@ fun App() {
 @Composable
 fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
     val di = localDI()
-    val editorService by di.instance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>()
     val updaterObserver by editorService.openglUpdateState.collectAsState()
-    var glListener by remember { mutableStateOf(
-        EditorRenderer(di)
-    ) }
+    var glListener by remember {
+        mutableStateOf(
+            if (editorService is PresetEditorService) PresetEditorRenderer(di)
+            else TODO()
+        )
+    }
 
     val shouldRunError by editorService.throwTestError.collectAsState()
 
@@ -170,7 +172,7 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
             println("Initializing GLProfile singleton")
 
             addGLEventListener(glListener)
-            val inputListener = InputListener(di)
+            val inputListener = if (editorService is PresetEditorService) PresetInputListener(di) else TODO()
             addMouseMotionListener(inputListener)
             addMouseListener(inputListener)
             addMouseWheelListener(inputListener)
@@ -188,7 +190,8 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
     LaunchedEffect(updaterObserver) {
         println("render jogl canvas $updaterObserver")
         val oldListener = glListener
-        glListener = EditorRenderer(di)
+        glListener = if (editorService is PresetEditorService) PresetEditorRenderer(di)
+            else TODO()
         canvas.removeGLEventListener(oldListener)
         canvas.addGLEventListener(glListener)
     }
