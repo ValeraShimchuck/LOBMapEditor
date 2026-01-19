@@ -7,8 +7,6 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.player.Player
-import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.services.dto.CreateProjectData
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
@@ -66,21 +64,24 @@ class ProjectsService(override val di: DI) : DIAware {
 
         println("Creating project $dto")
 
+        val commonData = GameScenario.CommonData(
+            name = dto.name,
+            description = "Map created by LobMapEditor",
+            map = Terrain.ofCells(dto.widthTiles, dto.heightTiles),
+            objectives = emptyList(),
+            triggers = emptyList()
+        )
+
+        val scenario: GameScenario<*> = if (dto.isHybrid) {
+            GameScenario.Hybrid.DEFAULT.withCommonData(commonData).readjustDeploymentZones()
+        } else {
+            GameScenario.Preset.DEFAULT.withCommonData(
+                commonData
+            )
+        }
+
         scenarioIO.save(
-            GameScenario.Preset(
-                GameScenario.CommonData(
-                    name = dto.name,
-                    description = "Map created by LobMapEditor",
-                    map = Terrain.ofCells(dto.widthPx / GameConstants.TILE_SIZE, dto.heightPx / GameConstants.TILE_SIZE),
-                    objectives = emptyList(),
-                    triggers = emptyList()
-                ),
-                units = emptyList(),
-                players = listOf(
-                    Player(PlayerTeam.BLUE, 500, 500),
-                    Player(PlayerTeam.RED, 500, 500),
-                ),
-            ),
+            scenario,
             File(dir, "map.json")
         )
 

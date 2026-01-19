@@ -21,7 +21,7 @@ class ColorStage(
         loadShaderSource("fcolor")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         glCtx.glUseProgram(colorProgram.program)
         val model = Matrix4f().identity()
         val mvpMatrix = getMvp(model)

@@ -42,10 +42,9 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdatePlayerListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
+import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.PlaceObjectiveTool
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import kotlin.getValue
 import kotlin.math.max
@@ -55,7 +54,7 @@ import kotlin.text.ifEmpty
 @Composable
 fun ObjectivePropertiesConfig() {
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>()
     val scenario by editorService.scenario.collectAsState()
     val rawSelection by editorService.selectedObjectives.collectAsState()
 
@@ -150,10 +149,12 @@ fun ObjectivePropertiesConfig() {
             )
 
             Spacer(Modifier.height(4.dp))
-
+            val presetScenario: GameScenario.Preset? = scenario as? GameScenario.Preset
             Text("Owner:")
             val ownerLabel: String = if (selection!!.owner == null) "No one"
-            else "${selection!!.owner!!.key + 1} ${scenario!!.players[selection!!.owner!!.key].team}"
+            else "${selection!!.owner!! + 1} ${if (presetScenario != null)
+                presetScenario.players[selection!!.owner!!].team
+            else PlayerTeam.entries[selection!!.owner!!]}"
             ComboBox(labelText = ownerLabel,
                 popupManager = ownerPopupManager,
                 popupContent = {
@@ -169,22 +170,39 @@ fun ObjectivePropertiesConfig() {
                                     text = "No one",
                                 )
                             }
+                            if (presetScenario != null) {
+                                presetScenario.players.withIndex().sortedByDescending {
+                                    it.index
+                                }.forEach { item ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                            updateObjective { objective -> objective.copy(owner = item.index) }
+                                            editorService.flushCompoundCommon()
+                                            ownerPopupManager.setPopupVisible(false)
+                                        }) {
+                                        Text(
+                                            text = "${item.index + 1} ${item.value.team}",
+                                        )
+                                    }
 
-                            scenario!!.players.withIndex().sortedByDescending {
-                                it.index
-                            }.forEach { item ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
-                                        updateObjective { objective -> objective.copy(owner = Reference(item.index)) }
-                                        editorService.flushCompoundCommon()
-                                        ownerPopupManager.setPopupVisible(false)
-                                    }) {
-                                    Text(
-                                        text = "${item.index + 1} ${item.value.team}",
-                                    )
                                 }
+                            } else {
+                                PlayerTeam.entries.withIndex().sortedByDescending { it.index }.forEach { item ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                            updateObjective { objective -> objective.copy(owner = item.index) }
+                                            editorService.flushCompoundCommon()
+                                            ownerPopupManager.setPopupVisible(false)
+                                        }) {
+                                        Text(
+                                            text = "${item.index + 1} ${item.value}",
+                                        )
+                                    }
 
+                                }
                             }
+
+
                         }
                     }
                 }

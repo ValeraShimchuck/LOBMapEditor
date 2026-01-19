@@ -35,8 +35,8 @@ import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
@@ -45,7 +45,8 @@ import kotlin.getValue
 @OptIn(ExperimentalJewelApi::class)
 @Composable
 fun UnitsConfigDock() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>()
+    val editorService = diEditorService as? PresetEditorService ?: return
 
     val scenario by editorService.scenario.collectAsState()
 

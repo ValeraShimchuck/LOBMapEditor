@@ -8,8 +8,9 @@ import java.io.File
 data class CreateProjectData(
     val name: String = "",
     val dir: File? = null,
-    val widthPx: Int = 992,
-    val heightPx: Int = 896
+    val widthTiles: Int = Terrain.MIN_TERRAIN_TILES_MAP_X,
+    val heightTiles: Int = Terrain.MIN_TERRAIN_TILES_MAP_Y,
+    val isHybrid: Boolean = false
 ) {
     companion object {
         val validator = Validation {
@@ -20,14 +21,14 @@ data class CreateProjectData(
 
             CreateProjectData::dir required {}
 
-            CreateProjectData::widthPx {
-                minimum(Terrain.MIN_TERRAIN_MAP_X)
-                maximum(Terrain.MAX_TERRAIN_MAP_X)
+            CreateProjectData::widthTiles {
+                minimum(Terrain.MIN_TERRAIN_TILES_MAP_X)
+                maximum(Terrain.MAX_TERRAIN_TILES_MAP_X)
             }
 
-            CreateProjectData::heightPx {
-                minimum(Terrain.MIN_TERRAIN_MAP_Y)
-                maximum(Terrain.MAX_TERRAIN_MAP_Y)
+            CreateProjectData::heightTiles {
+                minimum(Terrain.MIN_TERRAIN_TILES_MAP_Y)
+                maximum(Terrain.MAX_TERRAIN_TILES_MAP_Y)
             }
         }
 

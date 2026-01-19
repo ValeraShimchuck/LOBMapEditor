@@ -8,6 +8,7 @@ import org.joml.Vector3f
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
@@ -27,7 +28,8 @@ class RangeStage(
         loadShaderSource("frange")
     )
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
+        if (this !is PresetRenderContext) return
         glCtx.glUseProgram(rangeProgram.program)
         glCtx.glBindVertexArray(rangeProgram.vao)
         glCtx.glBindVBO(rangeProgram.vbo)

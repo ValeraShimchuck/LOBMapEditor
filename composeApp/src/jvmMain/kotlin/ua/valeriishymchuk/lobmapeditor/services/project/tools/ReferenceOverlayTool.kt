@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2f
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
-class ReferenceOverlayTool : PresetTool() {
+class ReferenceOverlayTool : Tool() {
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
         AllIconsKeys.FileTypes.Image,
@@ -23,7 +23,7 @@ class ReferenceOverlayTool : PresetTool() {
     val rotation = MutableStateFlow(0f) // radians
     val transparency = MutableStateFlow(0.4f) // value from 0 to 1
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
     }
 
 }

@@ -2,19 +2,17 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
-import org.joml.Vector2f
 import org.joml.Vector4f
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
-class DebugTool: PresetTool() {
+class MiscTool: Tool() {
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
-        AllIconsKeys.Toolwindows.ToolWindowDebugger,
-        "Debug tools",
-        "Debug tools: tools for map editor debugging and developing"
+        AllIconsKeys.Actions.InlayRenameInNoCodeFiles,
+        "Misc tools",
+        "Misc tools: general category for tools, includes debug tools"
     )
 
     val debugInfo: MutableStateFlow<RenderContext.DebugInfo> = MutableStateFlow(RenderContext.DebugInfo(
@@ -24,7 +22,7 @@ class DebugTool: PresetTool() {
         false
     ))
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
     }
 
 }

@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import org.joml.Vector2i
 import kotlin.math.absoluteValue
 
-abstract class BrushTool : PresetTool() {
+abstract class BrushTool : Tool() {
     enum class BrushShape {
         SQUARE, CIRCLE
     }

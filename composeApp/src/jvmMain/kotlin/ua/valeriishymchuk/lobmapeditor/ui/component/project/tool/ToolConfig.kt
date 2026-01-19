@@ -33,6 +33,7 @@ import org.joml.Vector2f
 import org.joml.Vector4f
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.*
+import ua.valeriishymchuk.lobmapeditor.domain.DeploymentZone
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
@@ -47,18 +48,24 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.PresetToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.*
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
+import kotlin.let
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.text.ifEmpty
 
 @Composable
 fun ToolConfig(modifier: Modifier = Modifier) {
-    val toolService by rememberInstance<ToolService>()
+    val toolService by rememberInstance<ToolService<*>>()
     val currentTool by toolService.currentTool.collectAsState()
 
 
@@ -91,8 +98,12 @@ fun ToolConfig(modifier: Modifier = Modifier) {
             { PlayerToolConfig() }
         }
 
-        is DebugTool -> {
-            { DebugToolConfig() }
+        is MiscTool -> {
+            { MiscToolConfig() }
+        }
+
+        is DeploymentZoneTool -> {
+            { DeploymentZoneConfig() }
         }
 
         else -> null
@@ -106,15 +117,82 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun DebugToolConfig() {
-    val toolService by rememberInstance<ToolService>()
-    val debugInfo by toolService.debugTool.debugInfo.collectAsState()
+private fun MiscToolConfig() {
+    val toolService by rememberInstance<ToolService<*>>()
+    val editorService by rememberInstance<EditorService<*>>()
+    val scenario by editorService.scenario.collectAsState()
+    val commonData = scenario?.commonData ?: return
+    val debugInfo by toolService.miscTool.debugInfo.collectAsState()
     val controller = rememberColorPickerController()
     val controller2 = rememberColorPickerController()
+
+    var textFieldValue by remember(commonData) {
+        mutableStateOf(
+            TextFieldValue(
+                text = commonData.name,
+                selection = TextRange(commonData.name.length)
+            )
+        )
+    }
+
+    var descriptionTextFieldValue by remember(commonData) {
+        mutableStateOf(
+            TextFieldValue(
+                text = commonData.description,
+                selection = TextRange(commonData.description.length)
+            )
+        )
+    }
 
 
 
     Column {
+
+        Spacer(Modifier.height(4.dp))
+
+        Text("Name:")
+        TextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+
+                val finalText: String = newValue.text
+                editorService.updateCommonData {
+                    it.copy(
+                        name = finalText
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    editorService.flushCompoundCommon()
+                }
+            },
+            placeholder = { Text("Empty") }
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text("Description:")
+        TextField(
+            value = descriptionTextFieldValue,
+            onValueChange = { newValue ->
+                descriptionTextFieldValue = newValue
+
+                val finalText: String = newValue.text
+                editorService.updateCommonData {
+                    it.copy(
+                        description = finalText
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    editorService.flushCompoundCommon()
+                }
+            },
+            placeholder = { Text("Empty") }
+        )
 
         Spacer(Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -122,7 +200,7 @@ private fun DebugToolConfig() {
             Text("Measure render performance GPU")
             Spacer(Modifier.width(4.dp))
             Checkbox(debugInfo.measurePerformanceGPU, onCheckedChange = {
-                toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                toolService.miscTool.debugInfo.value = toolService.miscTool.debugInfo.value.copy(
                     measurePerformanceGPU = it
                 )
             })
@@ -135,7 +213,7 @@ private fun DebugToolConfig() {
             Text("Measure render performance CPU")
             Spacer(Modifier.width(4.dp))
             Checkbox(debugInfo.measurePerformanceCPU, onCheckedChange = {
-                toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                toolService.miscTool.debugInfo.value = toolService.miscTool.debugInfo.value.copy(
                     measurePerformanceCPU = it
                 )
             })
@@ -168,7 +246,7 @@ private fun DebugToolConfig() {
                 },
 
                 onColorChanged = { colorEnvelope: ColorEnvelope ->
-                    toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                    toolService.miscTool.debugInfo.value = toolService.miscTool.debugInfo.value.copy(
                         firstHeightColor = Vector4f(
                             colorEnvelope.color.red,
                             colorEnvelope.color.green,
@@ -237,7 +315,7 @@ private fun DebugToolConfig() {
                 },
 
                 onColorChanged = { colorEnvelope: ColorEnvelope ->
-                    toolService.debugTool.debugInfo.value = toolService.debugTool.debugInfo.value.copy(
+                    toolService.miscTool.debugInfo.value = toolService.miscTool.debugInfo.value.copy(
                         secondHeightColor = Vector4f(
                             colorEnvelope.color.red,
                             colorEnvelope.color.green,
@@ -287,9 +365,291 @@ private fun DebugToolConfig() {
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
+private fun DeploymentZoneConfig() {
+    val diEditorService by rememberInstance<EditorService<*>>()
+    val editorService = diEditorService as? HybridEditorService ?: return
+    val diToolService by rememberInstance<ToolService<*>>()
+    val toolService = diToolService as HybridToolService
+
+    val deploymentZoneTool = toolService.deploymentZoneTool
+    val selectedReference by deploymentZoneTool.selected.collectAsState()
+    val nullableScenario by editorService.scenario.collectAsState()
+    val scenario = nullableScenario ?: return
+    val selected = selectedReference?.getValue(scenario.deploymentZones::get)
+    val isHidden by deploymentZoneTool.isHidden.collectAsState()
+    val canBeSelected by deploymentZoneTool.canBeSelected.collectAsState()
+
+    val zonePopupManager = remember { PopupManager() }
+
+
+
+
+    Column {
+
+        Spacer(Modifier.height(4.dp)) // hide checkbox
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Text("Hide")
+            Spacer(Modifier.width(4.dp))
+            Checkbox(isHidden, onCheckedChange = {
+                deploymentZoneTool.isHidden.value = it
+                deploymentZoneTool.selected.value = null
+            })
+        }
+
+        Spacer(Modifier.height(4.dp)) // allow selection checkbox
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Allow selection")
+            Spacer(Modifier.width(4.dp))
+            Checkbox(canBeSelected, onCheckedChange = {
+                deploymentZoneTool.canBeSelected.value = it
+                deploymentZoneTool.selected.value = null
+            })
+        }
+
+        Spacer(Modifier.height(4.dp))
+        Text("Current Zone")
+        ComboBox(
+            labelText = selectedReference?.let { "${it.key + 1} ${PlayerTeam.entries[it.key]}" } ?: "None" ,
+            popupManager = zonePopupManager,
+            popupContent = {
+                VerticallyScrollableContainer {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                deploymentZoneTool.selected.value = null
+                                zonePopupManager.setPopupVisible(false)
+                            }) {
+                            Text(
+                                text = "None",
+                            )
+                        }
+                        scenario.deploymentZones.withIndex().forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                                    deploymentZoneTool.selected.value = Reference(item.index)
+                                    zonePopupManager.setPopupVisible(false)
+                                }) {
+                                Text(
+                                    text = "${item.index + 1} ${item.value.team}",
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        // selected deployment zone properties
+        if (selected != null) {
+            fun updateSelection(updater: (DeploymentZone) -> DeploymentZone) {
+                val newZone = updater(selected)
+                val command = UpdateDeploymentZoneCommand(
+                    selectedReference!!.key,
+                    selected,
+                    newZone
+                )
+
+                if (selected == newZone) return
+                editorService.executeCompound(command)
+            }
+
+            var positionX by remember {
+                val text = selected.position.x.toString()
+                mutableStateOf(
+                    TextFieldValue(
+                        text = text,
+                        selection = TextRange(text.length)
+                    )
+                )
+            }
+
+            LaunchedEffect(selectedReference) {
+                positionX = positionX.copy(text = selected.position.x.toString())
+            }
+
+            var positionY by remember {
+                val text = selected.position.y.toString()
+                mutableStateOf(
+                    TextFieldValue(
+                        text = text,
+                        selection = TextRange(text.length)
+                    )
+                )
+            }
+
+            LaunchedEffect(selectedReference) {
+                positionY = positionY.copy(text = selected.position.y.toString())
+            }
+
+            var width by remember {
+                val text = selected.width.toString()
+                mutableStateOf(
+                    TextFieldValue(
+                        text = text,
+                        selection = TextRange(text.length)
+                    )
+                )
+            }
+
+            LaunchedEffect(selectedReference) {
+                width = positionX.copy(text = selected.width.toString())
+            }
+
+            var height by remember {
+                val text = selected.height.toString()
+                mutableStateOf(
+                    TextFieldValue(
+                        text = text,
+                        selection = TextRange(text.length)
+                    )
+                )
+            }
+
+            LaunchedEffect(selectedReference) {
+                height = positionY.copy(text = selected.height.toString())
+            }
+
+            Spacer(Modifier.height(4.dp))
+            Text("Position:")
+            Row(horizontalArrangement = Arrangement.Center) {
+                TextField(
+                    value = positionX,
+                    onValueChange = { newValue ->
+                        positionX = newValue
+                        positionX = positionX.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    val coercedValue = value.coerceIn(0f, scenario.map.widthPixels.toFloat())
+                                    if (coercedValue == value) return@let str
+                                    coercedValue.toString()
+                                }
+                        )
+
+
+                        val finalText: Float = positionX.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                        updateSelection { it.copy(position = it.position.copy(x = finalText)) }
+                    },
+                    modifier = Modifier.onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompound()
+                        }
+                    },
+                    leadingIcon = {
+                        Row {
+                            Text("X", color = JewelTheme.globalColors.text.info)
+                            Spacer(Modifier.width(4.dp))
+                        }
+                    }
+                )
+
+                TextField(
+                    value = positionY,
+                    onValueChange = { newValue ->
+                        positionY = newValue
+                        positionY = positionY.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    val coercedValue = value.coerceIn(0f, scenario.map.heightPixels.toFloat())
+                                    if (coercedValue == value) return@let str
+                                    coercedValue.toString()
+                                }
+                        )
+
+
+                        val finalText: Float = positionY.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                        updateSelection { it.copy(position = it.position.copy(y = finalText)) }
+                    },
+                    modifier = Modifier.onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompound()
+                        }
+                    },
+                    leadingIcon = {
+                        Row {
+                            Text("Y", color = JewelTheme.globalColors.text.info)
+                            Spacer(Modifier.width(4.dp))
+                        }
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+            Text("Size:")
+            Row(horizontalArrangement = Arrangement.Center) {
+                TextField(
+                    value = width,
+                    onValueChange = { newValue ->
+                        width = newValue
+                        width = width.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    value.toString()
+                                }
+                        )
+
+
+                        val finalText: Float = width.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                        updateSelection { it.copy(width = finalText) }
+                    },
+                    modifier = Modifier.onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompound()
+                        }
+                    },
+                    leadingIcon = {
+                        Row {
+                            Text("Width", color = JewelTheme.globalColors.text.info)
+                            Spacer(Modifier.width(4.dp))
+                        }
+                    }
+                )
+
+                TextField(
+                    value = height,
+                    onValueChange = { newValue ->
+                        height = newValue
+                        height = height.copy(
+                            text = newValue.text
+                                .replace(Regex("[^0-9.]"), "").let { str ->
+                                    val value = str.toFloatOrNull() ?: return@let str
+                                    value.toString()
+                                }
+                        )
+
+
+                        val finalText: Float = height.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                        updateSelection { it.copy(height = finalText) }
+                    },
+                    modifier = Modifier.onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompound()
+                        }
+                    },
+                    leadingIcon = {
+                        Row {
+                            Text("Height", color = JewelTheme.globalColors.text.info)
+                            Spacer(Modifier.width(4.dp))
+                        }
+                    }
+                )
+            }
+        }
+
+    }
+
+
+}
+
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
+@Composable
 private fun PlayerToolConfig() {
-    val toolService by rememberInstance<ToolService>()
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diToolService by rememberInstance<ToolService<*>>()
+    val toolService = diToolService as? PresetToolService ?: return
+    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
     scenario ?: return
     val tool = toolService.playerTool
@@ -525,13 +885,13 @@ private fun PlayerToolConfig() {
 
         val newObjectivesList = oldObjectivesList.mapNotNull { objective ->
             if (objective.owner == null) return@mapNotNull objective
-            if (objective.owner == currentPlayerReference) {
+            if (objective.owner == currentPlayerReference.key) {
                 if (newOwner == null) return@mapNotNull null
-                return@mapNotNull objective.copy(owner = newOwner)
+                return@mapNotNull objective.copy(owner = newOwner.key)
             }
-            val oldIndex = objective.owner.key
+            val oldIndex = objective.owner
             val newIndex = preparedNewList.first { it.oldIndex == oldIndex }.newIndex
-            return@mapNotNull objective.copy(owner = Reference(newIndex))
+            return@mapNotNull objective.copy(owner = newIndex)
         }
 
         editorService.selectedUnits.value = mutableSetOf()
@@ -630,7 +990,7 @@ private fun PlayerToolConfig() {
                 if (showDialog) showDialog = false
                 else {
                     val anyRelatedUnits = scenario!!.units.any { it.owner == currentPlayerReference }
-                    val anyRelatedObjectives = scenario!!.objectives.any { it.owner == currentPlayerReference }
+                    val anyRelatedObjectives = scenario!!.objectives.any { it.owner == currentPlayerReference.key }
                     if (anyRelatedUnits || anyRelatedObjectives) {
                         showDialog = true
                     } else {
@@ -695,7 +1055,7 @@ private fun TerrainToolConfig() {
     val currentTerrain by TerrainTool.terrain.collectAsState()
 
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>();
     val scenario by editorService.scenario.collectAsState()
 
     if (scenario == null) return
@@ -705,7 +1065,6 @@ private fun TerrainToolConfig() {
     var confirmFlow by remember(scenario) { mutableStateOf(false) }
 
 
-//    val scenarioDimensionX = rememberTextFieldState(scenario!!.map.widthPixels.toString())
     var scenarioDimensionX by remember {
         mutableStateOf(
             TextFieldValue(
@@ -714,7 +1073,6 @@ private fun TerrainToolConfig() {
             )
         )
     }
-//    val scenarioDimensionY = rememberTextFieldState(scenario!!.map.heightPixels.toString())
     var scenarioDimensionY by remember {
         mutableStateOf(
             TextFieldValue(
@@ -723,43 +1081,6 @@ private fun TerrainToolConfig() {
             )
         )
     }
-
-
-//    LaunchedEffect(scenarioDimensionX) {
-//        snapshotFlow { scenarioDimensionX.text }
-//            .collect { rawText ->
-//                val newText = (rawText
-//                    .replace(Regex("[^0-9]"), "")
-//                    .toIntOrNull() ?: 0
-//                        ).coerceIn(
-//                        Terrain.MIN_TERRAIN_MAP_X..Terrain.MAX_TERRAIN_MAP_X
-//                    ).toString()
-//                if (newText == rawText) return@collect
-//                scenarioDimensionX.edit {
-//                    replace(
-//                        0, rawText.length, newText
-//                    )
-//                }
-//            }
-//    }
-//
-//    LaunchedEffect(scenarioDimensionY) {
-//        snapshotFlow { scenarioDimensionY.text }
-//            .collect { rawText ->
-//                val newText = (rawText
-//                    .replace(Regex("[^0-9]"), "")
-//                    .toIntOrNull() ?: 0
-//                        ).coerceIn(
-//                        Terrain.MIN_TERRAIN_MAP_Y..Terrain.MAX_TERRAIN_MAP_Y
-//                    ).toString()
-//                if (newText == rawText) return@collect
-//                scenarioDimensionY.edit {
-//                    replace(
-//                        0, rawText.length, newText
-//                    )
-//                }
-//            }
-//    }
 
     BrushToolConfig(TerrainTool)
 
@@ -803,7 +1124,7 @@ private fun TerrainToolConfig() {
                             .replace(Regex("[^0-9]"), "").let { str ->
                                 val value = str.toIntOrNull() ?: 0
                                 val coercedValue = value.coerceIn(
-                                    Terrain.MIN_TERRAIN_MAP_X..Terrain.MAX_TERRAIN_MAP_X
+                                    Terrain.MIN_TERRAIN_PIXELS_MAP_X..Terrain.MAX_TERRAIN_PIXELS_MAP_X
                                 )
                                 if (coercedValue == value) return@let str
                                 coercedValue.toString()
@@ -829,7 +1150,7 @@ private fun TerrainToolConfig() {
                             .replace(Regex("[^0-9]"), "").let { str ->
                                 val value = str.toIntOrNull() ?: 0
                                 val coercedValue = value.coerceIn(
-                                    Terrain.MIN_TERRAIN_MAP_Y..Terrain.MAX_TERRAIN_MAP_Y
+                                    Terrain.MIN_TERRAIN_PIXELS_MAP_Y..Terrain.MAX_TERRAIN_PIXELS_MAP_Y
                                 )
                                 if (coercedValue == value) return@let str
                                 coercedValue.toString()
@@ -852,13 +1173,11 @@ private fun TerrainToolConfig() {
                     val newX = scenarioDimensionX.text.toInt()
                     val newY = scenarioDimensionY.text.toInt()
 
-                    editorService.importScenario(
-                        scenario!!.copy(
-                            commonData = scenario!!.commonData.copy(
-                                map = scenario!!.commonData.map.resize(newX, newY)
-                            )
-                        )
-                    )
+                    val newScenario = scenario!!.withCommonData(scenario!!.commonData.copy(
+                        map = scenario!!.commonData.map.resize(newX, newY)
+                    ))
+                    val method = editorService.javaClass.getMethod("importScenario", GameScenario::class.java)
+                    method.invoke(editorService,newScenario)
                     confirmFlow = false
 
                 },
@@ -920,7 +1239,7 @@ private fun HeightToolConfig() {
 private fun PlaceUnitToolConfig() {
     val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
 
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
 
 
@@ -1228,13 +1547,21 @@ private fun PlaceUnitToolConfig() {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun PlaceObjectiveToolConfig() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-
+    val editorService by rememberInstance<EditorService<*>>()
+    val presetEditorService = editorService as? PresetEditorService
 
     val currentObjective by PlaceObjectiveTool.currentObjective.collectAsState()
-    var playerIndex = currentObjective.owner?.key
+    var playerIndex = currentObjective.owner
     val scenario by editorService.scenario.collectAsState()
-    if (playerIndex != null && !scenario!!.players.indices.contains(playerIndex)) playerIndex = null
+    if (playerIndex != null) {
+        if (presetEditorService != null) {
+            if (!presetEditorService.scenario.value!!.players.indices.contains(playerIndex)) {
+                playerIndex = null
+            }
+        } else {
+            if (!PlayerTeam.entries.indices.contains(playerIndex)) playerIndex = null
+        }
+    }
     val playerTeamPopupManager = remember { PopupManager() }
     val objectiveTypePopupManager = remember { PopupManager() }
 
@@ -1243,8 +1570,13 @@ private fun PlaceObjectiveToolConfig() {
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        val ownerTeam: PlayerTeam? = playerIndex?.let { ownerIndex ->
+            if (presetEditorService != null) {
+                presetEditorService.scenario.value!!.players[ownerIndex].team
+            } else PlayerTeam.entries.get(ownerIndex)
+        }
         // owner
-        ComboBox(labelText = playerIndex?.let { "${playerIndex + 1} ${scenario!!.players[playerIndex].team}" }
+        ComboBox(labelText = playerIndex?.let { "${playerIndex + 1} $ownerTeam" }
             ?: "No one",
             popupManager = playerTeamPopupManager,
             popupContent = {
@@ -1262,23 +1594,45 @@ private fun PlaceObjectiveToolConfig() {
                             )
                         }
 
-                        scenario!!.players.withIndex().sortedByDescending {
-                            it.index
-                        }.forEach { item ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+                        if (presetEditorService != null) {
+                            presetEditorService.scenario.value!!.players.withIndex().sortedByDescending {
+                                it.index
+                            }.forEach { item ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
 
-                                    PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
-                                        owner = Reference(item.index)
+                                        PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                                            owner = item.index
+                                        )
+                                        playerTeamPopupManager.setPopupVisible(false)
+                                    }) {
+                                    Text(
+                                        text = "${item.index + 1} ${item.value.team}",
                                     )
-                                    playerTeamPopupManager.setPopupVisible(false)
-                                }) {
-                                Text(
-                                    text = "${item.index + 1} ${item.value.team}",
-                                )
-                            }
+                                }
 
+                            }
+                        } else {
+                            PlayerTeam.entries.withIndex().sortedByDescending {
+                                it.index
+                            }.forEach { item ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
+
+                                        PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
+                                            owner = item.index
+                                        )
+                                        playerTeamPopupManager.setPopupVisible(false)
+                                    }) {
+                                    Text(
+                                        text = "${item.index + 1} ${item.value}",
+                                    )
+                                }
+
+                            }
                         }
+
+
                     }
                 }
             })
@@ -1372,10 +1726,8 @@ private fun PlaceObjectiveToolConfig() {
 @Composable
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun GridToolConfig() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
-    val toolService by rememberInstance<ToolService>()
-//    val canvas by rememberInstance<GLCanvas>()
 
+    val toolService by rememberInstance<ToolService<*>>()
 
     val size by toolService.gridTool.size.collectAsState()
     val offset by toolService.gridTool.offset.collectAsState()
@@ -1597,8 +1949,9 @@ private fun GridToolConfig() {
 @Composable
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 private fun ReferenceOverlayToolConfig() {
-    val toolService by rememberInstance<ToolService>()
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val editorService by rememberInstance<EditorService<*>>()
+    val toolService by rememberInstance<ToolService<*>>()
+
     val projectService by rememberInstance<ProjectsService>()
     val projectRef by rememberInstance<ProjectRef>()
     val textureStorage by rememberInstance<TextureStorage>()
@@ -1638,7 +1991,9 @@ private fun ReferenceOverlayToolConfig() {
             hideSprites,
             onCheckedChange = {
                 toolService.refenceOverlayTool.hideSprites.value = it
-                editorService.selectedUnits.value = emptySet()
+                (editorService as? PresetEditorService)?.let { presetEditorService ->
+                    presetEditorService.selectedUnits.value = emptySet()
+                }
                 editorService.selectedObjectives.value = null
             }
         )

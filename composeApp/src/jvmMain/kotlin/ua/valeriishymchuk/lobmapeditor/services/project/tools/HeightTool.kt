@@ -3,7 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2i
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
@@ -21,8 +21,8 @@ object HeightTool : BrushTool() {
         "Height: change height of terrain"
     )
 
-    override fun useToolAt(
-        editorService: EditorService<GameScenario.Preset>,
+    override fun useToolAtGeneric(
+        editorService: EditorService<*>,
         x: Float,
         y: Float,
         flushCompoundCommands: Boolean,
@@ -46,7 +46,7 @@ object HeightTool : BrushTool() {
         }
         .any { it }
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
         editorService.flushCompoundCommon()
     }
 
@@ -54,7 +54,7 @@ object HeightTool : BrushTool() {
         tileX: Int,
         tileY: Int,
         height: Int,
-        editorService: EditorService<GameScenario.Preset>,
+        editorService: EditorService<*>,
     ): Boolean {
         val terrain = editorService.scenario.value!!.map.terrainMap.get(tileX, tileY) ?: return false
         val oldValue = editorService.scenario.value!!.map.terrainHeight.get(tileX, tileY) ?: return false
@@ -76,7 +76,7 @@ object HeightTool : BrushTool() {
         tileX: Int,
         tileY: Int,
         height: Int,
-        editorService: EditorService<GameScenario.Preset>,
+        editorService: EditorService<*>,
         flushCompoundCommands: Boolean,
     ): Boolean {
         val heightMap = editorService.scenario.value!!.map.terrainHeight

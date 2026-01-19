@@ -19,27 +19,25 @@ import io.github.vinceglb.filekit.dialogs.openFileSaver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.jetbrains.jewel.ui.component.IconActionButton
-import org.jetbrains.jewel.ui.component.OutlinedButton
-import org.jetbrains.jewel.ui.component.SuccessInlineBanner
-import org.jetbrains.jewel.ui.component.Text
-import org.jetbrains.jewel.ui.component.Tooltip
+import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.screen.HomeScreen
 import ua.valeriishymchuk.lobmapeditor.ui.screen.TitleBarScreen
 import java.awt.Desktop
-import kotlin.getValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TitleBarScreen.ProjectTitleScreenProvider() {
-    val editorService by rememberInstance<EditorService<GameScenario.Preset>>()
+    val diEditorService by rememberInstance<EditorService<*>>()
+    val editorService = diEditorService
     val scenarioIO by rememberInstance<ScenarioIOService>()
     val toastService by rememberInstance<ToastService>()
     val ref by rememberInstance<ProjectRef>()
@@ -130,11 +128,27 @@ fun TitleBarScreen.ProjectTitleScreenProvider() {
 
                             val file = FileKit.openFilePicker(type = FileKitType.File("json")) ?: return@launch
 
-                            val newScenario = scenarioIO.load(file.file) as? GameScenario.Preset ?: return@launch
+                            val newScenario = scenarioIO.load(file.file)
+                            when (editorService) {
+                                is HybridEditorService -> {
+                                    val scenario =
+                                        newScenario as? GameScenario.Hybrid
+                                            ?: GameScenario.Hybrid.DEFAULT.withCommonData(
+                                            newScenario.commonData
+                                        ).readjustDeploymentZones()
+                                    editorService.importScenario(scenario)
+                                }
 
-                            editorService.importScenario(newScenario)
-//                            editorService.scenario.value = newScenario
-//                            editorService.save(true)
+                                is PresetEditorService -> {
+                                    val scenario =
+                                        newScenario as? GameScenario.Preset
+                                            ?: GameScenario.Preset.DEFAULT.withCommonData(
+                                                newScenario.commonData
+                                            )
+                                    editorService.importScenario(scenario)
+                                }
+                            }
+
 
                             toastService.toast() {
                                 SuccessInlineBanner(

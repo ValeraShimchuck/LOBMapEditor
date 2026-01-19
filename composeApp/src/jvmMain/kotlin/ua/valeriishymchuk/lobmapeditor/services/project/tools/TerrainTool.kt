@@ -3,7 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.services.project.tools
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2i
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
@@ -20,12 +20,12 @@ object TerrainTool : BrushTool() {
         "Terrain: change type of terrain"
     )
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flushGeneric(editorService: EditorService<*>) {
         editorService.flushCompoundCommon()
     }
 
-    override fun useToolAt(
-        editorService: EditorService<GameScenario.Preset>,
+    override fun useToolAtGeneric(
+        editorService: EditorService<*>,
         x: Float,
         y: Float,
         flushCompoundCommands: Boolean,

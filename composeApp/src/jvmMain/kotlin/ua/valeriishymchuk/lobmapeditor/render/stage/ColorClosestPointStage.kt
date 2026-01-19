@@ -3,6 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.render.stage
 import com.jogamp.opengl.GL.GL_TRIANGLES
 import org.joml.Matrix4f
 import org.joml.Vector2f
+import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
@@ -20,8 +21,8 @@ class ColorClosestPointStage(
                 loadShaderSource("fcolorclosestpoint")
     )
 
-    override fun RenderContext.draw0() {
-
+    override fun RenderContext<*>.draw0() {
+        if (this !is PresetRenderContext) return
         val model = Matrix4f().identity()
         val mvpMatrix = getMvp(model)
 

@@ -1,40 +1,44 @@
-package ua.valeriishymchuk.lobmapeditor.render
+package ua.valeriishymchuk.lobmapeditor.render.renderer
 
-import com.jogamp.opengl.GL.*
+import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
-import org.joml.Matrix4f
-import org.joml.Vector2f
-import org.joml.Vector2i
-import org.joml.Vector3f
 import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
+import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.currentGl
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
-import ua.valeriishymchuk.lobmapeditor.render.stage.*
+import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.DeploymentZoneStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.RangeStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.ReferenceOverlayStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.SpriteStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.UnitBarsStage
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
-import java.lang.Math
+import kotlin.math.min
 import kotlin.time.TimeSource
 
+abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(override val di: DI) : GLEventListener, DIAware {
 
-class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
+    protected open val editorService: EditorService<*> by di.instance()
+    protected val toolService: ToolService<*> by di.instance()
+    protected val textureStorage: TextureStorage by di.instance()
+    protected val projectRef: ProjectRef by di.instance()
 
-    private val editorService: EditorService<GameScenario.Preset> by di.instance()
-    private val toolService: ToolService by di.instance()
-    private val textureStorage: TextureStorage by di.instance()
-    private val projectRef: ProjectRef by di.instance()
-
-    private val frame1BorderOffset = 21f
-    private val frame1Color = Vector4f(33f, 19f, 10f, 255f).div(255f)
-    private val frame1Vertices = floatArrayOf(
+    protected val frame1BorderOffset = 21f
+    protected val frame1Color = Vector4f(33f, 19f, 10f, 255f).div(255f)
+    protected val frame1Vertices = floatArrayOf(
         -frame1BorderOffset,
         editorService.scenario.value!!.map.heightPixels + frame1BorderOffset,
         editorService.scenario.value!!.map.widthPixels + frame1BorderOffset,
@@ -51,9 +55,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     )
 
 
-    private val frame2BorderOffset = 16f
-    private val frame2Color = Vector4f(162f, 157f, 131f, 255f).div(255f)
-    private val frame2Vertices = floatArrayOf(
+    protected val frame2BorderOffset = 16f
+    protected val frame2Color = Vector4f(162f, 157f, 131f, 255f).div(255f)
+    protected val frame2Vertices = floatArrayOf(
         -frame2BorderOffset,
         editorService.scenario.value!!.map.heightPixels + frame2BorderOffset,
         editorService.scenario.value!!.map.widthPixels + frame2BorderOffset,
@@ -70,7 +74,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     )
 
 
-    private val tileMapVertices = floatArrayOf(
+    protected val tileMapVertices = floatArrayOf(
         0f,
         editorService.scenario.value!!.map.heightPixels.toFloat(),
         editorService.scenario.value!!.map.widthPixels.toFloat(),
@@ -96,33 +100,21 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
     }
 
     // Order matters
-    private lateinit var renderStages: List<RenderStage>
-    private lateinit var performanceQueries: PerformanceQueries
+    protected lateinit var renderStages: List<RenderStage>
+    protected lateinit var performanceQueries: PerformanceQueries
+
+    abstract fun createRenderStages(ctx: CurrentGL): List<RenderStage>
 
     override fun init(drawable: GLAutoDrawable) {
         val ctx = drawable.gl.currentGl()
         textureStorage.referenceFile = projectRef.referenceFile
 
-        ctx.glEnable(GL_BLEND)
-        ctx.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        ctx.glEnable(GL.GL_BLEND)
+        ctx.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
         textureStorage.loadTextures(ctx)
 
-        renderStages = listOf(
-            BackgroundStage(ctx),
-            ColorStage(ctx, frame1Vertices, frame1Color),
-            ColorStage(ctx, frame2Vertices, frame2Color),
-            TerrainMapStage(ctx, tileMapVertices),
-            BlobTileStage(ctx, tileMapVertices),
-            OverlayTileStage(ctx, tileMapVertices),
-            ColorClosestPointStage(ctx, tileMapVertices),
-            ReferenceOverlayStage(ctx, tileMapVertices),
-            GridStage(ctx, tileMapVertices),
-            RangeStage(ctx),
-            SpriteStage(ctx),
-            SelectionStage(ctx),
-            UnitBarsStage(ctx)
-        )
+        renderStages = createRenderStages(ctx)
 
         var queryIndex = 0;
 
@@ -150,6 +142,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
     }
 
+    abstract fun prepareContext(gl: CurrentGL): CTX
 
     override fun display(drawable: GLAutoDrawable) {
         editorService.save()
@@ -198,7 +191,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         }
 
-        val shouldQueryTimer = toolService.debugTool.debugInfo.value.measurePerformanceGPU
+        val shouldQueryTimer = toolService.miscTool.debugInfo.value.measurePerformanceGPU
                 && performanceQueries.shouldStartCounter
         if (shouldQueryTimer) performanceQueries.shouldStartCounter = false
 
@@ -216,53 +209,9 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         textureStorage.loadReference(ctx)
         ctx.glClearColor(0.5f, 0f, 0.5f, 1f)
-        ctx.glClear(GL_COLOR_BUFFER_BIT)
+        ctx.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-        val renderCtx = RenderContext(
-            ctx,
-            Vector2i(editorService.width, editorService.height),
-            textureStorage,
-            editorService.viewMatrix,
-            editorService.projectionMatrix,
-            editorService.scenario.value!!,
-            editorService.selectedUnits.value
-                .mapNotNull { reference -> reference.getValueOrNull(editorService.scenario.value!!.units::getOrNull) },
-            editorService.selectedObjectives.value?.let {
-                listOf(it).mapNotNull { reference ->
-                    reference.getValueOrNull(editorService.scenario.value!!.objectives::getOrNull)
-                }
-            } ?: emptyList(),
-            RenderContext.SelectionContext(
-                editorService.selectionEnabled,
-                editorService.selectionStart,
-                editorService.selectionEnd
-            ),
-            RenderContext.GridContext(
-                toolService.gridTool.offset.value,
-                toolService.gridTool.size.value,
-                toolService.gridTool.thickness.value,
-                toolService.gridTool.color.value
-            ),
-            RenderContext.OverlayReferenceContext(
-                Vector4f(1f, 1f, 1f, toolService.refenceOverlayTool.transparency.value),
-                Matrix4f().apply {
-
-                    val center = Vector2f(0.5f, 0.5f)
-
-                    // Translate to origin, rotate, then translate back to center
-                    translate(center.x, center.y, 0f)  // Move center to origin
-                    scale(Vector3f(Vector2f(1f).div(Vector2f(toolService.refenceOverlayTool.scale.value)), 1f))
-                    val normalizedRotation = (Math.PI.toFloat() * 2) - toolService.refenceOverlayTool.rotation.value
-                    rotateZ(normalizedRotation)  // Perform rotation
-                    translate(-center.x, -center.y, 0f)  // Move back to original position
-
-                    // Apply other transformations (scale and offset)
-
-                    translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
-                }
-            ),
-            toolService.debugTool.debugInfo.value
-        )
+        val renderCtx = prepareContext(ctx)
 
 
         val timeSource = TimeSource.Monotonic
@@ -271,6 +220,16 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         renderStages.forEach { stage ->
 
             if (stage is SpriteStage && toolService.refenceOverlayTool.hideSprites.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+
+            if (stage is UnitBarsStage && toolService.refenceOverlayTool.hideSprites.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+            val hybridToolService = toolService as? HybridToolService
+            if (stage is DeploymentZoneStage && hybridToolService != null && hybridToolService.deploymentZoneTool.isHidden.value) {
                 performanceQueries.disabledRenderStages.add(stage)
                 return@forEach
             }
@@ -299,7 +258,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
         }
 
         val end = timeSource.markNow()
-        if (toolService.debugTool.debugInfo.value.measurePerformanceCPU) {
+        if (toolService.miscTool.debugInfo.value.measurePerformanceCPU) {
             println("Prepared frame on CPU SIDE, it took: ${end - start} to render it. Summary for every stage:")
             var lastMark = start
             marks.forEach { (stage, mark) ->
@@ -310,7 +269,7 @@ class EditorRenderer(override val di: DI) : GLEventListener, DIAware {
 
         ctx.glBindVertexArray(0)
         val error = ctx.glGetError()
-        if (error != GL_NO_ERROR) {
+        if (error != GL.GL_NO_ERROR) {
             System.err.println("OpenGL error $error")
         }
 

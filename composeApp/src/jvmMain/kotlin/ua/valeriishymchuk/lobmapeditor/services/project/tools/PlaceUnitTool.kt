@@ -10,7 +10,8 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
@@ -28,7 +29,7 @@ object PlaceUnitTool : PresetTool() {
         GameUnitType.LINE_INFANTRY.defaultStamina
     ))
 
-    override fun flush(editorService: EditorService<GameScenario.Preset>) {
+    override fun flush(editorService: PresetEditorService) {
         editorService.flushCompoundCommon()
     }
 
@@ -39,7 +40,7 @@ object PlaceUnitTool : PresetTool() {
     )
 
     override fun useToolAt(
-        editorService: EditorService<GameScenario.Preset>,
+        editorService: PresetEditorService,
         x: Float,
         y: Float,
         flushCompoundCommands: Boolean,

@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.ui.component.*
 import org.jetbrains.jewel.ui.icon.IconKey
 import org.kodein.di.compose.rememberInstance
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 
 data class ToolUiInfo(
     val icon: IconKey,
@@ -21,7 +21,7 @@ data class ToolUiInfo(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ToolBar(modifier: Modifier) {
-    val toolService by rememberInstance<ToolService>()
+    val toolService by rememberInstance<ToolService<*>>()
     val currentTool by toolService.currentTool.collectAsState()
 
     Row(

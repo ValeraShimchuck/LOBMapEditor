@@ -1,7 +1,5 @@
-package ua.valeriishymchuk.lobmapeditor.render
+package ua.valeriishymchuk.lobmapeditor.render.input
 
-
-import org.joml.Math
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -10,16 +8,12 @@ import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
-import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.Position
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.EditorService.Companion.deleteUnits
-import ua.valeriishymchuk.lobmapeditor.services.project.ToolService
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
@@ -29,36 +23,33 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionListener
 import java.awt.event.MouseWheelEvent
-import kotlin.getValue
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.ranges.contains
 
-class InputListener(
+abstract class InputListener<S: GameScenario<S>>(
     override val di: DI
 ) : MouseAdapter(), MouseMotionListener, KeyListener, DIAware {
 
-    private var lastMouseX = 0
-    private var lastMouseY = 0
+    protected var lastMouseX = 0
+    protected var lastMouseY = 0
 
-    private var lastX = 0
-    private var lastY = 0
-    private var isDragging = false
+    protected var lastX = 0
+    protected var lastY = 0
+    protected var isDragging = false
 
-    private var leftLastX: Int? = null
-    private var leftLastY: Int? = null
-    private var isToolDragging = false
+    protected var leftLastX: Int? = null
+    protected var leftLastY: Int? = null
+    protected var isToolDragging = false
 
-    private var isShiftPressed = false
-    private var isCtrlPressed = false
-    private var isSelectionDragging: Boolean = false
-    private var shouldDragSelectedObjects: Boolean = false
-    private var lastDragPosition: Vector2f = Vector2f()
+    protected var isShiftPressed = false
+    protected var isCtrlPressed = false
+    protected var isSelectionDragging: Boolean = false
+    protected var shouldDragSelectedObjects: Boolean = false
+    protected var lastDragPosition: Vector2f = Vector2f()
 
-    private var rotatableUnit: Reference<Int, GameUnit>? = null
 
-    private val editorService: EditorService<GameScenario.Preset> by di.instance()
-    private val toolService: ToolService by di.instance()
+    protected open val editorService: EditorService<*> by di.instance()
+    protected val toolService: ToolService<*> by di.instance()
 
     fun getPointsBetween(start: Vector2i, end: Vector2i): List<Vector2i> {
         val points = mutableListOf<Vector2i>()
@@ -108,6 +99,16 @@ class InputListener(
         }
     }
 
+    open fun onDelete() {
+
+    }
+
+    open fun onDuplicate() {
+
+    }
+
+    open fun onArrowDrag(e: MouseEvent) {
+    }
 
     override fun keyReleased(e: KeyEvent) {
         when (e.keyCode) {
@@ -123,9 +124,7 @@ class InputListener(
             KeyEvent.VK_CONTROL -> isCtrlPressed = false
 
             KeyEvent.VK_DELETE -> {
-                editorService.deleteUnits(
-                    editorService.selectedUnits.value
-                )
+                onDelete()
                 editorService.selectedObjectives.value?.let { reference ->
                     editorService.deleteObjectives(
                         setOf(reference)
@@ -165,42 +164,16 @@ class InputListener(
         }
     }
 
-    private fun runTestError() {
+    protected fun runTestError() {
         if (!isCtrlPressed) return
         println("Throwing error")
         editorService.throwTestError.value = true
 //        throw IllegalStateException("Test exception")
     }
 
-    private fun handleDuplication() {
+    protected fun handleDuplication() {
         if (!isCtrlPressed) return
-        val selectedUnitsToCopy =
-            editorService.selectedUnits.value.map { it.getValue(editorService.scenario.value!!.units::get) }
-        if (selectedUnitsToCopy.isNotEmpty()) {
-            val minPos = selectedUnitsToCopy.map { Vector2f(it.position.x, it.position.y) }
-                .reduce { vec1, vec2 ->
-                    vec1.min(vec2, Vector2f())
-                }
-            val maxPos = selectedUnitsToCopy.map { Vector2f(it.position.x, it.position.y) }
-                .reduce { vec1, vec2 ->
-                    vec1.max(vec2, Vector2f())
-                }
-
-            val center = Vector2f((minPos.x + maxPos.x ) / 2, (minPos.y + maxPos.y ) / 2)
-            val mousePos = editorService.fromScreenToWorldSpace(lastMouseX, lastMouseY)
-            val difference = mousePos.sub(center, Vector2f())
-            val unitsToAdd = selectedUnitsToCopy.map {
-                it.copy(position = Position(it.position.x + difference.x, it.position.y + difference.y))
-            }
-            val oldList = editorService.scenario.value!!.units
-            val newList = oldList.toMutableList()
-            newList.addAll(unitsToAdd)
-            editorService.execute(UpdateGameUnitListCommand(
-                oldList,
-                newList
-            ))
-        }
-
+        onDuplicate()
         val selectedObjectivesToCopy = editorService.selectedObjectives.value
             ?.getValue(editorService.scenario.value!!.objectives::get) ?: return
 
@@ -212,11 +185,14 @@ class InputListener(
         newList.add(selectedObjectivesToCopy.copy(position = Position(
             selectedObjectivesToCopy.position.x + difference.x,
             selectedObjectivesToCopy.position.y + difference.y
-        )))
-        editorService.executeCommon(UpdateObjectiveListCommand(
-            oldList,
-            newList
+        )
         ))
+        editorService.executeCommon(
+            UpdateObjectiveListCommand(
+                oldList,
+                newList
+            )
+        )
     }
 
 
@@ -225,36 +201,13 @@ class InputListener(
         checkTilePainting(e)
         checkSelectionDrag(e)
         checkSelectedObjectsDrag(e)
-        checkUnitRotation(e)
+        checkArrowDrag(e)
 //        println("Current thread: ${Thread.currentThread().name}")
 
     }
 
-    private fun checkUnitRotation(e: MouseEvent): Boolean {
-        val unitReference = rotatableUnit ?: return false
-        val unit = unitReference.getValue(editorService.scenario.value!!.units::get)
-        val unitPos = Vector2f(unit.position.x, unit.position.y)
-        val draggedPos = editorService.fromScreenToWorldSpace(e.x, e.y)
-        val differenceVector = draggedPos.sub(unitPos, Vector2f())
-        val unitVector = Vector2f(1f, 0f)
-        var newRotation = unitVector.angle(differenceVector)
-        if (newRotation < 0f) {
-            newRotation += 2 * Math.PI_f
-        }
-        val oldRotation = unit.rotationRadians
-        val differenceRotation = newRotation - oldRotation
-        editorService.executeCompound(
-            UpdateGameUnitListCommand(
-            editorService.scenario.value!!.units,
-            editorService.scenario.value!!.units.mapIndexed { index, unit ->
-                val unitToChange = editorService.selectedUnits.value.firstOrNull { reference ->
-                    reference.key == index
-                }
-                if (unitToChange == null) return@mapIndexed unit
-                unit.copy(rotationRadians = unit.rotationRadians + differenceRotation)
-            }
-        ))
-        return true
+    protected fun checkArrowDrag(e: MouseEvent) {
+        onArrowDrag(e)
     }
 
     override fun mouseMoved(e: MouseEvent) {
@@ -262,7 +215,7 @@ class InputListener(
         lastMouseY = e.y
     }
 
-    private fun checkTilePainting(e: MouseEvent): Boolean {
+    protected fun checkTilePainting(e: MouseEvent): Boolean {
         if (!isToolDragging) return false
         if (leftLastX == null || leftLastY == null) {
             leftLastX = e.x
@@ -294,7 +247,7 @@ class InputListener(
     }
 
 
-    private fun checkMiddleMouse(e: MouseEvent): Boolean {
+    protected fun checkMiddleMouse(e: MouseEvent): Boolean {
         if (!isDragging) return false
         val dx = e.x - lastX
         val dy = e.y - lastY
@@ -308,7 +261,7 @@ class InputListener(
 
     }
 
-    private fun checkSelectionDrag(e: MouseEvent): Boolean {
+    protected fun checkSelectionDrag(e: MouseEvent): Boolean {
         if (!isSelectionDragging) return false
         editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
         if (!editorService.selectionEnabled && editorService.selectionStart.distance(editorService.selectionEnd) > 0.05f)
@@ -316,36 +269,18 @@ class InputListener(
         return editorService.selectionEnabled
     }
 
-    private fun checkSelectedObjectsDrag(e: MouseEvent): Boolean {
+    open fun onSelectionDrag(change: Vector2f) {
+
+    }
+
+    protected fun checkSelectedObjectsDrag(e: MouseEvent): Boolean {
         if (!shouldDragSelectedObjects) return false
         val oldPos = Vector2f(lastDragPosition)
         val newPos = editorService.fromScreenToWorldSpace(e.x, e.y)
         lastDragPosition = newPos
         val change = newPos.sub(oldPos, Vector2f())
 
-        if (editorService.selectedUnits.value.isNotEmpty()) {
-            val unitList = editorService.scenario.value!!.units.toMutableList()
-            editorService.selectedUnits.value.forEach { reference ->
-                val oldUnit = reference.getValue(editorService.scenario.value!!.units::get)
-                val newUnitPos = Vector2f(oldUnit.position.x, oldUnit.position.y).add(change)
-//                println("New unit pos: ${newPos.x} ${newPos.y} change: ${change.x} ${change.y} change distance: ${change.length()}")
-                val newUnit = oldUnit.copy(
-                    position = Position(
-                        newUnitPos.x.coerceIn(0f, editorService.scenario.value!!.map.widthPixels.toFloat()),
-                        newUnitPos.y.coerceIn(0f, editorService.scenario.value!!.map.heightPixels.toFloat())
-                    )
-                )
-                unitList[reference.key] = newUnit
-            }
-//            if (true) return true
-
-            editorService.executeCompound(
-                UpdateGameUnitListCommand(
-                    editorService.scenario.value!!.units,
-                    unitList
-                )
-            )
-        }
+        onSelectionDrag(change)
 
         val selectedObjective = editorService.selectedObjectives.value
         if (selectedObjective != null) {
@@ -382,7 +317,14 @@ class InputListener(
         checkEndOfToolUsage(e)
     }
 
-    private fun checkStartOfSelection(e: MouseEvent) {
+    open fun onSelectionClear() {
+
+    }
+    open fun onStartOfSelection(e: MouseEvent): Boolean {
+        return false
+    }
+
+    protected fun checkStartOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
         if (toolService.refenceOverlayTool.hideSprites.value) {
             editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
@@ -394,7 +336,7 @@ class InputListener(
         val objective = getClickedObjective(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
         if (objective != null && !shiftOrControl) {
-            editorService.selectedUnits.value = setOf()
+            onSelectionClear()
             editorService.selectedObjectives.value =
                 Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
@@ -402,36 +344,14 @@ class InputListener(
             return
         }
 
-        val units = getClickedUnits(e)
-        if (units.isNotEmpty() && !shiftOrControl) {
-            editorService.selectedObjectives.value = null
-            shouldDragSelectedObjects = true
-            lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
-            val firstSelected = units.firstOrNull { unit ->
-                val reference = Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
-                editorService.selectedUnits.value.contains(reference)
-            }
-            if (firstSelected == null) {
-                editorService.selectedUnits.value = setOf()
-                editorService.selectedUnits.value += Reference(editorService.scenario.value!!.units.indexOf(units.first()))
-            }
-            return
-        }
-
-        val arrowOfUnit = getClickedArrow(e)
-        if (arrowOfUnit != null) {
-            rotatableUnit = Reference(editorService.scenario.value!!.units.indexOf(arrowOfUnit))
-            return
-        }
-
-
+        if (onStartOfSelection(e)) return
 
         editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
         editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
         isSelectionDragging = true
     }
 
-    private fun getClickedObjective(e: MouseEvent): Objective? {
+    protected fun getClickedObjective(e: MouseEvent): Objective? {
         val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
         val objectiveDimensions = Vector2f(
             GameConstants.TILE_SIZE.toFloat()
@@ -454,69 +374,32 @@ class InputListener(
         }
     }
 
-    private fun getClickedArrow(e: MouseEvent): GameUnit? {
-        val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
-        val hitboxDimensions = Vector2f(
-            54f,
-            16f
-        )
-        val hitboxDimensionsMin = hitboxDimensions.mul(0f, -0.5f, Vector2f())
-        val hitboxDimensionsMax = hitboxDimensions.mul(1f, 0.5f, Vector2f())
-        return editorService.selectedUnits.value.map { reference ->
-            reference.getValue(editorService.scenario.value!!.units::get)
-        }.firstOrNull { unit ->
-            val positionMatrix = Matrix4f()
-            positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
-            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-            val inversePositionMatrix = positionMatrix.invert(Matrix4f())
-            val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
-                .mul(inversePositionMatrix, Vector4f())
-            val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
-            hitboxDimensionsMin.x < localPoint.x && localPoint.x < hitboxDimensionsMax.x &&
-                    hitboxDimensionsMin.y < localPoint.y && localPoint.y < hitboxDimensionsMax.y
-        }
+    open fun onSingleSelection(e: MouseEvent) {
+
     }
 
-    private fun getClickedUnits(e: MouseEvent): List<GameUnit> {
-        val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
-        return editorService.scenario.value!!.units.filter { unit ->
-            val unitDimensionsMin = (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(-2f, Vector2f())
-            val unitDimensionsMax = (unit.formation?.dimensions ?: UNIT_DIMENSIONS).div(2f, Vector2f())
-            val positionMatrix = Matrix4f()
-            positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
-            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-            val inversePositionMatrix = positionMatrix.invert(Matrix4f())
-            val localPoint4f = Vector4f(clickedPoint, 0f, 1f)
-                .mul(inversePositionMatrix, Vector4f())
-            val localPoint = Vector2f(localPoint4f.x, localPoint4f.y)
-            unitDimensionsMin.x < localPoint.x && localPoint.x < unitDimensionsMax.x &&
-                    unitDimensionsMin.y < localPoint.y && localPoint.y < unitDimensionsMax.y
-        }
-    }
-
-    private fun checkSingleSelection(e: MouseEvent) {
+    protected fun checkSingleSelection(e: MouseEvent) {
         if (toolService.refenceOverlayTool.hideSprites.value) return
         val objective = getClickedObjective(e)
         if (objective != null) {
-            editorService.selectedUnits.value = setOf()
+            onSelectionClear()
             editorService.selectedObjectives.value =
                 Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             return
         }
-
-        val newSelectedUnits = getClickedUnits(e).map { unit ->
-            Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
-        }
         editorService.selectedObjectives.value = null
-        if (!isShiftPressed && !isCtrlPressed) {
-            editorService.selectedUnits.value = setOf()
-        }
-        if (!isCtrlPressed) editorService.selectedUnits.value += newSelectedUnits
-        else editorService.selectedUnits.value -= newSelectedUnits.toSet()
+        onSingleSelection(e)
+    }
+
+    open fun onSelectionEndBegin(): Boolean {
+        return false
+    }
+
+    open fun onSelectionEnd() {
 
     }
 
-    private fun checkEndOfSelection(e: MouseEvent) {
+    protected fun checkEndOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
         if (toolService.refenceOverlayTool.hideSprites.value) {
             isSelectionDragging = false
@@ -524,16 +407,14 @@ class InputListener(
             return
         }
 
-        if (rotatableUnit != null) {
-            rotatableUnit = null
-            editorService.flushCompound()
-            return
-        }
+        if (onSelectionEndBegin()) return
+
 
         isSelectionDragging = false
+
         if (shouldDragSelectedObjects) {
             shouldDragSelectedObjects = false
-            if (editorService.selectedUnits.value.isNotEmpty())
+            if (editorService.selectedObjectives.value == null)
                 editorService.flushCompound()
             else editorService.flushCompoundCommon()
             return
@@ -543,40 +424,24 @@ class InputListener(
             return
         }
         editorService.selectionEnabled = false
-        val worldPosStart = editorService.fromNDCToWorldSpace(editorService.selectionStart)
-        val worldPosEnd = editorService.fromNDCToWorldSpace(editorService.selectionEnd)
-        val worldPosMin = worldPosStart.min(worldPosEnd, Vector2f())
-        val worldPosMax = worldPosStart.max(worldPosEnd, Vector2f())
-
-        val selectedUnits = editorService.scenario.value!!.units.filter { unit ->
-            val pos = unit.position
-            worldPosMin.x < pos.x && pos.x < worldPosMax.x &&
-                    worldPosMin.y < pos.y && pos.y < worldPosMax.y
-        }
-        val newSelectedUnits = selectedUnits.map { unit ->
-            Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
-        }
-        if (newSelectedUnits.isNotEmpty()) editorService.selectedObjectives.value = null
-        if (!isShiftPressed && !isCtrlPressed && !toolService.refenceOverlayTool.hideSprites.value) editorService.selectedUnits.value = setOf()
-        if (!isCtrlPressed) editorService.selectedUnits.value += newSelectedUnits
-        else editorService.selectedUnits.value -= newSelectedUnits.toSet()
+        onSelectionEnd()
     }
 
-    private fun checkMiddlePressed(e: MouseEvent) {
+    protected fun checkMiddlePressed(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON2) return
         lastX = e.x
         lastY = e.y
         isDragging = true
     }
 
-    private fun checkMiddleReleased(e: MouseEvent) {
+    protected fun checkMiddleReleased(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON2) return
         leftLastX = e.x
         leftLastX = e.y
         isDragging = false
     }
 
-    private fun checkToolUsage(e: MouseEvent) {
+    protected fun checkToolUsage(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON3) return
         isToolDragging = true
         val worldCoordinates = editorService.fromScreenToWorldSpace(e.x, e.y)
@@ -585,7 +450,7 @@ class InputListener(
         toolService.useTool(worldCoordinates.x, worldCoordinates.y)
     }
 
-    private fun checkEndOfToolUsage(e: MouseEvent) {
+    protected fun checkEndOfToolUsage(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON3) return
         isToolDragging = false
         toolService.flushCompoundCommands()

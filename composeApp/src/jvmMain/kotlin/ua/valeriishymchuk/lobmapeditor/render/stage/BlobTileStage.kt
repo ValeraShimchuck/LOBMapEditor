@@ -25,7 +25,7 @@ class BlobTileStage(
     )
 
 
-    override fun RenderContext.draw0() {
+    override fun RenderContext<*>.draw0() {
         val model = Matrix4f().identity()
         val mvpMatrix = getMvp(model)
 
@@ -74,10 +74,8 @@ class BlobTileStage(
         }
     }
 
-    private fun RenderContext.getTintByHeight(height: Int): Vector4f {
+    private fun RenderContext<*>.getTintByHeight(height: Int): Vector4f {
         val maxHeight = Terrain.MAX_TERRAIN_HEIGHT
-//        val basicTint = Vector4f(Vector3f(0.1f, 0.2f, 0.1f),0.2f)
-//        val maxTint = Vector4f(Vector3f(0.55f, 0.4f, 0.3f), 0.2f)
         val basicTint = debugInfo.firstHeightColor
         val maxTint = debugInfo.secondHeightColor
         val step = 1f / maxHeight

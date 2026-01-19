@@ -2,8 +2,8 @@ package ua.valeriishymchuk.lobmapeditor.ui.window
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.setTextAndSelectAll
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -75,32 +75,32 @@ fun WindowScope.CreateProjectWindow() {
 
 
         Row {
-            val widthState = remember { TextFieldState(form.widthPx.toString()) }
+            val widthState = remember { TextFieldState(form.widthTiles.toString()) }
             LaunchedEffect(widthState.text) {
 //                println("Changed state of witdth ${}")
                 val newWidth = widthState.text.toString().toIntOrNull()
-                if (newWidth != null && form.widthPx != newWidth) {
-                    form = form.copy(widthPx = newWidth)
+                if (newWidth != null && form.widthTiles != newWidth) {
+                    form = form.copy(widthTiles = newWidth)
                 }
             }
             TextField(
                 state = widthState,
-                placeholder = { Text("Width") },
+                placeholder = { Text("Width Tiles") },
                 modifier = Modifier.weight(1f),
             )
 
             Spacer(Modifier.width(8.dp))
 
-            val heightState = remember { TextFieldState(form.heightPx.toString()) }
+            val heightState = remember { TextFieldState(form.heightTiles.toString()) }
             LaunchedEffect(heightState.text) {
                 val newHeight = heightState.text.toString().toIntOrNull()
-                if (newHeight != null && form.heightPx != newHeight) {
-                    form = form.copy(heightPx = newHeight)
+                if (newHeight != null && form.heightTiles != newHeight) {
+                    form = form.copy(heightTiles = newHeight)
                 }
             }
             TextField(
                 state = heightState,
-                placeholder = { Text("Height") },
+                placeholder = { Text("Height Tiles") },
                 modifier = Modifier.weight(1f),
             )
 
@@ -132,6 +132,19 @@ fun WindowScope.CreateProjectWindow() {
         )
         Text("All project files will be saved in this directory", color = JewelTheme.globalColors.text.info)
 
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                form.isHybrid,
+                onCheckedChange = {
+                    form = form.copy(isHybrid = it)
+                }
+            )
+            Spacer(Modifier.width(4.dp))
+            Text("Hybrid")
+        }
 
         Spacer(Modifier.weight(1f))
 

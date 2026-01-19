@@ -7,20 +7,26 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 
 data class Objective(
-    val owner: Reference<Int, Player>?,
+    // depends on scenario type can be either player or player team
+    val owner: Int?,
     val name: String?,
     val position: Position,
     val type: ObjectiveType,
     val victoryPoints: Int
 ) {
-    fun serialize(): JsonObject {
+    fun serialize(isPreset: Boolean): JsonObject {
         return JsonObject().apply {
             name?.let {
                 add("name", JsonPrimitive(it))
             }
-            owner?.key?.let {
-                add("player", JsonPrimitive(it + 1))
+            if (owner != null) {
+                if (isPreset) {
+                    add("player", JsonPrimitive(owner + 1))
+                } else {
+                    add("team", JsonPrimitive(owner + 1))
+                }
             }
+
             add("pos", position.serialize())
             add("type", JsonPrimitive(type.id))
             if (victoryPoints != type.defaultVictoryPoints) {
@@ -32,10 +38,16 @@ data class Objective(
     companion object {
         const val MIN_VICTORY_POINTS = 1
 
-        fun deserialize(json: JsonObject): Objective {
-            val owner: Reference<Int, Player>? = if (json.has("player")) {
-                Reference(json.getAsJsonPrimitive("player").asInt - 1)
-            } else null
+        fun deserialize(json: JsonObject, isPreset: Boolean): Objective {
+            val owner: Int? = if (isPreset) {
+                if (json.has("player")) {
+                    json.getAsJsonPrimitive("player").asInt - 1
+                } else null
+            } else {
+                if (json.has("team")) {
+                    json.getAsJsonPrimitive("team").asInt - 1
+                } else null
+            }
             val name = if (json.has("name"))
                 json.getAsJsonPrimitive("name").asString
             else null
