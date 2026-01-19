@@ -119,13 +119,80 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 @Composable
 private fun MiscToolConfig() {
     val toolService by rememberInstance<ToolService<*>>()
+    val editorService by rememberInstance<EditorService<*>>()
+    val scenario by editorService.scenario.collectAsState()
+    val commonData = scenario?.commonData ?: return
     val debugInfo by toolService.miscTool.debugInfo.collectAsState()
     val controller = rememberColorPickerController()
     val controller2 = rememberColorPickerController()
 
+    var textFieldValue by remember(commonData) {
+        mutableStateOf(
+            TextFieldValue(
+                text = commonData.name,
+                selection = TextRange(commonData.name.length)
+            )
+        )
+    }
+
+    var descriptionTextFieldValue by remember(commonData) {
+        mutableStateOf(
+            TextFieldValue(
+                text = commonData.description,
+                selection = TextRange(commonData.description.length)
+            )
+        )
+    }
+
 
 
     Column {
+
+        Spacer(Modifier.height(4.dp))
+
+        Text("Name:")
+        TextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+
+                val finalText: String = newValue.text
+                editorService.updateCommonData {
+                    it.copy(
+                        name = finalText
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    editorService.flushCompoundCommon()
+                }
+            },
+            placeholder = { Text("Empty") }
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text("Description:")
+        TextField(
+            value = descriptionTextFieldValue,
+            onValueChange = { newValue ->
+                descriptionTextFieldValue = newValue
+
+                val finalText: String = newValue.text
+                editorService.updateCommonData {
+                    it.copy(
+                        description = finalText
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                if (!focus.isFocused) {
+                    editorService.flushCompoundCommon()
+                }
+            },
+            placeholder = { Text("Empty") }
+        )
 
         Spacer(Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

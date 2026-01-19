@@ -97,6 +97,29 @@ sealed interface GameScenario<T : GameScenario<T>> {
     ): GameScenario<Hybrid> {
         override val scenarioTypeKey: String = SCENARIO_TYPE_KEY
 
+        fun readjustDeploymentZones(): Hybrid {
+            val firstZone = deploymentZones[0]
+            val secondZone = deploymentZones[1]
+            return copy(deploymentZones = listOf(
+                firstZone.copy(
+                    position = Position(
+                        5 * GameConstants.TILE_SIZE.toFloat(),
+                        commonData.map.heightPixels - 5 * GameConstants.TILE_SIZE.toFloat() - 12 * GameConstants.TILE_SIZE
+                    ),
+                    width = commonData.map.widthPixels - 10 * GameConstants.TILE_SIZE.toFloat(),
+                    height = 12 * GameConstants.TILE_SIZE.toFloat()
+                ),
+                secondZone.copy(
+                    position = Position(
+                        5 * GameConstants.TILE_SIZE.toFloat(),
+                        5 * GameConstants.TILE_SIZE.toFloat()
+                    ),
+                    width = commonData.map.widthPixels - 10 * GameConstants.TILE_SIZE.toFloat(),
+                    height = 12 * GameConstants.TILE_SIZE.toFloat()
+                )
+            ))
+        }
+
         override fun withCommonData(newCommonData: CommonData): Hybrid {
             return copy(commonData = newCommonData)
         }
@@ -146,8 +169,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
                         192f
                     )
                 )
-
-            )
+            ).readjustDeploymentZones()
 
         }
 

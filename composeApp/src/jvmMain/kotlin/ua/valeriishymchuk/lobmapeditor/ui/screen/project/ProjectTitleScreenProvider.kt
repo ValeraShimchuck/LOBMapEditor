@@ -134,8 +134,8 @@ fun TitleBarScreen.ProjectTitleScreenProvider() {
                                     val scenario =
                                         newScenario as? GameScenario.Hybrid
                                             ?: GameScenario.Hybrid.DEFAULT.withCommonData(
-                                                newScenario.commonData
-                                            )
+                                            newScenario.commonData
+                                        ).readjustDeploymentZones()
                                     editorService.importScenario(scenario)
                                 }
 

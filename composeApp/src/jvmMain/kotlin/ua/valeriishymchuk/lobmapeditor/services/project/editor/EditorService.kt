@@ -127,6 +127,11 @@ sealed class EditorService<T : GameScenario<T>>(
 
 
 
+    fun updateCommonData(updater: (GameScenario.CommonData) -> GameScenario.CommonData) {
+        scenario.value = scenario.value?.let {
+            it.withCommonData(updater(it.commonData))
+        }
+    }
 
     init {
         lifecycleService.onClose = {

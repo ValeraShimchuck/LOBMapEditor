@@ -73,7 +73,7 @@ class ProjectsService(override val di: DI) : DIAware {
         )
 
         val scenario: GameScenario<*> = if (dto.isHybrid) {
-            GameScenario.Hybrid.DEFAULT.withCommonData(commonData)
+            GameScenario.Hybrid.DEFAULT.withCommonData(commonData).readjustDeploymentZones()
         } else {
             GameScenario.Preset.DEFAULT.withCommonData(
                 commonData
