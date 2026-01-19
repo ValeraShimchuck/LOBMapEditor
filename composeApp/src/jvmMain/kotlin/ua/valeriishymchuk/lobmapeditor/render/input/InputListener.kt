@@ -12,7 +12,6 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.TerrainPickTool
@@ -24,7 +23,6 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionListener
 import java.awt.event.MouseWheelEvent
-import kotlin.collections.plusAssign
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -109,7 +107,7 @@ abstract class InputListener<S: GameScenario<S>>(
 
     }
 
-    open fun onRotation(e: MouseEvent) {
+    open fun onArrowDrag(e: MouseEvent) {
     }
 
     override fun keyReleased(e: KeyEvent) {
@@ -203,13 +201,13 @@ abstract class InputListener<S: GameScenario<S>>(
         checkTilePainting(e)
         checkSelectionDrag(e)
         checkSelectedObjectsDrag(e)
-        checkUnitRotation(e)
+        checkArrowDrag(e)
 //        println("Current thread: ${Thread.currentThread().name}")
 
     }
 
-    protected fun checkUnitRotation(e: MouseEvent) {
-        onRotation(e)
+    protected fun checkArrowDrag(e: MouseEvent) {
+        onArrowDrag(e)
     }
 
     override fun mouseMoved(e: MouseEvent) {
@@ -389,6 +387,7 @@ abstract class InputListener<S: GameScenario<S>>(
                 Reference(editorService.scenario.value!!.objectives.indexOf(objective))
             return
         }
+        editorService.selectedObjectives.value = null
         onSingleSelection(e)
     }
 

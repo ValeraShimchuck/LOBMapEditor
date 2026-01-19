@@ -2,6 +2,7 @@ package ua.valeriishymchuk.lobmapeditor.services.project.editor
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.kodein.di.DI
+import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
@@ -27,6 +28,16 @@ class PresetEditorService(
             println("Importing project ${openglUpdateState.value}")
             savingJob = null
             save(true)
+        }
+    }
+
+    override fun executeCompound(command: Command<GameScenario.Preset>) {
+        lastAction = System.currentTimeMillis()
+        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
+        lock {
+            checkComposedCommandsIntegrity { it is Command.Preset }
+            composedCommands.add(wrapper)
+            wrapper.execute()
         }
     }
 

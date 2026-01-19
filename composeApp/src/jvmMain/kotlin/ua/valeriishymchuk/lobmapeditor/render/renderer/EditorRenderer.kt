@@ -4,10 +4,6 @@ import com.jogamp.opengl.GL
 import com.jogamp.opengl.GL3
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
-import org.joml.Matrix4f
-import org.joml.Vector2f
-import org.joml.Vector2i
-import org.joml.Vector3f
 import org.joml.Vector4f
 import org.kodein.di.DI
 import org.kodein.di.DIAware
@@ -17,23 +13,20 @@ import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.currentGl
 import ua.valeriishymchuk.lobmapeditor.render.pointer.IntPointer
-import ua.valeriishymchuk.lobmapeditor.render.stage.BackgroundStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.BlobTileStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.DeploymentZoneStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RangeStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ReferenceOverlayStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.SelectionStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SpriteStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.TerrainMapStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.UnitBarsStage
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
+import kotlin.math.min
 import kotlin.time.TimeSource
 
 abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(override val di: DI) : GLEventListener, DIAware {
@@ -198,7 +191,7 @@ abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(overrid
 
         }
 
-        val shouldQueryTimer = toolService.debugTool.debugInfo.value.measurePerformanceGPU
+        val shouldQueryTimer = toolService.miscTool.debugInfo.value.measurePerformanceGPU
                 && performanceQueries.shouldStartCounter
         if (shouldQueryTimer) performanceQueries.shouldStartCounter = false
 
@@ -231,6 +224,16 @@ abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(overrid
                 return@forEach
             }
 
+            if (stage is UnitBarsStage && toolService.refenceOverlayTool.hideSprites.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+            val hybridToolService = toolService as? HybridToolService
+            if (stage is DeploymentZoneStage && hybridToolService != null && hybridToolService.deploymentZoneTool.isHidden.value) {
+                performanceQueries.disabledRenderStages.add(stage)
+                return@forEach
+            }
+
             if (stage is RangeStage && (toolService.refenceOverlayTool.hideSprites.value || toolService.refenceOverlayTool.hideRange.value)) {
                 performanceQueries.disabledRenderStages.add(stage)
                 return@forEach
@@ -255,7 +258,7 @@ abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(overrid
         }
 
         val end = timeSource.markNow()
-        if (toolService.debugTool.debugInfo.value.measurePerformanceCPU) {
+        if (toolService.miscTool.debugInfo.value.measurePerformanceCPU) {
             println("Prepared frame on CPU SIDE, it took: ${end - start} to render it. Summary for every stage:")
             var lastMark = start
             marks.forEach { (stage, mark) ->

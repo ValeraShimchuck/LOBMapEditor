@@ -8,29 +8,30 @@ import org.joml.Vector4f
 import org.kodein.di.DI
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.render.context.HybridRenderContext
-import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.stage.BackgroundStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.BlobTileStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.ColorClosestPointStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ColorStage
+import ua.valeriishymchuk.lobmapeditor.render.stage.DeploymentZoneStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.GridStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.OverlayTileStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.RangeStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.ReferenceOverlayStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.RenderStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SelectionStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.SpriteStage
 import ua.valeriishymchuk.lobmapeditor.render.stage.TerrainMapStage
-import ua.valeriishymchuk.lobmapeditor.render.stage.UnitBarsStage
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 
 class HybridEditorRenderer(di: DI) : EditorRenderer<GameScenario.Hybrid, HybridRenderContext>(di) {
 
     val hybridEditorService: HybridEditorService by lazy {
         editorService as HybridEditorService
+    }
+
+    private val hybridToolService: HybridToolService by lazy {
+        toolService as HybridToolService
     }
 
     override fun createRenderStages(ctx: CurrentGL): List<RenderStage> {
@@ -45,6 +46,7 @@ class HybridEditorRenderer(di: DI) : EditorRenderer<GameScenario.Hybrid, HybridR
             ReferenceOverlayStage(ctx, tileMapVertices),
             GridStage(ctx, tileMapVertices),
 //            RangeStage(ctx),
+            DeploymentZoneStage(ctx),
             SpriteStage(ctx),
             SelectionStage(ctx),
 //            UnitBarsStage(ctx)
@@ -93,7 +95,8 @@ class HybridEditorRenderer(di: DI) : EditorRenderer<GameScenario.Hybrid, HybridR
                     translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
                 }
             ),
-            toolService.debugTool.debugInfo.value
+            toolService.miscTool.debugInfo.value,
+            hybridToolService
         )
     }
 }

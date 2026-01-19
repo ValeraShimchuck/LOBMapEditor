@@ -14,7 +14,7 @@ class PresetToolService(di: DI) : ToolService<GameScenario.Preset>(di) {
     val playerTool = PlayerTool()
 
     override val tools: List<Tool> = listOf(
-        debugTool,
+        miscTool,
         playerTool,
         HeightTool,
         TerrainTool,

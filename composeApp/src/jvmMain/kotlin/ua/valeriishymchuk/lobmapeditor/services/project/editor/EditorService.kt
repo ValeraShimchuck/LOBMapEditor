@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-abstract class EditorService<T : GameScenario<T>>(
+sealed class EditorService<T : GameScenario<T>>(
     override val di: DI,
 ): DIAware {
 
@@ -122,7 +122,7 @@ abstract class EditorService<T : GameScenario<T>>(
     protected fun checkComposedCommandsIntegrity(typeChecker: (Command<*>) -> Boolean) {
         if (composedCommands.isEmpty()) return
         if (!composedCommands.all { typeChecker(it.command) })
-            throw IllegalStateException("The composed commands list doesn't have integrity: ${composedCommands}")
+            throw IllegalStateException("The composed commands list doesn't have integrity: $composedCommands")
     }
 
 
@@ -172,15 +172,7 @@ abstract class EditorService<T : GameScenario<T>>(
 
     }
 
-    fun executeCompound(command: Command<T>) {
-        lastAction = System.currentTimeMillis()
-        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
-        lock {
-            checkComposedCommandsIntegrity { it is Command.Preset }
-            composedCommands.add(wrapper)
-            wrapper.execute()
-        }
-    }
+    abstract fun executeCompound(command: Command<T>)
 
     fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
         lastAction = System.currentTimeMillis()

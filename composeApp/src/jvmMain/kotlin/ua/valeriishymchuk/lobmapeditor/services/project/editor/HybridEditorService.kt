@@ -1,11 +1,10 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.editor
 
 import org.kodein.di.DI
+import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 
 class HybridEditorService(di: DI) : EditorService<GameScenario.Hybrid>(di) {
-
-    // TODO add deployment zone selection, probably will need it
 
     override fun importScenario(scenario: GameScenario.Hybrid) {
         lock {
@@ -18,6 +17,16 @@ class HybridEditorService(di: DI) : EditorService<GameScenario.Hybrid>(di) {
             println("Importing project ${openglUpdateState.value}")
             savingJob = null
             save(true)
+        }
+    }
+
+    override fun executeCompound(command: Command<GameScenario.Hybrid>) {
+        lastAction = System.currentTimeMillis()
+        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
+        lock {
+            checkComposedCommandsIntegrity { it is Command.Hybrid }
+            composedCommands.add(wrapper)
+            wrapper.execute()
         }
     }
 }

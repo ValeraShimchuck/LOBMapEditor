@@ -93,7 +93,7 @@ class PresetEditorRenderer(di: DI) : EditorRenderer<GameScenario.Preset, PresetR
                     translate(Vector3f(toolService.refenceOverlayTool.offset.value.mul(-1f, Vector2f()), 0f))
                 }
             ),
-            toolService.debugTool.debugInfo.value
+            toolService.miscTool.debugInfo.value
         )
     }
 }

@@ -26,7 +26,7 @@ class ScenarioIOService(override val di: DI) : DIAware {
     }
 
     fun isHybrid(file: File): Boolean {
-        return getType(file) == "hybrid"
+        return getType(file) == GameScenario.Hybrid.SCENARIO_TYPE_KEY
     }
 
     fun getType(file: File): String {

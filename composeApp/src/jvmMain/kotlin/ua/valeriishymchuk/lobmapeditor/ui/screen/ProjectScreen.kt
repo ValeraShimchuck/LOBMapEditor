@@ -29,6 +29,7 @@ import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModule
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
@@ -52,7 +53,7 @@ class ProjectScreen(
         val scenarioIO by rememberInstance<ScenarioIOService>()
         val errorService by rememberInstance<ErrorService>()
         val nav = LocalNavigator.currentOrThrow
-        val isHybrid = scenarioIO.isHybrid(ref.projectFile)
+        val isHybrid = scenarioIO.isHybrid(ref.mapFile)
 
         org.kodein.di.compose.subDI(diBuilder = {
             import(setupProjectScopeDiModule(ref, isHybrid))
@@ -86,16 +87,12 @@ class ProjectScreen(
                     return@produceState
                 }
 
-                if (scenario is GameScenario.Hybrid) {
-                    errorService.error.value = ErrorService.AppError(
-                        ErrorService.AppError.Severity.Warning,
-                        "Hybrid scenario is not supported yet"
-                    )
-                    nav.push(HomeScreen)
-                    return@produceState
-                }
                 (editorService as? PresetEditorService)?.let { presetEditorService ->
-                    presetEditorService.scenario.value = scenario as GameScenario.Preset;
+                    presetEditorService.scenario.value = scenario as GameScenario.Preset
+                }
+
+                (editorService as? HybridEditorService)?.let { presetEditorService ->
+                    presetEditorService.scenario.value = scenario as GameScenario.Hybrid
                 }
 
                 value = scenario
@@ -124,13 +121,6 @@ class ProjectScreen(
 
     @Composable
     private fun EditorPanel() {
-        /*Column(
-            Modifier,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-
-        }*/
-
         VerticalSplitLayout(
             first = {
                 ToolDock()

@@ -9,6 +9,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 
 class PresetRenderContext(
     glCtx: CurrentGL,
@@ -48,7 +49,8 @@ class HybridRenderContext(
     selection: SelectionContext,
     gridContext: GridContext,
     overlayReferenceContext: OverlayReferenceContext,
-    debugInfo: DebugInfo
+    debugInfo: DebugInfo,
+    val toolService: HybridToolService
 ) : RenderContext<GameScenario.Hybrid>(
     glCtx,
     windowDimensions,

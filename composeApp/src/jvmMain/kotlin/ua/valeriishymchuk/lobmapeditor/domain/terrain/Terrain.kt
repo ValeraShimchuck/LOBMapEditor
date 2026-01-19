@@ -4,8 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.jogamp.common.nio.Buffers
-import ua.valeriishymchuk.lobmapeditor.domain.terrain.HeightMap.BlobHeightCachedRenderData
-import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainMap.BlobCachedRenderData
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.dimension.ArrayMap2d
 import java.nio.IntBuffer
@@ -82,11 +80,15 @@ data class Terrain(
 
     companion object {
 
-        const val MAX_TERRAIN_HEIGHT = 7;
-        const val MAX_TERRAIN_MAP_X = 3200 * 10;
-        const val MIN_TERRAIN_MAP_X = 992;
-        const val MAX_TERRAIN_MAP_Y = 2512 * 10;
-        const val MIN_TERRAIN_MAP_Y = 896;
+        const val MAX_TERRAIN_HEIGHT = 7
+        const val MAX_TERRAIN_PIXELS_MAP_X = 3200 * 10
+        const val MAX_TERRAIN_TILES_MAP_X = MAX_TERRAIN_PIXELS_MAP_X / GameConstants.TILE_SIZE
+        const val MIN_TERRAIN_PIXELS_MAP_X = 992
+        const val MIN_TERRAIN_TILES_MAP_X = MIN_TERRAIN_PIXELS_MAP_X / GameConstants.TILE_SIZE
+        const val MAX_TERRAIN_PIXELS_MAP_Y = 2512 * 10
+        const val MAX_TERRAIN_TILES_MAP_Y = MAX_TERRAIN_PIXELS_MAP_Y / GameConstants.TILE_SIZE
+        const val MIN_TERRAIN_PIXELS_MAP_Y = 896
+        const val MIN_TERRAIN_TILES_MAP_Y = MIN_TERRAIN_PIXELS_MAP_Y / GameConstants.TILE_SIZE
 
         fun deserialize(json: JsonObject): Terrain {
             // Extract dimensions in pixels

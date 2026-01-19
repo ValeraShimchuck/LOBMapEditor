@@ -23,6 +23,7 @@ class PresetInputListener(di: DI) : InputListener<GameScenario.Preset>(di) {
         super.editorService as PresetEditorService
     }
 
+    // if you click and hit something, then let the user drag it instantly
     override fun onStartOfSelection(e: MouseEvent): Boolean {
         val units = getClickedUnits(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
@@ -86,7 +87,6 @@ class PresetInputListener(di: DI) : InputListener<GameScenario.Preset>(di) {
         val newSelectedUnits = getClickedUnits(e).map { unit ->
             Reference<Int, GameUnit>(editorService.scenario.value!!.units.indexOf(unit))
         }
-        editorService.selectedObjectives.value = null
         if (!isShiftPressed && !isCtrlPressed) {
             editorService.selectedUnits.value = setOf()
         }
@@ -166,7 +166,7 @@ class PresetInputListener(di: DI) : InputListener<GameScenario.Preset>(di) {
         }
     }
 
-    override fun onRotation(e: MouseEvent) {
+    override fun onArrowDrag(e: MouseEvent) {
         val unitReference = rotatableUnit ?: return
         val unit = unitReference.getValue(editorService.scenario.value!!.units::get)
         val unitPos = Vector2f(unit.position.x, unit.position.y)

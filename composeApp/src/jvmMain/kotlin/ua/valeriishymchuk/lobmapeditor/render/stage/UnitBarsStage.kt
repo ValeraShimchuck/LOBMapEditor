@@ -132,71 +132,14 @@ class UnitBarsStage(
                     ),
                 )
             }
-
-
-
-
         }
 
-        val healthVbo: List<ManyColorProgram.BufferData> = healthBars.flatMap { unit ->
-            val positionMatrix = Matrix4f()
-            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y - 13, 0f))
-            val bgDimensions = Vector2f(16f, 3f)
-            val barDimensions = bgDimensions.sub(Vector2f(1.5f), Vector2f())
-            val progress = unit.health.toFloat() / unit.type.defaultHealth
-            listOf(
-                ManyColorProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        bgDimensions.mul(-0.5f, -0.5f, Vector2f()),
-                        bgDimensions.mul(0.5f, 0.5f, Vector2f()),
-                    ),
-                    Vector4f(0f, 0f, 0f, 1f),
-                    positionMatrix
-                ),
-                ManyColorProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        barDimensions.mul(-0.5f, -0.5f, Vector2f()),
-                        barDimensions.mul(lerp(-0.5f, 0.5f, progress), 0.5f, Vector2f()),
-                    ),
-                    Vector4f(0f, 1f, 0f, 1f),
-                    positionMatrix
-                ),
-            )
 
-        }
-
-        val organizationBars = this.scenario.units.filter { unit -> unit.health < unit.type.defaultHealth }
-        val organizationVbo: List<ManyColorProgram.BufferData> = healthBars.flatMap { unit ->
-            val positionMatrix = Matrix4f()
-            positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y - 13, 0f))
-            val bgDimensions = Vector2f(16f, 3f)
-            val barDimensions = bgDimensions.sub(Vector2f(1.5f), Vector2f())
-            val progress = unit.health.toFloat() / unit.type.defaultHealth
-            listOf(
-                ManyColorProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        bgDimensions.mul(-0.5f, -0.5f, Vector2f()),
-                        bgDimensions.mul(0.5f, 0.5f, Vector2f()),
-                    ),
-                    Vector4f(0f, 0f, 0f, 1f),
-                    positionMatrix
-                ),
-                ManyColorProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        barDimensions.mul(-0.5f, -0.5f, Vector2f()),
-                        barDimensions.mul(lerp(-0.5f, 0.5f, progress), 0.5f, Vector2f()),
-                    ),
-                    Vector4f(0f, 1f, 0f, 1f),
-                    positionMatrix
-                ),
-            )
-
-        }
-
-        if (!healthVbo.isEmpty()) {
+        if (!vbo.isEmpty()) {
             program.setUpVBO(glCtx, vbo)
             glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
         }
+
 
     }
 }

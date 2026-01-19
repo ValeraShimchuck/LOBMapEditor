@@ -9,6 +9,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import kotlin.time.TimeSource
 
 sealed interface GameScenario<T : GameScenario<T>> {
@@ -35,7 +36,8 @@ sealed interface GameScenario<T : GameScenario<T>> {
 
 
 
-        override val scenarioTypeKey: String = "preset"
+
+        override val scenarioTypeKey: String = SCENARIO_TYPE_KEY
 
         override fun serialize(): JsonObject {
             return JsonObject().apply {
@@ -75,13 +77,25 @@ sealed interface GameScenario<T : GameScenario<T>> {
         override fun withCommonData(newCommonData: CommonData): Preset {
             return copy(commonData = newCommonData)
         }
+
+        companion object {
+            const val SCENARIO_TYPE_KEY = "preset"
+            val DEFAULT = GameScenario.Preset(
+                CommonData.DEFAULT,
+                units = emptyList(),
+                players = listOf(
+                    Player(PlayerTeam.BLUE, 500, 500),
+                    Player(PlayerTeam.RED, 500, 500),
+                ),
+            )
+        }
     }
 
     data class Hybrid(
         override val commonData: CommonData,
         val deploymentZones: List<DeploymentZone>
     ): GameScenario<Hybrid> {
-        override val scenarioTypeKey: String = "hybrid"
+        override val scenarioTypeKey: String = SCENARIO_TYPE_KEY
 
         override fun withCommonData(newCommonData: CommonData): Hybrid {
             return copy(commonData = newCommonData)
@@ -91,7 +105,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
             return JsonObject().apply {
                 add("name", JsonPrimitive(name))
                 add("description", JsonPrimitive(description))
-                add("type", JsonPrimitive(description))
+                add("type", JsonPrimitive(scenarioTypeKey))
                 add("map", map.serialize().apply {
                     add("deploymentZones", JsonArray().apply {
                         deploymentZones.forEach {
@@ -112,6 +126,30 @@ sealed interface GameScenario<T : GameScenario<T>> {
                 })
             }
         }
+        
+        companion object {
+            const val SCENARIO_TYPE_KEY = "hybrid"
+
+            val DEFAULT = Hybrid(
+                CommonData.DEFAULT,
+                listOf(
+                    DeploymentZone(
+                        PlayerTeam.entries[0],
+                        Position(224f, 896f),
+                        832f,
+                        192f
+                    ),
+                    DeploymentZone(
+                        PlayerTeam.entries[1],
+                        Position(224f, 192f),
+                        832f,
+                        192f
+                    )
+                )
+
+            )
+
+        }
 
     }
 
@@ -121,9 +159,22 @@ sealed interface GameScenario<T : GameScenario<T>> {
         val map: Terrain,
         val objectives: List<Objective>,
         val triggers: List<GameTrigger>
-    )
+    ) {
+        companion object {
+            val DEFAULT = GameScenario.CommonData(
+                name = "",
+                description = "Map created by LobMapEditor",
+                map = Terrain.ofCells(992 / GameConstants.TILE_SIZE, 896 / GameConstants.TILE_SIZE),
+                objectives = emptyList(),
+                triggers = emptyList()
+            )
+        }
+    }
 
     companion object {
+
+
+
         fun deserialize(json: JsonObject): GameScenario<*> {
             val name = json.getAsJsonPrimitive("name").asString
             val description = json.getAsJsonPrimitive("description").asString
@@ -146,13 +197,13 @@ sealed interface GameScenario<T : GameScenario<T>> {
 
 
             val objectives = objectivesArray.map { element ->
-                Objective.deserialize(element.asJsonObject, type == "preset")
+                Objective.deserialize(element.asJsonObject, type == Preset.SCENARIO_TYPE_KEY)
             }.toList()
 
             val commonData = CommonData(name, description, map, objectives, triggers)
 
             return when (type) {
-                "preset" -> {
+                Preset.SCENARIO_TYPE_KEY -> {
                     // Deserialize players
                     val playersArray = json.getAsJsonArray("players") ?: JsonArray()
                     val players = playersArray.sortedBy { element ->
@@ -177,7 +228,7 @@ sealed interface GameScenario<T : GameScenario<T>> {
 
                     Preset(commonData, units, players)
                 }
-                "hybrid" -> {
+                Hybrid.SCENARIO_TYPE_KEY -> {
                     // Deserialize deployment zones
                     val deploymentZonesArray = mapJson.getAsJsonArray("deploymentZones") ?: JsonArray()
                     val deploymentZones = deploymentZonesArray.map { element ->
