@@ -52,10 +52,10 @@ class ProjectScreen(
         val scenarioIO by rememberInstance<ScenarioIOService>()
         val errorService by rememberInstance<ErrorService>()
         val nav = LocalNavigator.currentOrThrow
-
+        val isHybrid = scenarioIO.isHybrid(ref.projectFile)
 
         org.kodein.di.compose.subDI(diBuilder = {
-            import(setupProjectScopeDiModule(ref))
+            import(setupProjectScopeDiModule(ref, isHybrid))
         }, content = {
 
             ProjectTitleScreenProvider()

@@ -31,12 +31,16 @@ import org.jetbrains.jewel.ui.theme.popupContainerStyle
 import org.kodein.di.compose.localDI
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.render.helper.CURRENT_GL_PROFILE
+import ua.valeriishymchuk.lobmapeditor.render.input.HybridInputListener
+import ua.valeriishymchuk.lobmapeditor.render.input.InputListener
 import ua.valeriishymchuk.lobmapeditor.render.input.PresetInputListener
 import ua.valeriishymchuk.lobmapeditor.render.renderer.EditorRenderer
+import ua.valeriishymchuk.lobmapeditor.render.renderer.HybridEditorRenderer
 import ua.valeriishymchuk.lobmapeditor.render.renderer.PresetEditorRenderer
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
+import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import java.awt.Dimension
 
@@ -141,7 +145,7 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
     var glListener by remember {
         mutableStateOf(
             if (editorService is PresetEditorService) PresetEditorRenderer(di)
-            else TODO()
+            else HybridEditorRenderer(di)
         )
     }
 
@@ -172,7 +176,8 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
             println("Initializing GLProfile singleton")
 
             addGLEventListener(glListener)
-            val inputListener = if (editorService is PresetEditorService) PresetInputListener(di) else TODO()
+            val inputListener: InputListener<*> = if (editorService is PresetEditorService) PresetInputListener(di)
+            else HybridInputListener(di)
             addMouseMotionListener(inputListener)
             addMouseListener(inputListener)
             addMouseWheelListener(inputListener)
@@ -191,7 +196,7 @@ fun JoglCanvas(canvasRefSet: (GLCanvas) -> Unit) {
         println("render jogl canvas $updaterObserver")
         val oldListener = glListener
         glListener = if (editorService is PresetEditorService) PresetEditorRenderer(di)
-            else TODO()
+            else HybridEditorRenderer(di)
         canvas.removeGLEventListener(oldListener)
         canvas.addGLEventListener(glListener)
     }

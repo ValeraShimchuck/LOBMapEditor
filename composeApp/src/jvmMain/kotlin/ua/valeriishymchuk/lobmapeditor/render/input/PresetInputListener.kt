@@ -13,12 +13,6 @@ import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.awt.event.MouseEvent
-import kotlin.collections.addAll
-import kotlin.collections.getValue
-import kotlin.collections.minusAssign
-import kotlin.collections.plusAssign
-import kotlin.compareTo
-import kotlin.text.set
 
 class PresetInputListener(di: DI) : InputListener<GameScenario.Preset>(di) {
 

@@ -35,9 +35,33 @@ class PresetRenderContext(
     gridContext,
     overlayReferenceContext,
     debugInfo
-) {
+)
 
-}
+class HybridRenderContext(
+    glCtx: CurrentGL,
+    windowDimensions: Vector2i,
+    textureStorage: TextureStorage,
+    viewMatrix: Matrix4f,
+    projectionMatrix: Matrix4f,
+    scenario: GameScenario.Hybrid,
+    selectedObjectives: List<Objective>,
+    selection: SelectionContext,
+    gridContext: GridContext,
+    overlayReferenceContext: OverlayReferenceContext,
+    debugInfo: DebugInfo
+) : RenderContext<GameScenario.Hybrid>(
+    glCtx,
+    windowDimensions,
+    textureStorage,
+    viewMatrix,
+    projectionMatrix,
+    scenario,
+    selectedObjectives,
+    selection,
+    gridContext,
+    overlayReferenceContext,
+    debugInfo
+)
 
 abstract class RenderContext<T: GameScenario<T>>(
     val glCtx: CurrentGL,
