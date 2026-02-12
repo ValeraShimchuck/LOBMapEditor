@@ -278,7 +278,11 @@ abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(overrid
 
     override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
         val ctx = drawable.gl.gL3
-        ctx.glViewport(0, 0, width, height)
+        val fbWidth = drawable.surfaceWidth
+        val fbHeight = drawable.surfaceHeight
+        ctx.glViewport(0, 0, fbWidth, fbHeight)
+
+
 
         editorService.projectionMatrix.setOrtho(
             0f,
