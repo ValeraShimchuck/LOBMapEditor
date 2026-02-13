@@ -33,7 +33,7 @@ data class GameUnit(
             add("type", JsonPrimitive(type.id))
             formation?.let {
                 if (it != UnitFormation.MASS) {
-                    add("f", JsonPrimitive(it.name))
+                    add("f", JsonPrimitive(it.name.lowercase()))
                 }
             }
 
