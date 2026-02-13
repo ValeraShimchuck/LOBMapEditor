@@ -118,6 +118,7 @@ compose.desktop {
 
         jvmArgs += listOf(
             "-Djogamp.gluegen.UseTempJarCache=false",
+            "-Dsun.java2d.uiScale.enabled=false",
             "--add-opens=jogl.all/com.jogamp.opengl.util=ALL-UNNAMED",
             "--add-opens=jogl.all/com.jogamp.opengl.glu=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
