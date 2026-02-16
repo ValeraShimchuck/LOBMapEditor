@@ -12,6 +12,29 @@ data class GameTrigger(
     val once: Boolean
 ) {
 
+    fun displayText(prepend: String): String {
+        val onceText = if (once) "Once" else "Not-Once"
+        val eventType = when (eventType) {
+            EventTriggerType.ON_TURN_START -> "Turn-Start"
+            EventTriggerType.ON_TURN_END -> "Turn-End"
+        }
+        val conditionLogicType = when (conditionLogicType) {
+            ConditionLogicType.OR -> "Logic-Or"
+            ConditionLogicType.AND -> "Logic-And"
+        }
+
+        val conditions = conditions.size.toString() + "-Cond."
+        val actions = actions.size.toString() + "-Act."
+        return listOf(
+            prepend,
+            eventType,
+            conditionLogicType,
+            onceText,
+            conditions,
+            actions
+        ).joinToString(separator = " ")
+    }
+
     fun serialize(): JsonObject {
         return JsonObject().apply {
             add("actions", JsonArray().apply {

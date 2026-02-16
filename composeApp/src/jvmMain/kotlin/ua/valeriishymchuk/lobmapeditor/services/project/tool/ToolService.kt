@@ -12,6 +12,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
 import ua.valeriishymchuk.lobmapeditor.services.project.tools.Tool
+import ua.valeriishymchuk.lobmapeditor.services.project.tools.TriggerTool
 
 abstract class ToolService<S: GameScenario<S>>(override val di: DI) : DIAware {
 
@@ -21,6 +22,7 @@ abstract class ToolService<S: GameScenario<S>>(override val di: DI) : DIAware {
     val gridTool = GridTool()
     val refenceOverlayTool = ReferenceOverlayTool()
     val miscTool = MiscTool()
+    val triggerTool = TriggerTool()
 
     abstract val tools: List<Tool>
 

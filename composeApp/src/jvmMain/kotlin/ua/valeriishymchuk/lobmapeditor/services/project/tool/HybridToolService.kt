@@ -20,6 +20,7 @@ class HybridToolService(di: DI) : ToolService<GameScenario.Hybrid>(di) {
         TerrainTool,
         TerrainPickTool,
         PlaceObjectiveTool,
+        triggerTool,
         gridTool,
         refenceOverlayTool
     )

@@ -41,11 +41,11 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.Terrain
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
-import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
-import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
-import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
-import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitTypeTexture
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.Condition
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.ConditionLogicType
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.EventTriggerType
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
+import ua.valeriishymchuk.lobmapeditor.domain.unit.*
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
 import ua.valeriishymchuk.lobmapeditor.services.ProjectsService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
@@ -58,10 +58,10 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tools.*
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
-import kotlin.let
+import ua.valeriishymchuk.lobmapeditor.ui.component.DropDown
+import ua.valeriishymchuk.lobmapeditor.ui.component.DropDownNullable
 import kotlin.math.max
 import kotlin.math.roundToInt
-import kotlin.text.ifEmpty
 
 @Composable
 fun ToolConfig(modifier: Modifier = Modifier) {
@@ -106,6 +106,10 @@ fun ToolConfig(modifier: Modifier = Modifier) {
             { DeploymentZoneConfig() }
         }
 
+        is TriggerTool -> {
+            { TriggerToolConfig() }
+        }
+
         else -> null
     }
 
@@ -114,6 +118,671 @@ fun ToolConfig(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun TriggerToolConfig() {
+    val toolService by rememberInstance<ToolService<*>>()
+    val editorService by rememberInstance<EditorService<*>>()
+    val scenarioNullable by editorService.scenario.collectAsState()
+    val scenario = scenarioNullable ?: return
+    val tool = toolService.triggerTool
+    val currentTriggerReference by tool.currentTrigger.collectAsState()
+    val currentTrigger: GameTrigger? = currentTriggerReference?.let { triggerReference ->
+        val trigger = triggerReference.getValueOrNull(scenario.commonData.triggers::getOrNull)
+        if (trigger == null) {
+            tool.currentTrigger.value = null
+            return
+        }
+        trigger
+    }
+    val currentTriggerPopupManager = remember { PopupManager() }
+
+
+
+    Text("Current Trigger")
+    DropDownNullable(
+        currentTrigger,
+        scenario.commonData.triggers,
+        { idx, value ->
+            value.displayText("${idx ?: currentTriggerReference!!.key}")
+        },
+        { idx, value ->
+            tool.currentTrigger.value = value?.let { Reference(idx) }
+        }
+    )
+
+    if (currentTrigger == null) return
+
+    fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger) {
+        val reference = currentTriggerReference!!
+        val oldList = scenario.triggers
+        val newList = scenario.triggers.mapIndexed { idx, value ->
+            if (idx != reference.key) return@mapIndexed value
+            updater(value)
+        }
+        editorService.executeCommon(
+            UpdateGameTriggerListCommand(
+                oldList,
+                newList
+            )
+        )
+
+    }
+
+    Spacer(Modifier.height(20.dp))
+
+    Text("Triggers settings:")
+    Spacer(Modifier.height(5.dp))
+    // event
+    Row {
+        Text("Event:")
+        Spacer(Modifier.height(5.dp))
+
+        DropDown(
+            currentTrigger.eventType,
+            EventTriggerType.entries,
+            { _, value ->
+                value.displayName
+            },
+            { _, value ->
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(
+                        eventType = value
+                    )
+                }
+            }
+        )
+    }
+
+    Spacer(Modifier.height(5.dp))
+
+    // Condition Logic
+    Row {
+        Text("Condition Logic:")
+        Spacer(Modifier.height(5.dp))
+
+        DropDown(
+            currentTrigger.conditionLogicType,
+            ConditionLogicType.entries,
+            { _, value ->
+                value.displayName
+            },
+            { _, value ->
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(
+                        conditionLogicType = value
+                    )
+                }
+            }
+        )
+    }
+
+    Spacer(Modifier.height(5.dp))
+    Text("Conditions:")
+    Spacer(Modifier.height(10.dp))
+
+    currentTrigger.conditions.withIndex().forEach { item ->
+        val condition: Condition = item.value
+
+        fun updateCondition(updater: (Condition) -> Condition) {
+            updateCurrentTrigger { trigger ->
+                trigger.copy(
+                    conditions = trigger.conditions.mapIndexed { idx2, condition2 ->
+                        if (idx2 != item.index) return@mapIndexed condition2
+                        updater(condition2)
+                    }
+                )
+            }
+        }
+
+        fun <T : Condition> updatedConditionTyped(condition: T, updater: (T) -> T) {
+            updateCondition { _ ->
+                updater(condition)
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        DropDown(
+            condition.enumRepresentation,
+            Condition.ConditionEnum.entries,
+            { _, value ->
+                value.displayName
+            },
+            { _, value ->
+                updateCondition { _ ->
+                    value.default
+                }
+            }
+        )
+
+        Spacer(Modifier.height(5.dp))
+
+
+        when (condition) {
+            is Condition.Chance -> {
+                val chance = condition.chance
+                var value by remember { mutableStateOf(chance) }
+
+                LaunchedEffect(value) {
+                    updatedConditionTyped(condition) {
+                        it.copy(chance = value)
+                    }
+                }
+
+                Text("Chance: %.2f".format(chance))
+
+                Slider(
+                    value = value, // Float
+                    onValueChange = { newValue ->
+                        value = newValue
+                    }, valueRange = 0f..100f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+
+            }
+            is Condition.IsTurn -> {
+                val turn = condition.turn
+                var value by remember { mutableStateOf(turn.toFloat()) }
+
+                LaunchedEffect(value) {
+                    updatedConditionTyped(condition) {
+                        it.copy(turn = value.roundToInt())
+                    }
+                }
+
+                Text("Turn: $turn")
+
+                Slider(
+                    value = value, // Float
+                    onValueChange = { newValue ->
+                        value = newValue
+                    }, valueRange = 1f..60f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            is Condition.IsTurnGreaterThan -> {
+                val turn = condition.value
+                var value by remember { mutableStateOf(turn.toFloat()) }
+
+                LaunchedEffect(value) {
+                    updatedConditionTyped(condition) {
+                        it.copy(value = value.roundToInt())
+                    }
+                }
+
+                Text("Turn: $turn")
+
+                Slider(
+                    value = value, // Float
+                    onValueChange = { newValue ->
+                        value = newValue
+                    }, valueRange = 1f..60f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            is Condition.IsTurnLessThan -> {
+                val turn = condition.value
+                var value by remember { mutableStateOf(turn.toFloat()) }
+
+                LaunchedEffect(value) {
+                    updatedConditionTyped(condition) {
+                        it.copy(value = value.roundToInt())
+                    }
+                }
+
+                Text("Turn: $turn")
+
+                Slider(
+                    value = value, // Float
+                    onValueChange = { newValue ->
+                        value = newValue
+                    }, valueRange = 1f..60f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            is Condition.IsTurnMultipleOf -> {
+                val multiple = condition.multiple
+                val offset = condition.offset
+                var value by remember { mutableStateOf(multiple.toFloat()) }
+
+                LaunchedEffect(value) {
+                    updatedConditionTyped(condition) {
+                        it.copy(multiple = value.roundToInt())
+                    }
+                }
+
+                Text("Multiple: $multiple")
+
+                Slider(
+                    value = value, // Float
+                    onValueChange = { newValue ->
+                        value = newValue
+                    }, valueRange = 1f..60f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                var value2 by remember { mutableStateOf(offset.toFloat()) }
+
+                LaunchedEffect(value2) {
+                    updatedConditionTyped(condition) {
+                        it.copy(offset = value.roundToInt())
+                    }
+                }
+
+                Text("Offset: $multiple")
+
+                Slider(
+                    value = value2, // Float
+                    onValueChange = { newValue ->
+                        value2 = newValue
+                    }, valueRange = 1f..60f,
+                    steps = 0,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            is Condition.IsUnitNotAlive -> {
+                var textFieldValue by remember(currentTrigger) {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = condition.unitName,
+                            selection = TextRange(condition.unitName.length)
+                        )
+                    )
+                }
+
+
+
+                Spacer(Modifier.height(4.dp))
+
+                Text("Unit:")
+                TextField(
+                    value = textFieldValue,
+                    onValueChange = { newValue ->
+                        textFieldValue = newValue
+
+                        val finalText: String = newValue.text
+                        updatedConditionTyped(condition) { condition ->
+                            condition.copy(
+                                unitName = finalText
+                            )
+
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompoundCommon()
+                        }
+                    },
+                    placeholder = { Text("Empty") }
+                )
+            }
+            is Condition.IsUnitRouting -> {
+                var textFieldValue by remember(currentTrigger) {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = condition.unitName,
+                            selection = TextRange(condition.unitName.length)
+                        )
+                    )
+                }
+
+
+
+                Spacer(Modifier.height(4.dp))
+
+                Text("Unit:")
+                TextField(
+                    value = textFieldValue,
+                    onValueChange = { newValue ->
+                        textFieldValue = newValue
+
+                        val finalText: String = newValue.text
+                        updatedConditionTyped(condition) { condition ->
+                            condition.copy(
+                                unitName = finalText
+                            )
+
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompoundCommon()
+                        }
+                    },
+                    placeholder = { Text("Empty") }
+                )
+            }
+            is Condition.IsVar -> {
+                var textFieldValue by remember(currentTrigger) {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = condition.name,
+                            selection = TextRange(condition.name.length)
+                        )
+                    )
+                }
+
+
+
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Var:")
+                    TextField(
+                        value = textFieldValue,
+                        onValueChange = { newValue ->
+                            textFieldValue = newValue
+
+                            val finalText: String = newValue.text
+                            updatedConditionTyped(condition) { condition ->
+                                condition.copy(
+                                    name = finalText
+                                )
+
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                            if (!focus.isFocused) {
+                                editorService.flushCompoundCommon()
+                            }
+                        },
+                        placeholder = { Text("Empty") }
+                    )
+                }
+
+
+                var value by remember {
+                    val text = condition.value.toString()
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = text,
+                            selection = TextRange(text.length)
+                        )
+                    )
+                }
+
+                LaunchedEffect(currentTrigger) {
+                    value = value.copy(text = condition.value.toString())
+                }
+
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Value:")
+                    TextField(
+                        value = value,
+                        onValueChange = { newValue ->
+                            value = newValue
+                            value = value.copy(
+                                text = newValue.text
+                                    .replace(Regex("[^0-9.-]"), "").let { str ->
+                                        val value = str.toFloatOrNull() ?: return@let str
+                                        value.toString()
+                                    }
+                            )
+
+
+                            val finalText: Float = value.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+
+                            updatedConditionTyped(condition) { condition ->
+                                condition.copy(value = finalText)
+                            }
+                        },
+                        modifier = Modifier.onFocusChanged { focus ->
+                            if (!focus.isFocused) {
+                                editorService.flushCompoundCommon()
+                            }
+                        },
+                        leadingIcon = {
+                            Row {
+                                Text("Value", color = JewelTheme.globalColors.text.info)
+                                Spacer(Modifier.width(4.dp))
+                            }
+                        }
+                    )
+                }
+
+                val isHidden = condition.not == true
+
+                Spacer(Modifier.height(4.dp)) // hide checkbox
+                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    Text("Not Equals(Not):")
+                    Spacer(Modifier.width(4.dp))
+                    Checkbox(isHidden, onCheckedChange = {
+                        updatedConditionTyped(condition) { condition ->
+                            if (it) {
+                                condition.copy(not = true)
+                            } else {
+                                condition.copy(not = null)
+                            }
+
+
+                        }
+                    })
+                }
+
+            }
+            is Condition.ObjectiveBelongsTo -> {
+                var objectiveValue by remember(currentTrigger) {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = condition.objectiveName,
+                            selection = TextRange(condition.objectiveName.length)
+                        )
+                    )
+                }
+
+
+
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Objective:")
+                    TextField(
+                        value = objectiveValue,
+                        onValueChange = { newValue ->
+                            objectiveValue = newValue
+
+                            val finalText: String = newValue.text
+                            updatedConditionTyped(condition) { condition ->
+                                condition.copy(
+                                    objectiveName = finalText
+                                )
+
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                            if (!focus.isFocused) {
+                                editorService.flushCompoundCommon()
+                            }
+                        },
+                        placeholder = { Text("Empty") }
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Team:")
+                    DropDownNullable(condition.team,
+                        PlayerTeam.entries,
+                        { _, team ->
+                            team.displayName
+                        },
+                        { _, team ->
+                            updatedConditionTyped(condition) { condition ->
+                                condition.copy(team = team)
+                            }
+                        }
+                    )
+                }
+
+                var playerValue by remember {
+                    val text = (condition.player ?: 0).toString()
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = text,
+                            selection = TextRange(text.length)
+                        )
+                    )
+                }
+
+                LaunchedEffect(currentTrigger) {
+                    playerValue = playerValue.copy(text = (condition.player ?: 0).toString())
+                }
+
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Player:")
+                    TextField(
+                        value = playerValue,
+                        onValueChange = { newValue ->
+                            playerValue = newValue
+                            playerValue = playerValue.copy(
+                                text = newValue.text
+                                    .replace(Regex("[^0-9]"), "").let { str ->
+                                        val value = str.toIntOrNull() ?: return@let str
+                                        value.toString()
+                                    }
+                            )
+
+
+                            val finalText: Int = playerValue.text.ifEmpty { "0" }.toIntOrNull() ?: 0
+
+                            updatedConditionTyped(condition) { condition ->
+                                if (finalText <= 0) {
+                                    condition.copy(player = null)
+                                } else {
+                                    condition.copy(player = finalText)
+                                }
+
+                            }
+                        },
+                        modifier = Modifier.onFocusChanged { focus ->
+                            if (!focus.isFocused) {
+                                editorService.flushCompoundCommon()
+                            }
+                        },
+                        leadingIcon = {
+                            Row {
+                                Text("Value", color = JewelTheme.globalColors.text.info)
+                                Spacer(Modifier.width(4.dp))
+                            }
+                        }
+                    )
+                }
+                
+                
+            }
+            is Condition.UnitMovedThisTurn -> {
+                var textFieldValue by remember(currentTrigger) {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = condition.name,
+                            selection = TextRange(condition.name.length)
+                        )
+                    )
+                }
+
+
+
+                Spacer(Modifier.height(4.dp))
+
+                Text("Unit:")
+                TextField(
+                    value = textFieldValue,
+                    onValueChange = { newValue ->
+                        textFieldValue = newValue
+
+                        val finalText: String = newValue.text
+                        updatedConditionTyped(condition) { condition ->
+                            condition.copy(
+                                name = finalText
+                            )
+
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
+                        if (!focus.isFocused) {
+                            editorService.flushCompoundCommon()
+                        }
+                    },
+                    placeholder = { Text("Empty") }
+                )
+            }
+        }
+
+        DefaultButton(
+            style = JewelTheme.defaultButtonStyle.let { style ->
+                val color = Color(196, 27, 27, 255)
+                val color2 = Color(182, 25, 25, 255)
+                val color3 = Color(165, 21, 21, 255)
+                ButtonStyle(
+                    colors = ButtonColors(
+//                        style.colors.background,
+                        Brush.linearGradient(listOf(color, color)),
+                        style.colors.backgroundDisabled,
+                        Brush.linearGradient(listOf(color, color)),
+                        Brush.linearGradient(listOf(color3, color3)),
+                        Brush.linearGradient(listOf(color2, color2)),
+                        style.colors.content,
+                        style.colors.contentDisabled,
+                        style.colors.contentFocused,
+                        style.colors.contentPressed,
+                        style.colors.contentHovered,
+                        style.colors.border,
+                        style.colors.borderDisabled,
+                        style.colors.borderFocused,
+                        style.colors.borderPressed,
+                        style.colors.borderHovered
+                    ),
+                    metrics = style.metrics,
+                    focusOutlineAlignment = style.focusOutlineAlignment
+                )
+            },
+            onClick = {
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(conditions = trigger.conditions.filterIndexed { idx, _ ->
+                        item.index != idx
+                    })
+                }
+            },
+        ) {
+            Text("Delete Condition" )
+        }
+
+    }
+
+    Spacer(Modifier.height(20.dp))
+
+    DefaultButton(
+        onClick = {
+            updateCurrentTrigger { trigger ->
+                trigger.copy(
+                    conditions = trigger.conditions.toMutableList().also {
+                        it.add(Condition.ConditionEnum.IS_TURN.default)
+                    }
+                )
+            }
+        },
+    ) {
+        Text("Add new condition")
+    }
+
+    Spacer(Modifier.height(20.dp))
+    Text("Actions:")
+
+    currentTrigger.actions.forEachIndexed { actionIndex, action ->
+        action // TODO continue
+    }
+
+
+}
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -126,14 +795,6 @@ private fun MiscToolConfig() {
     val controller = rememberColorPickerController()
     val controller2 = rememberColorPickerController()
 
-    var textFieldValue by remember(commonData) {
-        mutableStateOf(
-            TextFieldValue(
-                text = commonData.name,
-                selection = TextRange(commonData.name.length)
-            )
-        )
-    }
 
     var descriptionTextFieldValue by remember(commonData) {
         mutableStateOf(
@@ -144,6 +805,14 @@ private fun MiscToolConfig() {
         )
     }
 
+    var textFieldValue by remember(commonData) {
+        mutableStateOf(
+            TextFieldValue(
+                text = commonData.name,
+                selection = TextRange(commonData.name.length)
+            )
+        )
+    }
 
 
     Column {
@@ -410,7 +1079,7 @@ private fun DeploymentZoneConfig() {
         Spacer(Modifier.height(4.dp))
         Text("Current Zone")
         ComboBox(
-            labelText = selectedReference?.let { "${it.key + 1} ${PlayerTeam.entries[it.key]}" } ?: "None" ,
+            labelText = selectedReference?.let { "${it.key + 1} ${PlayerTeam.entries[it.key]}" } ?: "None",
             popupManager = zonePopupManager,
             popupContent = {
                 VerticallyScrollableContainer {
@@ -649,17 +1318,18 @@ private fun DeploymentZoneConfig() {
 private fun PlayerToolConfig() {
     val diToolService by rememberInstance<ToolService<*>>()
     val toolService = diToolService as? PresetToolService ?: return
-    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
+    val diEditorService by rememberInstance<EditorService<*>>();
+    val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
     scenario ?: return
     val tool = toolService.playerTool
     val currentPlayerReference by tool.currentPlayer.collectAsState()
-    var playerToMoveOwnership by remember(scenario, currentPlayerReference) {
-        mutableStateOf(Reference<Int, Player>(scenario!!.players.indices.first { currentPlayerReference.key != it }))
-    }
     val currentPlayer = currentPlayerReference.getValueOrNull(scenario!!.players::getOrNull) ?: Unit.let {
         tool.currentPlayer.value = Reference(scenario!!.players.mapIndexed { index, _ -> index }.first())
         return
+    }
+    var playerToMoveOwnership by remember(scenario, currentPlayerReference) {
+        mutableStateOf(Reference<Int, Player>(scenario!!.players.indices.first { currentPlayerReference.key != it }))
     }
 
     var showDialog by remember(currentPlayerReference, scenario) { mutableStateOf(false) }
@@ -1173,11 +1843,13 @@ private fun TerrainToolConfig() {
                     val newX = scenarioDimensionX.text.toInt()
                     val newY = scenarioDimensionY.text.toInt()
 
-                    val newScenario = scenario!!.withCommonData(scenario!!.commonData.copy(
-                        map = scenario!!.commonData.map.resize(newX, newY)
-                    ))
+                    val newScenario = scenario!!.withCommonData(
+                        scenario!!.commonData.copy(
+                            map = scenario!!.commonData.map.resize(newX, newY)
+                        )
+                    )
                     val method = editorService.javaClass.getMethod("importScenario", GameScenario::class.java)
-                    method.invoke(editorService,newScenario)
+                    method.invoke(editorService, newScenario)
                     confirmFlow = false
 
                 },
@@ -1239,7 +1911,8 @@ private fun HeightToolConfig() {
 private fun PlaceUnitToolConfig() {
     val currentUnit by PlaceUnitTool.currentUnit.collectAsState()
 
-    val diEditorService by rememberInstance<EditorService<*>>(); val editorService = diEditorService as? PresetEditorService ?: return
+    val diEditorService by rememberInstance<EditorService<*>>();
+    val editorService = diEditorService as? PresetEditorService ?: return
     val scenario by editorService.scenario.collectAsState()
 
 
@@ -1424,7 +2097,7 @@ private fun PlaceUnitToolConfig() {
     }
     TextField(
         value = healthTextValue,
-        modifier =Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         onValueChange = { newValue ->
             // Simply update the state with the complete new value
             healthTextValue = newValue
@@ -1438,7 +2111,8 @@ private fun PlaceUnitToolConfig() {
                     }
             )
 
-            val finalText: Int = healthTextValue.text.ifEmpty { GameUnit.MIN_HEALTH.toString() }.toIntOrNull() ?: GameUnit.MIN_HEALTH
+            val finalText: Int =
+                healthTextValue.text.ifEmpty { GameUnit.MIN_HEALTH.toString() }.toIntOrNull() ?: GameUnit.MIN_HEALTH
 
             PlaceUnitTool.currentUnit.value = currentUnit.copy(
                 health = finalText
@@ -1467,7 +2141,7 @@ private fun PlaceUnitToolConfig() {
     }
     TextField(
         value = organizationTextValue,
-        modifier =Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         onValueChange = { newValue ->
             organizationTextValue = newValue
             organizationTextValue = organizationTextValue.copy(
@@ -1480,7 +2154,9 @@ private fun PlaceUnitToolConfig() {
                     }
             )
 
-            val finalText: Int = organizationTextValue.text.ifEmpty { GameUnit.MIN_ORGANIZATION.toString() }.toIntOrNull() ?: GameUnit.MIN_ORGANIZATION
+            val finalText: Int =
+                organizationTextValue.text.ifEmpty { GameUnit.MIN_ORGANIZATION.toString() }.toIntOrNull()
+                    ?: GameUnit.MIN_ORGANIZATION
 
             PlaceUnitTool.currentUnit.value = currentUnit.copy(
                 organization = finalText
@@ -1510,7 +2186,7 @@ private fun PlaceUnitToolConfig() {
         }
         TextField(
             value = staminaTextValue,
-            modifier =Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             onValueChange = { newValue ->
                 staminaTextValue = newValue
                 staminaTextValue = staminaTextValue.copy(
@@ -1523,7 +2199,8 @@ private fun PlaceUnitToolConfig() {
                         }
                 )
 
-                val finalText: Int = staminaTextValue.text.ifEmpty { GameUnit.MIN_STAMINA.toString() }.toIntOrNull() ?: GameUnit.MIN_STAMINA
+                val finalText: Int = staminaTextValue.text.ifEmpty { GameUnit.MIN_STAMINA.toString() }.toIntOrNull()
+                    ?: GameUnit.MIN_STAMINA
 
                 PlaceUnitTool.currentUnit.value = currentUnit.copy(
                     stamina = finalText
@@ -1539,7 +2216,6 @@ private fun PlaceUnitToolConfig() {
             }
         )
     }
-
 
 
 }
@@ -1695,7 +2371,9 @@ private fun PlaceObjectiveToolConfig() {
                         }
                 )
 
-                val finalText: Int = victoryPointsTextValue.text.ifEmpty { Objective.MIN_VICTORY_POINTS.toString() }.toIntOrNull() ?: Objective.MIN_VICTORY_POINTS
+                val finalText: Int =
+                    victoryPointsTextValue.text.ifEmpty { Objective.MIN_VICTORY_POINTS.toString() }.toIntOrNull()
+                        ?: Objective.MIN_VICTORY_POINTS
 
                 PlaceObjectiveTool.currentObjective.value = currentObjective.copy(
                     victoryPoints = finalText

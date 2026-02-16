@@ -21,6 +21,7 @@ class PresetToolService(di: DI) : ToolService<GameScenario.Preset>(di) {
         TerrainPickTool,
         PlaceUnitTool,
         PlaceObjectiveTool,
+        triggerTool,
         gridTool,
         refenceOverlayTool
     )

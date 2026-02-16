@@ -1,5 +1,6 @@
 package ua.valeriishymchuk.lobmapeditor.domain
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.joml.Vector2f
@@ -16,6 +17,13 @@ data class Position(
         }
     }
 
+    fun serializeAsArray(): JsonArray {
+        return JsonArray().apply {
+            add(x)
+            add(y)
+        }
+    }
+
     companion object {
         fun deserialize(json: JsonObject): Position {
             return Position(
@@ -23,6 +31,14 @@ data class Position(
                 json.getAsJsonPrimitive("y").asFloat
             )
         }
+
+        fun deserializeArray(json: JsonArray): Position {
+            return Position(
+                json.get(0).asFloat,
+                json.get(1).asFloat
+            )
+        }
+
     }
 
 

@@ -1,10 +1,11 @@
 package ua.valeriishymchuk.lobmapeditor.domain.trigger
 
 enum class ConditionLogicType(
-    val key: String
+    val key: String,
+    val displayName: String
 ) {
-    OR("OR"),
-    AND("AND");
+    OR("OR", "Any Condition(OR)"),
+    AND("AND", "All Conditions(AND)");
 
     companion object {
         fun findByKey(key: String): ConditionLogicType {

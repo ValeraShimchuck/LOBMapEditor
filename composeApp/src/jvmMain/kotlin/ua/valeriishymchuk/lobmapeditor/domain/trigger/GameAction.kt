@@ -1,31 +1,100 @@
 package ua.valeriishymchuk.lobmapeditor.domain.trigger
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
+import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import ua.valeriishymchuk.lobmapeditor.shared.utils.getOrNull
 
 sealed interface GameAction {
 
-    val key: String
+    val enumRepresentation: ActionEnum
     fun serializeValue(): JsonElement
     fun serialize(): JsonObject {
         return JsonObject().apply {
-            add("type", JsonPrimitive(key))
+            add("type", JsonPrimitive(enumRepresentation.key))
             add("value", serializeValue())
         }
     }
 
+    enum class ActionEnum(
+        val key: String,
+        val default: GameAction
+    ) {
+        ADD_UNIT("addUnit", AddUnit(
+            listOf(
+                GameUnit(
+                    null,
+                    Reference(1),
+                    Position(500f, 500f),
+                    0f,
+                    GameUnitType.LINE_INFANTRY,
+                    UnitStatus.STANDING,
+                    null,
+                    GameUnitType.LINE_INFANTRY.defaultHealth,
+                    GameUnitType.LINE_INFANTRY.defaultOrganization,
+                    GameUnitType.LINE_INFANTRY.defaultStamina
+                )
+            )
+        )),
+        REMOVE_UNIT("removeUnit", RemoveUnit(
+            listOf("UNIT_NAME1", "UNIT_NAME2")
+        )),
+        ADD_TRIGGER("addTrigger", AddTrigger(emptyList())),
+        SHOW_MESSAGE("showMessage", ShowMessage("TITLE", "MESSAGE")),
+        DEFEAT_PLAYER("defeatPlayer", DefeatPlayer(Reference(1))),
+        MOVE_CAMERA("moveCamera", MoveCamera(Position(0f, 0f), 1f, 2f)),
+        SPAWN_NEUTRAL_OBJECTIVES("spawnNeutralObjectives", SpawnNeutralObjectives(
+            0.25f,
+            mapOf(
+                BattleType.CLASH to 1,
+                BattleType.COMBAT to 2,
+                BattleType.BATTLE to 3,
+                BattleType.GRAND_BATTLE to 3
+            ),
+            0.1f,
+            0.9f,
+            0.1f,
+            0.9f,
+            null
+        )),
+        SET_VAR("setVar", SetVar("VAR_NAME", 1f)),
+        END_GAME("endGame", EndGame(GameEndReason.VICTORY)),
+        ORDER_UNIT("orderUnit", OrderUnit(
+            OrderType.WALK,
+            "UNIT_NAME",
+            "TARGET_UNIT_NAME",
+            null,
+            null,
+            null
+        ));
+
+        companion object {
+            fun fromKey(str: String): ActionEnum {
+                return entries.firstOrNull { it.key == str } ?: throw IllegalArgumentException("Can't find $str")
+            }
+        }
+
+    }
+
+
     data class AddUnit(
-        val gameUnit: GameUnit
+        val gameUnit: List<GameUnit>
     ): GameAction {
-        override val key: String = "addUnit"
+        override val enumRepresentation: ActionEnum = ActionEnum.ADD_UNIT
 
         override fun serializeValue(): JsonElement {
-            return gameUnit.serialize()
+            val jsonArray = JsonArray()
+            gameUnit.forEach {
+                jsonArray.add(it.serialize())
+            }
+            return jsonArray
         }
 
     }
@@ -34,7 +103,7 @@ sealed interface GameAction {
         val title: String,
         val message: String
     ): GameAction {
-        override val key: String = "showMessage"
+        override val enumRepresentation: ActionEnum = ActionEnum.SHOW_MESSAGE
 
         override fun serializeValue(): JsonElement {
             return JsonObject().apply {
@@ -47,7 +116,7 @@ sealed interface GameAction {
     data class DefeatPlayer(
         val player: Reference<Int, Player>
     ): GameAction {
-        override val key: String = "defeatPlayer"
+        override val enumRepresentation: ActionEnum = ActionEnum.DEFEAT_PLAYER
 
         override fun serializeValue(): JsonElement {
             return JsonPrimitive(player.key)
@@ -56,47 +125,305 @@ sealed interface GameAction {
 
     data class MoveCamera(
         val position: Position,
-        val zoom: Float,
+        val zoom: Float?,
         val duration: Float
     ): GameAction {
-        override val key: String = "moveCamera"
+        override val enumRepresentation: ActionEnum = ActionEnum.MOVE_CAMERA
 
         override fun serializeValue(): JsonElement {
             return position.serialize().apply {
-                add("zoom", JsonPrimitive(zoom))
+                zoom?.let { zoom ->
+                    add("zoom", JsonPrimitive(zoom))
+                }
                 add("duration", JsonPrimitive(duration))
             }
         }
     }
+
+    data class AddTrigger(
+        val triggers: List<GameTrigger>
+    ): GameAction {
+        override val enumRepresentation: ActionEnum = ActionEnum.ADD_TRIGGER
+
+        override fun serializeValue(): JsonElement {
+            val array = JsonArray()
+
+            triggers.forEach { trigger ->
+                array.add(trigger.serialize())
+            }
+            return array
+        }
+
+    }
+
+    enum class GameEndReason{
+        VICTORY,
+        MAX_TURN,
+        CANCELLED,
+        DRAW_BY_AGREEMENT;
+        val key get() = name.lowercase()
+    }
+
+    data class SetVar(
+        val name: String,
+        val value: Float
+    ): GameAction {
+
+        override val enumRepresentation: ActionEnum = ActionEnum.SET_VAR
+
+        override fun serializeValue(): JsonElement {
+            val obj = JsonObject()
+            obj.add("name", JsonPrimitive(name))
+            obj.add("value", JsonPrimitive(value))
+            return obj
+        }
+    }
+
+    data class EndGame(
+        val reason: GameEndReason
+    ): GameAction {
+
+        override val enumRepresentation: ActionEnum = ActionEnum.END_GAME
+
+        override fun serializeValue(): JsonElement {
+            val obj = JsonObject()
+            obj.add("reason", JsonPrimitive(reason.key))
+            return obj
+        }
+
+    }
+
+    // reference https://github.com/sophie-games/lob-sdk/blob/main/src/game-data/eras/napoleonic/battle-types.json
+    enum class BattleType {
+        MICRO,
+        CLASH,
+        COMBAT,
+        BATTLE,
+        GRAND_BATTLE;
+        val key: String get() = name.lowercase()
+    }
+
+    enum class ObjectiveSpawnOrientation {
+        PERPENDICULAR,
+        PARALLEL,
+        CIRCLE;
+        val key: String get() = name.lowercase()
+    }
+
+    data class SpawnNeutralObjectives(
+        val spacing: Float?,
+        val amount: Map<BattleType, Int>?,
+        val minX: Float?, // 0-1
+        val maxX: Float?, // 0-1
+        val minY: Float?, // 0-1
+        val maxY: Float?, // 0-1
+        val orientation: ObjectiveSpawnOrientation?
+    ): GameAction {
+
+        override val enumRepresentation: ActionEnum = ActionEnum.SPAWN_NEUTRAL_OBJECTIVES
+
+        override fun serializeValue(): JsonElement {
+            val obj = JsonObject()
+            spacing?.let { spacing ->
+                obj.add("spacing", JsonPrimitive(spacing))
+            }
+            minX?.let { minX ->
+                obj.add("minX", JsonPrimitive(minX))
+            }
+            maxX?.let { maxX ->
+                obj.add("maxX", JsonPrimitive(maxX))
+            }
+
+            minY?.let { minY ->
+                obj.add("minY", JsonPrimitive(minY))
+            }
+            maxY?.let { maxY ->
+                obj.add("maxY", JsonPrimitive(maxY))
+            }
+            orientation?.let { orientation ->
+                obj.add("orientation", JsonPrimitive(orientation.key))
+            }
+
+            amount?.let { amount ->
+                val amountObj = JsonObject()
+                amount.forEach { (size, amount) ->
+                    amountObj.add(size.key, JsonPrimitive(amount))
+                }
+                obj.add("amount", amountObj)
+            }
+
+            return obj
+        }
+
+    }
+
+    enum class OrderType {
+        WALK,
+        RUN,
+        SHOOT,
+        FIRE_AND_ADVANCE,
+        PLACE_ENTITY,
+        FALLBACK,
+        ROTATE;
+        val id: Int get() = ordinal + 1
+    }
+
+    data class RemoveUnit(
+        val units: List<String>
+    ): GameAction {
+
+        override val enumRepresentation: ActionEnum = ActionEnum.REMOVE_UNIT
+
+        override fun serializeValue(): JsonElement {
+            return JsonArray().apply {
+                units.forEach { unitName ->
+                    add(unitName)
+                }
+            }
+        }
+
+    }
+
+    data class OrderUnit(
+        val type: OrderType?, // null will be serialized as -1
+        val unitName: String,
+        val targetName: String?,
+        val path: List<Position>?, // positions will be stored as array of 2 numbers
+        val pos: Position?,
+        val rotation: Float? // in radians
+
+    ): GameAction{
+
+        override val enumRepresentation: ActionEnum = ActionEnum.ORDER_UNIT
+
+
+        override fun serializeValue(): JsonElement {
+            val obj = JsonObject()
+            if (type == null) {
+                obj.add("type", JsonPrimitive(-1))
+            } else {
+                obj.add("type", JsonPrimitive(type.id))
+            }
+            obj.add("unitName", JsonPrimitive(unitName))
+            targetName?.let { targetName ->
+                obj.add("targetName", JsonPrimitive(targetName))
+            }
+
+            path?.let { path ->
+                val array = JsonArray()
+                path.forEach { pos ->
+                    array.add(pos.serializeAsArray())
+                }
+                obj.add("path", array)
+            }
+
+            pos?.let { pos ->
+                obj.add("pos", pos.serializeAsArray())
+            }
+
+            rotation?.let { rotation ->
+                obj.add("rotation", JsonPrimitive(rotation))
+            }
+
+            return obj
+        }
+
+
+    }
+
     companion object {
         fun deserialize(json: JsonObject): GameAction {
-            val type = json.getAsJsonPrimitive("type").asString
+            val typeRaw = json.getAsJsonPrimitive("type").asString
+            val type = ActionEnum.fromKey(typeRaw)
             val value = json.get("value")
 
             return when (type) {
-                "addUnit" -> {
-                    val unitJson = value.asJsonObject
-                    AddUnit(GameUnit.deserialize(unitJson))
+                ActionEnum.ADD_UNIT -> {
+                    val unitJson = value.asJsonArray
+                    AddUnit(unitJson.map {
+                        GameUnit.deserialize(it.asJsonObject)
+                    })
                 }
-                "showMessage" -> {
+                ActionEnum.SHOW_MESSAGE -> {
                     val obj = value.asJsonObject
                     ShowMessage(
                         title = obj.getAsJsonPrimitive("title").asString,
                         message = obj.getAsJsonPrimitive("message").asString
                     )
                 }
-                "defeatPlayer" -> {
+                ActionEnum.DEFEAT_PLAYER -> {
                     DefeatPlayer(Reference(value.asJsonPrimitive.asInt))
                 }
-                "moveCamera" -> {  // Fixed key from "defeatPlayer" to "moveCamera"
+                ActionEnum.ADD_TRIGGER -> {
+                    val array = value.asJsonArray
+                    AddTrigger(array.map { json ->
+                        GameTrigger.deserialize(json.asJsonObject)
+                    })
+                }
+                ActionEnum.MOVE_CAMERA -> {  // Fixed key from "defeatPlayer" to "moveCamera"
                     val obj = value.asJsonObject
+                    val zoom = if (obj.has("zoom")) obj.getAsJsonPrimitive("zoom").asFloat
+                    else null
                     MoveCamera(
                         position = Position.deserialize(obj),
-                        zoom = obj.getAsJsonPrimitive("zoom").asFloat,
+                        zoom = zoom,
                         duration = obj.getAsJsonPrimitive("duration").asFloat
                     )
                 }
-                else -> throw IllegalArgumentException("Unknown GameAction type: $type")
+
+                ActionEnum.REMOVE_UNIT -> {
+                    RemoveUnit(
+                        value.asJsonArray.map { it.asString }
+                    )
+                }
+                ActionEnum.SPAWN_NEUTRAL_OBJECTIVES -> {
+                    val obj = value.asJsonObject
+
+                    SpawnNeutralObjectives(
+                        obj.getOrNull("spacing")?.asFloat,
+                        obj.getOrNull("amount")?.asJsonObject?.let { obj ->
+                            obj.asMap()
+                                .mapKeys { BattleType.valueOf(it.key.uppercase()) }
+                                .mapValues { it.value.asInt }
+                        },
+                        obj.getOrNull("minX")?.asFloat,
+                        obj.getOrNull("maX")?.asFloat,
+                        obj.getOrNull("minY")?.asFloat,
+                        obj.getOrNull("maxY")?.asFloat,
+                        obj.getOrNull("orientation")?.asString?.let { orientation ->
+                            ObjectiveSpawnOrientation.valueOf(orientation.uppercase())
+                        }
+                    )
+                }
+                ActionEnum.SET_VAR -> {
+                    val obj = value.asJsonObject
+                    SetVar(
+                        obj.get("name").asString,
+                        obj.get("value").asFloat
+                    )
+                }
+                ActionEnum.END_GAME -> {
+                    val obj = value.asJsonObject
+                    EndGame(
+                        GameEndReason.valueOf(obj.get("reason").asString.uppercase())
+                    )
+                }
+                ActionEnum.ORDER_UNIT -> {
+                    val obj = value.asJsonObject
+                    OrderUnit(
+                        obj.get("type").asInt?.let { rawOrder ->
+                            if (rawOrder <= 0) null
+                            else OrderType.entries[rawOrder - 1]
+                        },
+                        obj.get("unitName").asString,
+                        obj.getOrNull("targetName")?.asString,
+                        obj.getOrNull("path")?.asJsonArray?.let { path ->
+                            path.map { Position.deserializeArray(it.asJsonArray) }
+                        },
+                        obj.getOrNull("pos")?.asJsonArray?.let(Position::deserializeArray),
+                        obj.getOrNull("rotation")?.asFloat
+                    )
+                }
             }
         }
     }
