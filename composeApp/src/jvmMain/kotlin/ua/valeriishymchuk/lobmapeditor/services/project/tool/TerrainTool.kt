@@ -1,11 +1,10 @@
-package ua.valeriishymchuk.lobmapeditor.services.project.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tool
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2i
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateTerrainCommand
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.terrain.TerrainType
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
@@ -21,7 +20,7 @@ object TerrainTool : BrushTool() {
     )
 
     override fun flushGeneric(editorService: EditorService<*>) {
-        editorService.flushCompoundCommon()
+        editorService.flushCompound()
     }
 
     override fun useToolAtGeneric(
@@ -50,11 +49,11 @@ object TerrainTool : BrushTool() {
                     terrain.value,
                     height
                 )
-                editorService.executeCompoundCommon(command)
+                editorService.executeCompound(command)
                 true
             }
             .also {
-                if (flushCompoundCommands) editorService.flushCompoundCommon()
+                if (flushCompoundCommands) editorService.flushCompound()
             }
             .any { it }
 

@@ -14,6 +14,7 @@ class PresetEditorService(
     di: DI,
 ): EditorService<GameScenario.Preset>(di) {
 
+    @Deprecated("use selectedObjects", level = DeprecationLevel.WARNING)
     val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
 
     override fun importScenario(scenario: GameScenario.Preset) {
@@ -31,15 +32,14 @@ class PresetEditorService(
         }
     }
 
-    override fun executeCompound(command: Command<GameScenario.Preset>) {
-        lastAction = System.currentTimeMillis()
-        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
-        lock {
-            checkComposedCommandsIntegrity { it is Command.Preset }
-            composedCommands.add(wrapper)
-            wrapper.execute()
-        }
+    override fun castCommandOrFail(command: Command<*>): Command<GameScenario.Preset> {
+        return command as? Command.Preset ?: throw IllegalArgumentException("Invalid command: $command")
     }
+
+    override fun convertCommonCommand(command: Command.CommonData): Command<GameScenario.Preset> {
+        return command.asPreset()
+    }
+
 
     fun deleteUnits(map: Set<Reference<Int, GameUnit>>) {
         selectedUnits.value -= map

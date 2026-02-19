@@ -71,7 +71,7 @@ fun UnitsPropertiesConfig() {
     val isUnitTypeMixed by derivedStateOf { selection.map { it.type }.distinct().size > 1 }
     val isXPositionMixed by derivedStateOf { selection.map { it.position.x }.distinct().size > 1 }
     val isYPositionMixed by derivedStateOf { selection.map { it.position.y }.distinct().size > 1 }
-    val isRotationMixed by derivedStateOf { selection.map { it.rotationRadians }.distinct().size > 1 }
+    val isRotationMixed by derivedStateOf { selection.map { it.rotation }.distinct().size > 1 }
     val isStatusMixed by derivedStateOf { selection.map { it.status }.distinct().size > 1 }
     val isFormationMixed by derivedStateOf { selection.map { it.formation }.distinct().size > 1 }
     val canFormationBeModified by derivedStateOf { selection.none { it.formation == null } }
@@ -149,7 +149,7 @@ fun UnitsPropertiesConfig() {
                     selection.isEmpty() -> ""
                     isRotationMixed -> ""
                     else -> selection.map {
-                        org.joml.Math.toDegrees(it.rotationRadians)
+                        org.joml.Math.toDegrees(it.rotation)
                     }.distinct().firstOrNull()?.toString() ?: ""
                 }
 
@@ -166,7 +166,7 @@ fun UnitsPropertiesConfig() {
 
         val textValue = rotationTextFieldValue.text.toFloatOrNull()
         val rotation = selection.map {
-            org.joml.Math.toDegrees(it.rotationRadians)
+            org.joml.Math.toDegrees(it.rotation)
         }.distinct().firstOrNull()
         if (textValue != rotation || (textValue != null && isRotationMixed)) {
             val finalValue: String = if (rotation != null && !isRotationMixed) rotation.toString()
@@ -490,7 +490,7 @@ fun UnitsPropertiesConfig() {
                         val finalText: Float = org.joml.Math.toRadians(
                             rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
                         )
-                        updateSelectedUnits { it.copy(rotationRadians = finalText) }
+                        updateSelectedUnits { it.copy(rotation = finalText) }
                     },
                     modifier = Modifier.onFocusChanged { focus ->
                         if (!focus.isFocused) {
@@ -509,7 +509,7 @@ fun UnitsPropertiesConfig() {
                         rotationTextFieldValue = rotationTextFieldValue.copy(
                             text = org.joml.Math.toDegrees(newRotation).coerceIn(0f, 359f).toString()
                         )
-                        updateSelectedUnits { it.copy(rotationRadians = org.joml.Math.toRadians(rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f)) }
+                        updateSelectedUnits { it.copy(rotation = org.joml.Math.toRadians(rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f)) }
                     },
                     valueRange = 0f..(2 * Math.PI).toFloat(),
                     modifier = Modifier.fillMaxWidth()

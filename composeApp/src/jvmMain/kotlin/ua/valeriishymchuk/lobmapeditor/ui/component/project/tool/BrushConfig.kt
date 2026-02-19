@@ -23,7 +23,7 @@ import org.jetbrains.jewel.ui.component.SegmentedControlButtonData
 import org.jetbrains.jewel.ui.component.Slider
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.BrushTool
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.BrushTool
 import kotlin.math.roundToInt
 
 private val brushRange = 1..16

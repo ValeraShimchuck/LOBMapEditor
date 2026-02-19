@@ -7,12 +7,6 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.MiscTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.GridTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.HeightTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.ReferenceOverlayTool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.Tool
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.TriggerTool
 
 abstract class ToolService<S: GameScenario<S>>(override val di: DI) : DIAware {
 

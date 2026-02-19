@@ -64,6 +64,7 @@ class PresetEditorRenderer(di: DI) : EditorRenderer<GameScenario.Preset, PresetR
                     reference.getValueOrNull(editorService.scenario.value!!.objectives::getOrNull)
                 }
             } ?: emptyList(),
+            editorService.selectedObjects.value.map { it.dereference(editorService.scenario.value!!) },
             RenderContext.SelectionContext(
                 editorService.selectionEnabled,
                 editorService.selectionStart,

@@ -2,18 +2,42 @@ package ua.valeriishymchuk.lobmapeditor.domain.objective
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import org.joml.Vector2f
+import ua.valeriishymchuk.lobmapeditor.commands.Command
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
-import ua.valeriishymchuk.lobmapeditor.domain.player.Player
-import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
+import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.ScenarioUnitReference
+import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
+import kotlin.reflect.KClass
 
 data class Objective(
     // depends on scenario type can be either player or player team
     val owner: Int?,
     val name: String?,
-    val position: Position,
+    override val position: Position,
     val type: ObjectiveType,
     val victoryPoints: Int
-) {
+): PositionProperty<Objective> {
+
+    override val rotation: Float? = null
+    override fun withPosition(pos: Position): Objective {
+        return copy(position = pos)
+    }
+
+    override fun withRotation(rotation: Float): Objective {
+        throw IllegalStateException("Rotation is not supported")
+    }
+
+    override val hitboxDimensions: Vector2f = Vector2f(
+        26f
+    )
+
     fun serialize(isPreset: Boolean): JsonObject {
         return JsonObject().apply {
             name?.let {
@@ -33,6 +57,71 @@ data class Objective(
                 add("vp", JsonPrimitive(victoryPoints))
             }
         }
+    }
+
+    data class ScenarioObjectiveReference(
+        override val listId: Int
+    ) : ScenarioReference {
+        override fun dereference(scenario: GameScenario<*>): DomainProperty<*> {
+            return scenario.commonData.objectives[listId]
+        }
+
+        override fun <T : DomainProperty<*>> duplicate0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>
+        ): Pair<Command<*>, Set<ScenarioReference>> {
+            val old = scenario.commonData.objectives
+            val new = scenario.commonData.objectives.toMutableList().apply {
+                addAll(references.map { (it.dereference(scenario) as Objective).copy() })
+            }
+
+            val oldSize = old.size
+            val newSize = new.size
+            val references = (oldSize..<newSize).map {
+                ScenarioObjectiveReference(it)
+            }.toSet()
+            return UpdateObjectiveListCommand(
+                old,
+                new,
+            ) to references
+        }
+
+        override fun <T : DomainProperty<*>> delete0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>
+        ): Command<*> {
+            val ids = references.map { it.listId }.toSet()
+            val old = scenario.objectives
+            val new = scenario.objectives.filterIndexed { id, _ ->
+                !ids.contains(id)
+            }
+            return UpdateObjectiveListCommand(
+                old,
+                new
+            )
+        }
+
+        override fun <T : DomainProperty<*>> update0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>,
+            updater: (T) -> T
+        ): Command<*> {
+            val ids = references.map { it.listId }.toSet()
+            val old = scenario.objectives
+            val new = scenario.objectives.mapIndexed { id, unit ->
+                if (!ids.contains(id)) return@mapIndexed unit
+                updater(unit as T) as Objective
+            }
+            return UpdateObjectiveListCommand(
+                old,
+                new
+            )
+        }
+
+
     }
 
     companion object {

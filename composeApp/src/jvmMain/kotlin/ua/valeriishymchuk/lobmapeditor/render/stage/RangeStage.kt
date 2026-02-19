@@ -6,7 +6,6 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.joml.Vector4f
-import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
@@ -14,7 +13,6 @@ import ua.valeriishymchuk.lobmapeditor.render.geometry.RectanglePoints
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.helper.glBindVBO
 import ua.valeriishymchuk.lobmapeditor.render.program.RangeProgram
-import ua.valeriishymchuk.lobmapeditor.render.program.SpriteProgram
 import ua.valeriishymchuk.lobmapeditor.render.resource.ResourceLoader.loadShaderSource
 import ua.valeriishymchuk.lobmapeditor.shared.range.ShootingRange
 
@@ -41,7 +39,7 @@ class RangeStage(
         val vbo: List<RangeProgram.VertexBuffer> = rangesToRender.flatMap { unit ->
             val positionMatrix = Matrix4f()
             positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-            positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+            positionMatrix.setRotationXYZ(0f, 0f, unit.rotation)
 
             val range = unit.type.shootingRange!!
 

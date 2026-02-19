@@ -1,9 +1,8 @@
-package ua.valeriishymchuk.lobmapeditor.services.project.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tool
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
@@ -21,7 +20,7 @@ object PlaceObjectiveTool : Tool() {
     ))
 
     override fun flushGeneric(editorService: EditorService<*>) {
-        editorService.flushCompoundCommon()
+        editorService.flushCompound()
     }
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(
@@ -37,7 +36,7 @@ object PlaceObjectiveTool : Tool() {
         flushCompoundCommands: Boolean,
     ): Boolean {
 
-        editorService.executeCommon(UpdateObjectiveListCommand(
+        editorService.execute(UpdateObjectiveListCommand(
             editorService.scenario.value!!.objectives,
             editorService.scenario.value!!.objectives.toMutableList().apply {
                 add(currentObjective.value.copy(

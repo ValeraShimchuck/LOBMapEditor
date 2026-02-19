@@ -54,7 +54,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorServi
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.PresetToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
-import ua.valeriishymchuk.lobmapeditor.services.project.tools.*
+import ua.valeriishymchuk.lobmapeditor.services.project.tool.*
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
@@ -160,7 +160,7 @@ private fun TriggerToolConfig() {
             if (idx != reference.key) return@mapIndexed value
             updater(value)
         }
-        editorService.executeCommon(
+        editorService.execute(
             UpdateGameTriggerListCommand(
                 oldList,
                 newList
@@ -417,7 +417,7 @@ private fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompoundCommon()
+                            editorService.flushCompound()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -453,7 +453,7 @@ private fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompoundCommon()
+                            editorService.flushCompound()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -489,7 +489,7 @@ private fun TriggerToolConfig() {
                         },
                         modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompoundCommon()
+                                editorService.flushCompound()
                             }
                         },
                         placeholder = { Text("Empty") }
@@ -535,7 +535,7 @@ private fun TriggerToolConfig() {
                         },
                         modifier = Modifier.onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompoundCommon()
+                                editorService.flushCompound()
                             }
                         },
                         leadingIcon = {
@@ -598,7 +598,7 @@ private fun TriggerToolConfig() {
                         },
                         modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompoundCommon()
+                                editorService.flushCompound()
                             }
                         },
                         placeholder = { Text("Empty") }
@@ -665,7 +665,7 @@ private fun TriggerToolConfig() {
                         },
                         modifier = Modifier.onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompoundCommon()
+                                editorService.flushCompound()
                             }
                         },
                         leadingIcon = {
@@ -709,7 +709,7 @@ private fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompoundCommon()
+                            editorService.flushCompound()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -834,7 +834,7 @@ private fun MiscToolConfig() {
             },
             modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                 if (!focus.isFocused) {
-                    editorService.flushCompoundCommon()
+                    editorService.flushCompound()
                 }
             },
             placeholder = { Text("Empty") }
@@ -857,7 +857,7 @@ private fun MiscToolConfig() {
             },
             modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                 if (!focus.isFocused) {
-                    editorService.flushCompoundCommon()
+                    editorService.flushCompound()
                 }
             },
             placeholder = { Text("Empty") }
@@ -2010,10 +2010,10 @@ private fun PlaceUnitToolConfig() {
     Spacer(Modifier.height(4.dp))
 
     // angle
-    var angle by remember { mutableStateOf(currentUnit.rotationRadians) }
+    var angle by remember { mutableStateOf(currentUnit.rotation) }
     LaunchedEffect(angle) {
         PlaceUnitTool.currentUnit.value = currentUnit.copy(
-            rotationRadians = angle
+            rotation = angle
         )
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

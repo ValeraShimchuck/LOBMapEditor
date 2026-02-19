@@ -20,13 +20,12 @@ class HybridEditorService(di: DI) : EditorService<GameScenario.Hybrid>(di) {
         }
     }
 
-    override fun executeCompound(command: Command<GameScenario.Hybrid>) {
-        lastAction = System.currentTimeMillis()
-        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
-        lock {
-            checkComposedCommandsIntegrity { it is Command.Hybrid }
-            composedCommands.add(wrapper)
-            wrapper.execute()
-        }
+    override fun castCommandOrFail(command: Command<*>): Command<GameScenario.Hybrid> {
+        return command as? Command.Hybrid ?: throw IllegalArgumentException("Invalid command: $command")
     }
+
+    override fun convertCommonCommand(command: Command.CommonData): Command<GameScenario.Hybrid> {
+        return command.asHybrid()
+    }
+
 }

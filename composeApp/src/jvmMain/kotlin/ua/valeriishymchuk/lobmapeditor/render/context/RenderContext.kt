@@ -6,6 +6,7 @@ import org.joml.Vector2i
 import org.joml.Vector4f
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.helper.CurrentGL
 import ua.valeriishymchuk.lobmapeditor.render.texture.TextureStorage
@@ -18,8 +19,9 @@ class PresetRenderContext(
     viewMatrix: Matrix4f,
     projectionMatrix: Matrix4f,
     scenario: GameScenario.Preset,
-    val selectedUnits: List<GameUnit>,
+    @Deprecated("Use selectedObjects") val selectedUnits: List<GameUnit>,
     selectedObjectives: List<Objective>,
+    selectedObjects: List<DomainProperty<*>>,
     selection: SelectionContext,
     gridContext: GridContext,
     overlayReferenceContext: OverlayReferenceContext,
@@ -32,6 +34,7 @@ class PresetRenderContext(
     projectionMatrix,
     scenario,
     selectedObjectives,
+    selectedObjects,
     selection,
     gridContext,
     overlayReferenceContext,
@@ -46,6 +49,7 @@ class HybridRenderContext(
     projectionMatrix: Matrix4f,
     scenario: GameScenario.Hybrid,
     selectedObjectives: List<Objective>,
+    selectedObjects: List<DomainProperty<*>>,
     selection: SelectionContext,
     gridContext: GridContext,
     overlayReferenceContext: OverlayReferenceContext,
@@ -59,6 +63,7 @@ class HybridRenderContext(
     projectionMatrix,
     scenario,
     selectedObjectives,
+    selectedObjects,
     selection,
     gridContext,
     overlayReferenceContext,
@@ -72,7 +77,8 @@ abstract class RenderContext<T: GameScenario<T>>(
     val viewMatrix: Matrix4f,
     val projectionMatrix: Matrix4f,
     val scenario: T,
-    val selectedObjectives: List<Objective>,
+    @Deprecated("Use selectedObjects") val selectedObjectives: List<Objective>,
+    val selectedObjects: List<DomainProperty<*>>,
     val selection: SelectionContext,
     val gridContext: GridContext,
     val overlayReferenceContext: OverlayReferenceContext,

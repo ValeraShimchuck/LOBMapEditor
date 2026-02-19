@@ -26,7 +26,6 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.tool.HybridToolService
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
-import kotlin.math.min
 import kotlin.time.TimeSource
 
 abstract class EditorRenderer<S: GameScenario<S>, CTX: RenderContext<S>>(override val di: DI) : GLEventListener, DIAware {

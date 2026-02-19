@@ -38,6 +38,7 @@ import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolDock
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.PropertyDock
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.UnitsConfigDock
 import ua.valeriishymchuk.lobmapeditor.ui.screen.project.ProjectTitleScreenProvider
 import java.awt.Desktop
@@ -126,7 +127,8 @@ class ProjectScreen(
                 ToolDock()
             },
             second = {
-                UnitsConfigDock()
+//                UnitsConfigDock()
+                PropertyDock()
             },
             state = rememberSplitLayoutState(0.45f),
             firstPaneMinWidth = 200.dp,

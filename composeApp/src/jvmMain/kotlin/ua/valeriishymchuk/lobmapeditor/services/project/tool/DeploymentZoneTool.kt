@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.services.project.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tool
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys

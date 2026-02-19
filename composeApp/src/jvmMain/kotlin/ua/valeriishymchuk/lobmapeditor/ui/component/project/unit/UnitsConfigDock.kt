@@ -44,6 +44,7 @@ import kotlin.getValue
 
 @OptIn(ExperimentalJewelApi::class)
 @Composable
+@Deprecated("Legacy, DomainProperty API is modern ")
 fun UnitsConfigDock() {
     val diEditorService by rememberInstance<EditorService<*>>()
     val editorService = diEditorService as? PresetEditorService ?: return
@@ -146,7 +147,7 @@ fun UnitsConfigDock() {
                                             selectedUnits.map { it.getValue(scenario!!.units::get).position.toVector2f() }
                                                 .let {
                                                     it.fold(Vector2f()) { sum, vector ->
-                                                        sum.add(vector) // Накопичуємо суму в sum
+                                                        sum.add(vector)
                                                     }.div(it.size.toFloat())
                                                 }.also { println("${it.x} ${it.y}")}
 

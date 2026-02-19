@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.services.project.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tool
 
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService

@@ -149,6 +149,7 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
     }
 
     override fun onStartOfSelection(e: MouseEvent): Boolean {
+        if (super.onStartOfSelection(e)) return true
         if (!canSelect) return false
         val zone = getClickedZone(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
@@ -163,7 +164,7 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
             return true
         }
 
-        val zoneArrow = getClickedArrow(e)
+        val zoneArrow = getClickedZoneArrow(e)
         if (zoneArrow != null) {
             currentZoneArrow = zoneArrow
             return true
@@ -179,11 +180,12 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
             hybridEditorService.flushCompound()
             return true
         }
-        return false
+        return super.onSelectionEndBegin()
     }
 
     override fun onSelectionEnd() {
-        if (!canSelect) return
+        super.onSelectionEnd()
+        if (!canSelect || editorService.selectedObjects.value.isNotEmpty()) return
         val worldPosStart = editorService.fromNDCToWorldSpace(editorService.selectionStart)
         val worldPosEnd = editorService.fromNDCToWorldSpace(editorService.selectionEnd)
         val worldPosMin = worldPosStart.min(worldPosEnd, Vector2f())
@@ -204,7 +206,8 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
     }
 
     override fun onSingleSelection(e: MouseEvent) {
-        if (!canSelect) return
+        super.onSingleSelection(e)
+        if (!canSelect || editorService.selectedObjects.value.isNotEmpty()) return
         val selectedZoneReference = getClickedZone(e)?.let { zone ->
             Reference<Int, DeploymentZone>(
                 hybridEditorService.scenario.value!!.deploymentZones.indexOf(
@@ -232,11 +235,13 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
     }
 
     override fun onSelectionClear() {
+        super.onSelectionClear()
         hybridToolService.deploymentZoneTool.selected.value = null
     }
 
     override fun onSelectionDrag(change: Vector2f) {
-        if (!canSelect) return
+        super.onSelectionDrag(change)
+        if (!canSelect || editorService.selectedObjects.value.isNotEmpty()) return
         val selectedZone = hybridToolService.deploymentZoneTool.selected.value
         if (selectedZone != null) {
 
@@ -259,7 +264,7 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
         }
     }
 
-    private fun getClickedArrow(e: MouseEvent): ZoneArrow? {
+    private fun getClickedZoneArrow(e: MouseEvent): ZoneArrow? {
         if (!canSelect) return null
         val clickedPoint = editorService.fromScreenToWorldSpace(e.x, e.y)
         val hitboxDimensions = Vector2f(
@@ -289,6 +294,8 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
     private var lastArrowDragPos: Vector2f? = null
 
     override fun onArrowDrag(e: MouseEvent) {
+        super.onArrowDrag(e)
+        if (!canSelect && editorService.selectedObjects.value.isNotEmpty()) return
         val zoneArrow = currentZoneArrow ?: return
         val zone = zoneArrow.reference.getValue(hybridEditorService.scenario.value!!.deploymentZones::get)
         val worldPos = editorService.fromScreenToWorldSpace(e.x, e.y)

@@ -1,16 +1,14 @@
-package ua.valeriishymchuk.lobmapeditor.services.project.tools
+package ua.valeriishymchuk.lobmapeditor.services.project.tool
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Math
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitFormation
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
-import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
@@ -30,7 +28,7 @@ object PlaceUnitTool : PresetTool() {
     ))
 
     override fun flush(editorService: PresetEditorService) {
-        editorService.flushCompoundCommon()
+        editorService.flushCompound()
     }
 
     override val uiInfo: ToolUiInfo = ToolUiInfo(

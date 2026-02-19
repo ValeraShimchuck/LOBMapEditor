@@ -78,7 +78,7 @@ fun ObjectivePropertiesConfig() {
         )
 
         if (oldList == newList) return
-        editorService.executeCompoundCommon(command)
+        editorService.executeCompound(command)
     }
 
     val ownerPopupManager = remember { PopupManager() }
@@ -142,7 +142,7 @@ fun ObjectivePropertiesConfig() {
                 },
                 modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                     if (!focus.isFocused) {
-                        editorService.flushCompoundCommon()
+                        editorService.flushCompound()
                     }
                 },
                 placeholder = { Text("Empty") }
@@ -163,7 +163,7 @@ fun ObjectivePropertiesConfig() {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                     updateObjective { objective -> objective.copy(owner = null) }
-                                    editorService.flushCompoundCommon()
+                                    editorService.flushCompound()
                                     ownerPopupManager.setPopupVisible(false)
                                 }) {
                                 Text(
@@ -177,7 +177,7 @@ fun ObjectivePropertiesConfig() {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                             updateObjective { objective -> objective.copy(owner = item.index) }
-                                            editorService.flushCompoundCommon()
+                                            editorService.flushCompound()
                                             ownerPopupManager.setPopupVisible(false)
                                         }) {
                                         Text(
@@ -191,7 +191,7 @@ fun ObjectivePropertiesConfig() {
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                             updateObjective { objective -> objective.copy(owner = item.index) }
-                                            editorService.flushCompoundCommon()
+                                            editorService.flushCompound()
                                             ownerPopupManager.setPopupVisible(false)
                                         }) {
                                         Text(
@@ -222,7 +222,7 @@ fun ObjectivePropertiesConfig() {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(2.dp).onClick {
                                         updateObjective { it.copy(type = item) }
-                                        editorService.flushCompoundCommon()
+                                        editorService.flushCompound()
                                         typePopupManager.setPopupVisible(false)
                                     }) {
                                     Text(
@@ -260,7 +260,7 @@ fun ObjectivePropertiesConfig() {
                     },
                     modifier = Modifier.onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompoundCommon()
+                            editorService.flushCompound()
                         }
                     },
                     leadingIcon = {
@@ -291,7 +291,7 @@ fun ObjectivePropertiesConfig() {
                     },
                     modifier = Modifier.onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompoundCommon()
+                            editorService.flushCompound()
                         }
                     },
                     leadingIcon = {

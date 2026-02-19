@@ -3,15 +3,22 @@ package ua.valeriishymchuk.lobmapeditor.domain.unit
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.joml.Vector2f
+import ua.valeriishymchuk.lobmapeditor.commands.Command
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.Position
+import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
+import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import kotlin.reflect.KClass
 
 data class GameUnit(
     val name: String?,
     val owner: Reference<Int, Player>, // AKA player
-    val position: Position,
-    val rotationRadians: Float,
+    override val position: Position,
+    override val rotation: Float,
     val type: GameUnitType,
     val status: UnitStatus,
     val formation: UnitFormation?,
@@ -19,8 +26,12 @@ data class GameUnit(
     val organization: Int,
     val stamina: Int?
 
-) {
+): PositionProperty<GameUnit> {
 
+    override val hitboxDimensions: Vector2f get() {
+        val formation = formation ?: return UNIT_DIMENSIONS
+        return formation.dimensions
+    }
 
     fun serialize(): JsonObject {
         return JsonObject().apply {
@@ -29,7 +40,7 @@ data class GameUnit(
             }
             add("player", JsonPrimitive(owner.key + 1))
             add("pos", position.serialize())
-            add("rotation", JsonPrimitive(rotationRadians))
+            add("rotation", JsonPrimitive(rotation))
             add("type", JsonPrimitive(type.id))
             formation?.let {
                 if (it != UnitFormation.MASS) {
@@ -54,6 +65,83 @@ data class GameUnit(
             }
 
         }
+    }
+
+    override fun withPosition(pos: Position): GameUnit {
+        return copy(position = pos)
+    }
+
+    override fun withRotation(rotation: Float): GameUnit {
+        return copy(rotation = rotation)
+    }
+
+
+
+    data class ScenarioUnitReference(
+        override val listId: Int
+    ) : ScenarioReference.Preset {
+
+        override fun dereferencePreset(scenario: GameScenario.Preset): DomainProperty<*> {
+            return scenario.units[listId]
+        }
+
+
+        override fun <T : DomainProperty<*>> updatePreset(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario.Preset,
+            updater: (T) -> T
+        ): Command<*> {
+            val ids = references.map { it.listId }.toSet()
+            val old = scenario.units
+            val new = scenario.units.mapIndexed { id, unit ->
+                if (!ids.contains(id)) return@mapIndexed unit
+                updater(unit as T) as GameUnit
+            }
+            return UpdateGameUnitListCommand(
+                old,
+                new
+            )
+        }
+
+        override fun <T : DomainProperty<*>> duplicatePreset(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario.Preset
+        ): Pair<Command<*>, Set<ScenarioReference>> {
+            val old = scenario.units
+            val new = scenario.units.toMutableList().apply {
+                addAll(references.map { (it.dereference(scenario) as GameUnit).copy() })
+            }
+
+            val oldSize = old.size
+            val newSize = new.size
+            val references = (oldSize..<newSize).map {
+                ScenarioUnitReference(it)
+            }.toSet()
+            return UpdateGameUnitListCommand(
+                old,
+                new,
+            ) to references
+        }
+
+        override fun <T : DomainProperty<*>> deletePreset(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario.Preset
+        ): Command<*> {
+            val ids = references.map { it.listId }.toSet()
+            val old = scenario.units
+            val new = scenario.units.filterIndexed { id, _ ->
+                !ids.contains(id)
+            }
+            return UpdateGameUnitListCommand(
+                old,
+                new
+            )
+        }
+
+
     }
 
     companion object {
@@ -86,7 +174,7 @@ data class GameUnit(
                 name = name,
                 owner = Reference(playerKey),
                 position = position,
-                rotationRadians = rotation,
+                rotation = rotation,
                 type = unitType,
                 status = status,
                 formation = formation,

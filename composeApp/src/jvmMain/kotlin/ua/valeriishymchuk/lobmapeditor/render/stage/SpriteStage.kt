@@ -6,6 +6,7 @@ import org.joml.*
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.unit.*
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.render.context.HybridRenderContext
@@ -31,10 +32,54 @@ class SpriteStage(
         loadShaderSource("fsprite")
     )
 
-    private fun PresetRenderContext.renderUnitArrows() {
+    private fun RenderContext<*>.renderSelections() {
+        val selectionsToRender = selectedObjects.mapNotNull { it as? PositionProperty }.toList()
+        spriteProgram.setUpVAO(glCtx)
+        spriteProgram.applyUniform(
+            glCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                false,
+                true,
+                Vector4f(0f, 0f, 0f, 0.6f),
+                -1,
+                textureStorage.selectionTexture
+            )
+        )
+        val vbo = selectionsToRender.map { obj ->
+            val isObjective = obj is Objective
+
+            val positionMatrix = Matrix4f()
+            positionMatrix.setTranslation(Vector3f(obj.position.x, obj.position.y, 0f))
+            if (isObjective) {
+                val objectiveScale = max((2.5f / viewMatrix.getScale(Vector3f()).x), 1f)
+                positionMatrix.scale(objectiveScale)
+            }
+
+            val selectionDimensions = Vector2f(
+                32f
+            )
+            SpriteProgram.BufferData(
+                RectanglePoints.fromPoints(
+                    selectionDimensions.div(-2f, Vector2f()),
+                    selectionDimensions.div(2f, Vector2f()),
+                ),
+                RectanglePoints.TEXTURE_CORDS,
+                positionMatrix
+            )
+        }
+
+        spriteProgram.setUpVBO(glCtx, vbo)
+
+
+        glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+    }
+
+    private fun RenderContext<*>.renderUnitArrows() {
         // arrow body
+        val selectionsToRender = selectedObjects.mapNotNull { it as? PositionProperty }
+            .filter { it.rotation != null }.toList()
         also {
-            val selectionsToRender = selectedUnits.toList()
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
                 glCtx, SpriteProgram.Uniform(
@@ -50,7 +95,7 @@ class SpriteStage(
             val vbo = selectionsToRender.map { unit ->
                 val positionMatrix = Matrix4f()
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotation!!)
                 val selectionDimensions = Vector2f(
                     48f,
                     8f
@@ -73,7 +118,6 @@ class SpriteStage(
 
         // arrow head
         also {
-            val selectionsToRender = selectedUnits.toList()
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
                 glCtx, SpriteProgram.Uniform(
@@ -89,7 +133,7 @@ class SpriteStage(
             val vbo = selectionsToRender.map { unit ->
                 val positionMatrix = Matrix4f()
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotation!!)
                 val selectionDimensions = Vector2f(
                     48f,
                     8f
@@ -215,51 +259,12 @@ class SpriteStage(
 
     }
 
-    private fun PresetRenderContext.renderUnit() {
+    private fun PresetRenderContext.renderUnits() {
         val unitsToRender: Map<PlayerTeam, Map<Pair<GameUnitType, UnitFormation?>, List<GameUnit>>> = scenario.units
             .groupBy { it.owner.getValue(scenario.players::get).team }
             .mapValues { (_, value) ->
                 value.groupBy { it.type to it.formation }
             }
-
-        also {
-            val selectionsToRender = selectedUnits.toList()
-            spriteProgram.setUpVAO(glCtx)
-            spriteProgram.applyUniform(
-                glCtx, SpriteProgram.Uniform(
-                    projectionMatrix,
-                    viewMatrix,
-                    false,
-                    true,
-                    Vector4f(0f, 0f, 0f, 0.6f),
-                    -1,
-                    textureStorage.selectionTexture
-                )
-            )
-            val vbo = selectionsToRender.map { unit ->
-                val positionMatrix = Matrix4f()
-                positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-                val selectionDimensions = Vector2f(
-                    32f
-                )
-                SpriteProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        selectionDimensions.div(-2f, Vector2f()),
-                        selectionDimensions.div(2f, Vector2f()),
-                    ),
-                    RectanglePoints.TEXTURE_CORDS,
-                    positionMatrix
-                )
-            }
-
-            spriteProgram.setUpVBO(glCtx, vbo)
-
-
-            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
-        }
-
-        renderUnitArrows()
-
 
         val unitShadowsToRender: MutableMap<String, MutableList<GameUnit>> = mutableMapOf()
         val preparedUnitsToRender: MutableMap<Triple<PlayerTeam, GameUnitType, UnitFormation?>, MutableList<GameUnit>> =
@@ -299,7 +304,7 @@ class SpriteStage(
             )
             val vbo = it.value.filter { unit -> unit.status != UnitStatus.ROUTING }.map { unit ->
                 val positionMatrix = Matrix4f()
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotation)
                 positionMatrix.setTranslation(Vector3f(unit.position.x + 2, unit.position.y + 2, 0f))
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
@@ -354,7 +359,7 @@ class SpriteStage(
 
             val vboInput = units.filter { it.status != UnitStatus.ROUTING }.map { unit ->
                 val positionMatrix = Matrix4f()
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotation)
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
@@ -392,7 +397,7 @@ class SpriteStage(
 
             val vboInput2 = units.filter { it.status == UnitStatus.ROUTING }.map { unit ->
                 val positionMatrix = Matrix4f()
-                positionMatrix.setRotationXYZ(0f, 0f, unit.rotationRadians)
+                positionMatrix.setRotationXYZ(0f, 0f, unit.rotation)
                 positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
                 SpriteProgram.BufferData(
                     RectanglePoints.fromPoints(
@@ -419,8 +424,11 @@ class SpriteStage(
         glCtx.glBindVBO(spriteProgram.vbo)
 
 
+        renderSelections()
+        renderUnitArrows()
+
         if (this is PresetRenderContext) {
-            renderUnit()
+            renderUnits()
         }
 
         if (this is HybridRenderContext) {
@@ -449,42 +457,7 @@ class SpriteStage(
             GameConstants.TILE_SIZE.toFloat()
         ).mul(0.7f)
 
-        also {
-            val selectionsToRender = selectedObjectives.toList()
-            spriteProgram.setUpVAO(glCtx)
-            spriteProgram.applyUniform(
-                glCtx, SpriteProgram.Uniform(
-                    projectionMatrix,
-                    viewMatrix,
-                    false,
-                    true,
-                    Vector4f(0f, 0f, 0f, 0.6f),
-                    -1,
-                    textureStorage.selectionTexture
-                )
-            )
-            val vbo = selectionsToRender.map { objective ->
-                val positionMatrix = Matrix4f()
-                positionMatrix.setTranslation(Vector3f(objective.position.x, objective.position.y, 0f))
-                positionMatrix.scale(objectiveScale)
-                val selectionDimensions = Vector2f(
-                    32f
-                )
-                SpriteProgram.BufferData(
-                    RectanglePoints.fromPoints(
-                        selectionDimensions.div(-2f, Vector2f()),
-                        selectionDimensions.div(2f, Vector2f()),
-                    ),
-                    RectanglePoints.TEXTURE_CORDS,
-                    positionMatrix
-                )
-            }
 
-            spriteProgram.setUpVBO(glCtx, vbo)
-
-
-            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
-        }
 
         spriteProgram.setUpVAO(glCtx)
         spriteProgram.applyUniform(

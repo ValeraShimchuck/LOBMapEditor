@@ -6,7 +6,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.annotations.ApiStatus
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector2i
@@ -16,11 +15,14 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.commands.Command
+import ua.valeriishymchuk.lobmapeditor.commands.Command.Companion.applyAllCompound
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
@@ -29,6 +31,7 @@ import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.collections.minus
 import kotlin.concurrent.withLock
 
 sealed class EditorService<T : GameScenario<T>>(
@@ -47,7 +50,10 @@ sealed class EditorService<T : GameScenario<T>>(
     var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
-    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?> = MutableStateFlow(null)
+    @Deprecated("use selectedObjects", level = DeprecationLevel.WARNING)
+    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?> = MutableStateFlow(null) // old
+
+    var selectedObjects: MutableStateFlow<Set<ScenarioReference>> = MutableStateFlow(emptySet())
 
     var lastSave: Long = 0
         protected set
@@ -61,13 +67,7 @@ sealed class EditorService<T : GameScenario<T>>(
         this.scenario.value = it
     }
 
-    protected val commonDataSetter: (GameScenario.CommonData) -> Unit = {
-        this.scenario.value = this.scenario.value!!.withCommonData(it)
-    }
 
-    protected val commonDataGetter: () -> GameScenario.CommonData = {
-        this.scenario.value!!.commonData
-    }
 
     protected val scenarioGetter: () -> T = {
         scenario.value!!
@@ -177,13 +177,21 @@ sealed class EditorService<T : GameScenario<T>>(
 
     }
 
-    abstract fun executeCompound(command: Command<T>)
 
-    fun executeCompoundCommon(command: Command<GameScenario.CommonData>) {
+    fun deleteObjects(references: Set<ScenarioReference>) {
+        selectedObjects.value = emptySet()
+        ScenarioReference.deleteList(references, scenario.value!!).applyAllCompound(this)
+        flushCompound()
+    }
+
+    fun executeCompound(command: Command<*>) {
+        executeCompoundRaw(convertCommand(command))
+    }
+
+    protected fun executeCompoundRaw(command: Command<T>) {
         lastAction = System.currentTimeMillis()
-        val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
+        val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
         lock {
-            checkComposedCommandsIntegrity { it is Command.CommonData  }
             composedCommands.add(wrapper)
             wrapper.execute()
         }
@@ -205,17 +213,23 @@ sealed class EditorService<T : GameScenario<T>>(
         }
     }
 
-    fun flushCompoundCommon() {
-        lock {
-            if (composedCommands.isEmpty()) return@lock
-            val command = ComposedCommand(composedCommands.map { it.command })
-            composedCommands.clear()
-            undoStack.addLast(CommandWrapper(commonDataGetter, commonDataSetter, command as Command<GameScenario.CommonData>))
-            redoStack.clear()
+    abstract fun castCommandOrFail(command: Command<*>): Command<T>
+
+    abstract fun convertCommonCommand(command: Command.CommonData): Command<T>
+
+    fun execute(command: Command<*>) {
+        executeRaw(convertCommand(command))
+    }
+
+    protected fun convertCommand(command: Command<*>): Command<T> {
+        return if (command is Command.CommonData) {
+            convertCommonCommand(command)
+        } else {
+            castCommandOrFail(command)
         }
     }
 
-    fun execute(command: Command<T>) {
+    protected fun executeRaw(command: Command<T>) {
         val wrapper = CommandWrapper(scenarioGetter, scenarioSetter, command)
         lastAction = System.currentTimeMillis()
         wrapper.execute()
@@ -223,13 +237,6 @@ sealed class EditorService<T : GameScenario<T>>(
         redoStack.clear()
     }
 
-    fun executeCommon(command: Command<GameScenario.CommonData>) {
-        val wrapper = CommandWrapper(commonDataGetter, commonDataSetter, command)
-        lastAction = System.currentTimeMillis()
-        wrapper.execute()
-        undoStack.addLast(wrapper)
-        redoStack.clear()
-    }
 
     fun undo() {
         if (undoStack.isNotEmpty()) {
@@ -332,7 +339,7 @@ sealed class EditorService<T : GameScenario<T>>(
         }.map { it.getValue(scenario.value!!.objectives::get) }
         val oldList = scenario.value!!.objectives
         val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
-        executeCommon(UpdateObjectiveListCommand(oldList, newList))
+        execute(UpdateObjectiveListCommand(oldList, newList))
         val newSelectedList = scenario.value!!.objectives.mapIndexedNotNull { index, objective ->
             if (oldSelectedObjectives.contains(objective)) return@mapIndexedNotNull Reference<Int, Objective>(index)
             null
