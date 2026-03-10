@@ -6,6 +6,7 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.joml.Vector4f
+import ua.valeriishymchuk.lobmapeditor.domain.property.UnitProperty
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
@@ -34,12 +35,14 @@ class RangeStage(
 
 
 
-        val rangesToRender: List<GameUnit> = selectedUnits.filter { it.type.shootingRange != null }.toList()
+        val rangesToRender: List<UnitProperty<*>> = selectedObjects
+            .filterIsInstance<UnitProperty<*>>()
+            .filter { it.type.shootingRange != null }.toList()
 
         val vbo: List<RangeProgram.VertexBuffer> = rangesToRender.flatMap { unit ->
             val positionMatrix = Matrix4f()
             positionMatrix.setTranslation(Vector3f(unit.position.x, unit.position.y, 0f))
-            positionMatrix.setRotationXYZ(0f, 0f, unit.rotation)
+            positionMatrix.setRotationXYZ(0f, 0f, unit.rotation ?: 0f)
 
             val range = unit.type.shootingRange!!
 

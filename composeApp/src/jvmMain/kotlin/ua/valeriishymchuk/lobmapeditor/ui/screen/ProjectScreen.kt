@@ -1,6 +1,5 @@
 package ua.valeriishymchuk.lobmapeditor.ui.screen
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,35 +12,23 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.jogamp.opengl.awt.GLCanvas
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.jetbrains.jewel.ui.component.*
-import org.jetbrains.jewel.ui.icons.AllIconsKeys
-import org.jetbrains.jewel.window.TitleBarScope
-import org.kodein.di.DI
 import org.kodein.di.bindProvider
 import org.kodein.di.compose.rememberInstance
 import org.kodein.di.compose.subDI
-import org.kodein.di.compose.withDI
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.services.ErrorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
-import ua.valeriishymchuk.lobmapeditor.services.ToastService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.HybridEditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.setupProjectScopeDiModule
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
 import ua.valeriishymchuk.lobmapeditor.ui.JoglCanvas
-import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolConfig
 import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolDock
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.PropertyDock
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.unit.UnitsConfigDock
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.objects.PropertyDock
+import ua.valeriishymchuk.lobmapeditor.ui.component.project.objects.SelectionDock
 import ua.valeriishymchuk.lobmapeditor.ui.screen.project.ProjectTitleScreenProvider
-import java.awt.Desktop
 import java.io.File
 
 class ProjectScreen(
@@ -128,7 +115,8 @@ class ProjectScreen(
             },
             second = {
 //                UnitsConfigDock()
-                PropertyDock()
+//                PropertyDock()
+                SelectionDock()
             },
             state = rememberSplitLayoutState(0.45f),
             firstPaneMinWidth = 200.dp,

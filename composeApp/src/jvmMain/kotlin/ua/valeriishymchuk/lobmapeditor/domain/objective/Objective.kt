@@ -9,6 +9,8 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.NameProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.ObjectiveProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
@@ -18,20 +20,39 @@ import kotlin.reflect.KClass
 
 data class Objective(
     // depends on scenario type can be either player or player team
-    val owner: Int?,
-    val name: String?,
+    override val owner: Int?,
+    override val name: String?,
     override val position: Position,
-    val type: ObjectiveType,
-    val victoryPoints: Int
-): PositionProperty<Objective> {
+    override val type: ObjectiveType,
+    override val victoryPoints: Int
+): PositionProperty<Objective>, NameProperty<Objective>, ObjectiveProperty<Objective> {
 
     override val rotation: Float? = null
     override fun withPosition(pos: Position): Objective {
         return copy(position = pos)
     }
 
+    override fun withOwner(owner: Int?): Objective {
+        return copy(owner = owner)
+    }
+
+    override fun withType(type: ObjectiveType): Objective {
+        return copy(type = type)
+    }
+
+    override fun withVictoryPoints(victoryPoints: Int): Objective {
+        return copy(victoryPoints = victoryPoints)
+    }
+
+    override val identification: String = "${name ?: type.name}. Objective"
+
+
     override fun withRotation(rotation: Float): Objective {
         throw IllegalStateException("Rotation is not supported")
+    }
+
+    override fun withName(name: String?): Objective {
+        return copy(name = name)
     }
 
     override val hitboxDimensions: Vector2f = Vector2f(

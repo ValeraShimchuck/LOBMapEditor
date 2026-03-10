@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.ui.component.project.unit
+package ua.valeriishymchuk.lobmapeditor.ui.component.project.objects
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
-import com.jogamp.opengl.awt.GLCanvas
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.Checkbox
@@ -32,61 +31,68 @@ import org.jetbrains.jewel.ui.component.VerticallyScrollableContainer
 import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.joml.Vector2f
 import org.kodein.di.compose.rememberInstance
-import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.PresetEditorService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
+import ua.valeriishymchuk.lobmapeditor.shared.utils.StringSimilarityUtils
 import ua.valeriishymchuk.lobmapeditor.ui.component.DockContainer
-import ua.valeriishymchuk.lobmapeditor.ui.component.project.objective.ObjectivePropertiesConfig
+import kotlin.collections.plus
 import kotlin.getValue
+
+
 
 @OptIn(ExperimentalJewelApi::class)
 @Composable
-@Deprecated("Legacy, DomainProperty API is modern ")
-fun UnitsConfigDock() {
+fun SelectionDock() {
+
     val diEditorService by rememberInstance<EditorService<*>>()
-    val editorService = diEditorService as? PresetEditorService ?: return
+    val editorService = diEditorService
 
-    val scenario by editorService.scenario.collectAsState()
-
-    val canvas by rememberInstance<GLCanvas>()
+    val scenarioNullable by editorService.scenario.collectAsState()
+    val scenario = scenarioNullable ?: return
 
     DockContainer(
         startComponent = {
             Row(it) {
                 Icon(AllIconsKeys.Nodes.Editorconfig, null)
                 Spacer(Modifier.width(4.dp))
-                Text("Units configuration")
+                Text("Objects configuration")
             }
         },
-        endComponent = {
-            Row(it.widthIn(min = 140.dp, max = 300.dp).wrapContentWidth()) {
-
-                val selectedUnits by editorService.selectedUnits.collectAsState()
+        endComponent = { modifier ->
+            Row(modifier.widthIn(min = 140.dp, max = 300.dp).wrapContentWidth()) {
+                val selectedObjects by editorService.selectedObjects.collectAsState()
                 val filterText = remember { TextFieldState() }
 
 
-                val filteredUnits = remember(filterText.text, scenario) {
-                    scenario!!.units.filter { unit ->
-                        filterText.text.split(Regex(" ")).any { part ->
-                            unit.type.name.contains(part, ignoreCase = true) ||
-                                    (unit.name?.contains(part, ignoreCase = true) ?: false)
-                        }
+
+                val filteredObjects = remember(filterText.text, scenario) {
+
+                    val allObjects = editorService.getAllObjects()
+                    val candidates = allObjects.map {
+                        ref ->
+                        val value = ref.dereference(scenario).identification
+                        ref to (value to StringSimilarityUtils.jaroDistance(
+                            value.lowercase(),
+                            filterText.text.toString().lowercase()
+                        ))
                     }
+                    val sortedCandidates = candidates
+                        .filter { (_, value) -> value.second > 0.3 }
+                        .sortedBy { (_, value) -> 1.0 - value.second }
+//                        .reversed()
+                    if (sortedCandidates.isEmpty()) return@remember candidates
+                    sortedCandidates
                 }
 
-
-//                val labelText = currentSelectedUnits.joinToString(", ") { it.name ?: it.type.name }
-
+                val filteredObjectRefs = filteredObjects.map { pair -> pair.first }.toSet()
 
                 EditableComboBox(
                     filterText,
-
-
                     popupModifier = Modifier,
-
                 ) {
                     VerticallyScrollableContainer(
                         Modifier.heightIn( max= 350.dp)
@@ -94,7 +100,7 @@ fun UnitsConfigDock() {
 
                         Column(Modifier.padding(end = 8.dp)) {
 
-                            if ( filteredUnits.isEmpty() ) {
+                            if (filteredObjects.isEmpty() ) {
                                 Column(
                                     verticalArrangement = Arrangement.Center,
                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -110,11 +116,11 @@ fun UnitsConfigDock() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(2.dp)
                             ) {
-                                val map = selectedUnits.map { it.getValue(scenario!!.units::get) }
+                                val map = selectedObjects
 
                                 val state = when {
-                                    map.toSet() == filteredUnits.toSet() -> ToggleableState.On
-                                    map.toSet().intersect(filteredUnits.toSet())
+                                    map.toSet() == filteredObjectRefs -> ToggleableState.On
+                                    map.toSet().intersect(filteredObjectRefs)
                                         .isNotEmpty() -> ToggleableState.Indeterminate
 
                                     else -> ToggleableState.Off
@@ -125,14 +131,9 @@ fun UnitsConfigDock() {
                                     onClick = {
                                         when (state) {
                                             ToggleableState.Off, ToggleableState.Indeterminate ->
-                                                editorService.selectedUnits.value += filteredUnits.map {
-                                                    Reference<Int, GameUnit>(
-                                                        scenario!!.units.indexOf(it)
-                                                    )
-                                                }
+                                                editorService.selectedObjects.value += filteredObjectRefs
 
-                                            ToggleableState.On -> editorService.selectedUnits.value =
-                                                setOf()
+                                            ToggleableState.On -> editorService.selectedObjects.value = setOf()
                                         }
 
                                     }
@@ -144,65 +145,55 @@ fun UnitsConfigDock() {
                                     IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
 
                                         editorService.cameraPosition =
-                                            selectedUnits.map { it.getValue(scenario!!.units::get).position.toVector2f() }
-                                                .let {
-                                                    it.fold(Vector2f()) { sum, vector ->
+                                            selectedObjects.mapNotNull { ref ->
+                                                (ref.dereference(scenario) as? PositionProperty)?.position?.toVector2f()
+                                            }.let { collection ->
+                                                if (collection.isEmpty()) return@let editorService.cameraPosition
+                                                collection.fold(Vector2f()) { sum, vector ->
                                                         sum.add(vector)
-                                                    }.div(it.size.toFloat())
-                                                }.also { println("${it.x} ${it.y}")}
+                                                    }.div(collection.size.toFloat())
+                                                }
 
                                     })
 
                                     IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
-                                        editorService.deleteUnits(selectedUnits.toSet())
+                                        editorService.deleteObjects(selectedObjects)
                                     })
 
                                 }
                             }
 
-                            filteredUnits.forEach { unit ->
+                            filteredObjects.forEach { (ref, pair) ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     modifier = Modifier.padding(2.dp)
                                 ) {
+                                    val obj = ref.dereference(scenario)
+                                    val position = (obj as? PositionProperty)?.position
                                     Checkbox(
-                                        selectedUnits.map { it.getValue(scenario!!.units::get) }.contains(unit),
+                                        selectedObjects.contains(ref),
                                         onCheckedChange = {
-                                            if (it) editorService.selectedUnits.value += Reference<Int, GameUnit>(
-                                                scenario!!.units.indexOf(unit)
-                                            )
-                                            else editorService.selectedUnits.value =
-                                                editorService.selectedUnits.value.filter {
-                                                    it.getValue(scenario!!.units::get) != unit
-                                                }.toSet()
+                                            if (it) editorService.selectedObjects.value += ref
+                                            else editorService.selectedObjects.value -= ref
 
                                         }
                                     )
-                                    Text(unit.type.name, Modifier.weight(1f))
-                                    Text(unit.name ?: "", Modifier.weight(1f))
+                                    Text(pair.first, Modifier.weight(1f))
+
                                     Row {
-                                        IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
-                                            editorService.cameraPosition = Vector2f(
-                                                unit.position.x,
-                                                unit.position.y
-                                            )
-                                        })
-                                        IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
-                                            editorService.selectedUnits.value =
-                                                editorService.selectedUnits.value.filter {
-                                                    it.getValue(scenario!!.units::get) != unit
-                                                }.toSet()
-
-                                            editorService.deleteUnits(
-                                                setOf(
-                                                    Reference(
-                                                        scenario!!.units.indexOf(unit)
-                                                    )
+                                        position?.let { position ->
+                                            IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
+                                                editorService.cameraPosition = Vector2f(
+                                                    position.x,
+                                                    position.y
                                                 )
-                                            )
+                                            })
+                                        }
 
-
+                                        IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
+                                            editorService.selectedObjects.value -= ref
+                                            editorService.deleteObjects(setOf(ref))
                                         })
 
                                     }
@@ -211,13 +202,11 @@ fun UnitsConfigDock() {
                         }
                     }
                 }
-
-
             }
         },
         content = {
-            UnitsPropertiesConfig()
-            ObjectivePropertiesConfig()
+            PropertyDock()
         }
     )
+
 }

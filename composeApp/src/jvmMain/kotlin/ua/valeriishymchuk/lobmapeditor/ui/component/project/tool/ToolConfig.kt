@@ -1564,8 +1564,7 @@ private fun PlayerToolConfig() {
             return@mapNotNull objective.copy(owner = newIndex)
         }
 
-        editorService.selectedUnits.value = mutableSetOf()
-        editorService.selectedObjectives.value = null
+        editorService.selectedObjects.value = setOf()
 
         val command = ComposedCommand(
             listOf(
@@ -2669,10 +2668,7 @@ private fun ReferenceOverlayToolConfig() {
             hideSprites,
             onCheckedChange = {
                 toolService.refenceOverlayTool.hideSprites.value = it
-                (editorService as? PresetEditorService)?.let { presetEditorService ->
-                    presetEditorService.selectedUnits.value = emptySet()
-                }
-                editorService.selectedObjectives.value = null
+                editorService.selectedObjects.value = emptySet()
             }
         )
         Spacer(Modifier.width(4.dp))

@@ -11,7 +11,6 @@ class HybridEditorService(di: DI) : EditorService<GameScenario.Hybrid>(di) {
             undoStack.clear()
             redoStack.clear()
             composedCommands.clear()
-            selectedObjectives.value = null
             this.scenario.value = scenario
             openglUpdateState.value++
             println("Importing project ${openglUpdateState.value}")

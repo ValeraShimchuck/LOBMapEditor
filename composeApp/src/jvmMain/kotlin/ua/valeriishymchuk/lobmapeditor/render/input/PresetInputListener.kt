@@ -15,14 +15,4 @@ class PresetInputListener(di: DI) : InputListener<GameScenario.Preset>(di) {
 
     val scenario: GameScenario.Preset get() = editorService.scenario.value!!
 
-    override fun getAllObjects(): List<ScenarioReference> {
-        val superList = super.getAllObjects()
-        return superList.toMutableList().apply {
-            addAll(scenario.units.indices.map {
-                GameUnit.ScenarioUnitReference(it)
-            })
-        }
-    }
-
-
 }

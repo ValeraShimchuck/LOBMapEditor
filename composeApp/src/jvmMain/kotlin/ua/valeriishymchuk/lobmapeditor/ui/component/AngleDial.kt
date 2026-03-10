@@ -19,9 +19,10 @@ fun AngleDial(
     color: Color = Color.Red,
     modifier: Modifier = Modifier,
 ) {
+
     Canvas(
         modifier = modifier
-            .aspectRatio(1f) // квадратне поле
+            .aspectRatio(1f)
             .padding(16.dp)
     ) {
         val radius = size.minDimension / 2

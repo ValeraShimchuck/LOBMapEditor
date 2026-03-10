@@ -5,6 +5,7 @@ import org.kodein.di.DI
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import kotlin.collections.getValue
@@ -14,21 +15,27 @@ class PresetEditorService(
     di: DI,
 ): EditorService<GameScenario.Preset>(di) {
 
-    @Deprecated("use selectedObjects", level = DeprecationLevel.WARNING)
-    val selectedUnits: MutableStateFlow<Set<Reference<Int, GameUnit>>> = MutableStateFlow(setOf())
 
     override fun importScenario(scenario: GameScenario.Preset) {
         lock {
             undoStack.clear()
             redoStack.clear()
             composedCommands.clear()
-            selectedObjectives.value = null
-            selectedUnits.value = setOf()
+            selectedObjects.value = setOf()
             this.scenario.value = scenario
             openglUpdateState.value++
             println("Importing project ${openglUpdateState.value}")
             savingJob = null
             save(true)
+        }
+    }
+
+    override fun getAllObjects(): Set<ScenarioReference> {
+        val superList = super.getAllObjects()
+        return superList.toMutableSet().apply {
+            addAll(scenario.value!!.units.indices.map {
+                GameUnit.ScenarioUnitReference(it)
+            })
         }
     }
 
@@ -38,20 +45,6 @@ class PresetEditorService(
 
     override fun convertCommonCommand(command: Command.CommonData): Command<GameScenario.Preset> {
         return command.asPreset()
-    }
-
-
-    fun deleteUnits(map: Set<Reference<Int, GameUnit>>) {
-        selectedUnits.value -= map
-        val oldSelectedUnits = selectedUnits.value.map { it.getValue(scenario.value!!.units::get) }
-        val oldList = scenario.value!!.units
-        val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
-        execute(UpdateGameUnitListCommand(oldList, newList))
-        val newSelectedList = scenario.value!!.units.mapIndexedNotNull { index, unit ->
-            if (oldSelectedUnits.contains(unit)) return@mapIndexedNotNull Reference<Int, GameUnit>(index)
-            null
-        }
-        selectedUnits.value = newSelectedList.toSet()
     }
 
 }

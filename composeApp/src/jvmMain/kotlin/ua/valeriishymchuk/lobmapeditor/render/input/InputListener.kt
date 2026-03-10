@@ -389,10 +389,7 @@ abstract class InputListener<S: GameScenario<S>>(
     }
 
     open fun getAllObjects(): List<ScenarioReference> {
-        // TODO add other objects, such as objectives and objectives/units from triggers
-        return scenario.objectives.indices.map {
-            Objective.ScenarioObjectiveReference(it)
-        }
+        return editorService.getAllObjects().toList()
     }
 
     fun getAllObjectsWithPosition(): List<Pair<ScenarioReference, PositionProperty<*>>> {
@@ -417,7 +414,6 @@ abstract class InputListener<S: GameScenario<S>>(
 
     protected fun checkStartOfSelection(e: MouseEvent) {
         if (e.button != MouseEvent.BUTTON1) return
-        println("Trying to select pass1")
         if (toolService.refenceOverlayTool.hideSprites.value) {
             editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
             editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
@@ -425,11 +421,9 @@ abstract class InputListener<S: GameScenario<S>>(
             return
         }
 
-        println("Trying to select pass2")
 
         if (onStartOfSelection(e)) return
 
-        println("Trying to select pass3")
         editorService.selectionStart = editorService.fromScreenToNDC(e.x, e.y)
         editorService.selectionEnd = editorService.fromScreenToNDC(e.x, e.y)
         isSelectionDragging = true

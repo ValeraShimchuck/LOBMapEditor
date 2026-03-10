@@ -50,10 +50,15 @@ sealed class EditorService<T : GameScenario<T>>(
     var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
-    @Deprecated("use selectedObjects", level = DeprecationLevel.WARNING)
-    var selectedObjectives: MutableStateFlow<Reference<Int, Objective>?> = MutableStateFlow(null) // old
 
     var selectedObjects: MutableStateFlow<Set<ScenarioReference>> = MutableStateFlow(emptySet())
+
+    open fun getAllObjects(): Set<ScenarioReference> {
+        // TODO add other objects, such as objectives and objectives/units from triggers
+        return scenario.value!!.objectives.indices.map {
+            Objective.ScenarioObjectiveReference(it)
+        }.toSet()
+    }
 
     var lastSave: Long = 0
         protected set
@@ -330,21 +335,6 @@ sealed class EditorService<T : GameScenario<T>>(
         val tileY = (clampedY / GameConstants.TILE_SIZE).toInt()
 
         return Vector2i(tileX, tileY)
-    }
-
-    fun deleteObjectives(map: Set<Reference<Int, Objective>>) {
-        if (map.contains(selectedObjectives.value)) selectedObjectives.value = null
-        val oldSelectedObjectives = selectedObjectives.value.let { reference ->
-            listOf(reference).mapNotNull { it }
-        }.map { it.getValue(scenario.value!!.objectives::get) }
-        val oldList = scenario.value!!.objectives
-        val newList = oldList.filterIndexed { index, _ -> !map.contains(Reference(index)) }
-        execute(UpdateObjectiveListCommand(oldList, newList))
-        val newSelectedList = scenario.value!!.objectives.mapIndexedNotNull { index, objective ->
-            if (oldSelectedObjectives.contains(objective)) return@mapIndexedNotNull Reference<Int, Objective>(index)
-            null
-        }
-        selectedObjectives.value = newSelectedList.firstOrNull()
     }
 
 }

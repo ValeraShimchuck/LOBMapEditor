@@ -61,11 +61,6 @@ class HybridEditorRenderer(di: DI) : EditorRenderer<GameScenario.Hybrid, HybridR
             editorService.viewMatrix,
             editorService.projectionMatrix,
             hybridEditorService.scenario.value!!,
-            editorService.selectedObjectives.value?.let {
-                listOf(it).mapNotNull { reference ->
-                    reference.getValueOrNull(editorService.scenario.value!!.objectives::getOrNull)
-                }
-            } ?: emptyList(),
             editorService.selectedObjects.value.map { it.dereference(editorService.scenario.value!!) },
             RenderContext.SelectionContext(
                 editorService.selectionEnabled,

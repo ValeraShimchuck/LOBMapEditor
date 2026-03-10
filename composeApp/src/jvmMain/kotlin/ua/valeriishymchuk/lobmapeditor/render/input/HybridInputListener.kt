@@ -154,7 +154,7 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
         val zone = getClickedZone(e)
         val shiftOrControl = isShiftPressed || isCtrlPressed
         if (zone != null && !shiftOrControl) {
-            editorService.selectedObjectives.value = null
+            editorService.selectedObjects.value = setOf()
             shouldDragSelectedObjects = true
             lastDragPosition = editorService.fromScreenToWorldSpace(e.x, e.y)
             val reference = Reference<Int, DeploymentZone>(
@@ -201,7 +201,7 @@ class HybridInputListener(di: DI) : InputListener<GameScenario.Hybrid>(di) {
                 hybridEditorService.scenario.value!!.deploymentZones.indexOf(zone).checkValidIndex()
             )
         }
-        if (selectedZoneReference != null) editorService.selectedObjectives.value = null
+        if (selectedZoneReference != null) editorService.selectedObjects.value = setOf()
         hybridToolService.deploymentZoneTool.selected.value = selectedZoneReference
     }
 

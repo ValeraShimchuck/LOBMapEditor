@@ -8,29 +8,67 @@ import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.Position
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.NameProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.UnitProperty
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import kotlin.reflect.KClass
 
 data class GameUnit(
-    val name: String?,
-    val owner: Reference<Int, Player>, // AKA player
+    override val name: String?,
+    override val owner: Reference<Int, Player>, // AKA player
     override val position: Position,
     override val rotation: Float,
-    val type: GameUnitType,
-    val status: UnitStatus,
-    val formation: UnitFormation?,
-    val health: Int,
-    val organization: Int,
-    val stamina: Int?
+    override val type: GameUnitType,
+    override val status: UnitStatus,
+    override val formation: UnitFormation?,
+    override val health: Int,
+    override val organization: Int,
+    override val stamina: Int?
 
-): PositionProperty<GameUnit> {
+): PositionProperty<GameUnit>, NameProperty<GameUnit>, UnitProperty<GameUnit> {
 
     override val hitboxDimensions: Vector2f get() {
         val formation = formation ?: return UNIT_DIMENSIONS
         return formation.dimensions
+    }
+
+
+    override val identification: String = "${name ?: type.name}. Unit"
+
+    override fun withFormation(formation: UnitFormation?): GameUnit {
+        return copy(formation = formation)
+    }
+
+    override fun withHealth(health: Int): GameUnit {
+        return copy(health = health)
+    }
+
+    override fun withOrganization(organization: Int): GameUnit {
+        return copy(organization = organization)
+    }
+
+    override fun withOwner(owner: Reference<Int, Player>): GameUnit {
+        return copy(owner = owner)
+    }
+
+    override fun withStamina(stamina: Int?): GameUnit {
+        return copy(stamina = stamina)
+    }
+
+    override fun withStatus(status: UnitStatus): GameUnit {
+        return copy(status = status)
+    }
+
+    override fun withType(type: GameUnitType): GameUnit {
+        return copy(type = type)
+    }
+
+    override fun withName(name: String?): GameUnit {
+        return copy(name = name)
     }
 
     fun serialize(): JsonObject {

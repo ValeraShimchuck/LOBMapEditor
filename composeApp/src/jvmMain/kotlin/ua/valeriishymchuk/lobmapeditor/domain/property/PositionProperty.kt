@@ -1,23 +1,16 @@
 package ua.valeriishymchuk.lobmapeditor.domain.property
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
+import org.jetbrains.jewel.ui.component.Slider
 import org.jetbrains.jewel.ui.component.Text
 import org.jetbrains.jewel.ui.component.TextField
 import org.joml.Vector2f
@@ -25,10 +18,9 @@ import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
-import kotlin.getValue
-import kotlin.text.ifEmpty
+import ua.valeriishymchuk.lobmapeditor.ui.component.AngleDial
 
-interface PositionProperty<SELF: PositionProperty<SELF>> : DomainProperty<SELF> {
+interface PositionProperty<SELF : PositionProperty<SELF>> : DomainProperty<SELF> {
 
     val position: Position
     val hitboxDimensions: Vector2f
@@ -61,6 +53,7 @@ interface PositionProperty<SELF: PositionProperty<SELF>> : DomainProperty<SELF> 
 
             val isXPositionMixed by derivedStateOf { selectedObjects.map { it.position.x }.distinct().size > 1 }
             val isYPositionMixed by derivedStateOf { selectedObjects.map { it.position.y }.distinct().size > 1 }
+
 
             var xPositionTextFieldValue by remember {
                 mutableStateOf(
@@ -116,9 +109,11 @@ interface PositionProperty<SELF: PositionProperty<SELF>> : DomainProperty<SELF> 
                 }
             }
 
+            Spacer(Modifier.height(10.dp))
+            Text("Position:")
+            // position
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("Position")
-                Spacer(Modifier.width(10.dp))
+
                 TextField(
                     value = xPositionTextFieldValue,
                     onValueChange = { newValue ->
@@ -193,7 +188,114 @@ interface PositionProperty<SELF: PositionProperty<SELF>> : DomainProperty<SELF> 
                 )
             }
 
+            if (!selectedObjects.all { it.rotation != null }) return
+
+            val isRotationMixed by derivedStateOf { selectedObjects.map { it.rotation }.distinct().size > 1 }
+
+            var rotationTextFieldValue by remember {
+                mutableStateOf(
+                    Unit.let {
+
+                        val currentText = when {
+                            selectedObjects.isEmpty() -> ""
+                            isRotationMixed -> ""
+                            else -> selectedObjects.map {
+                                org.joml.Math.toDegrees(it.rotation!!)
+                            }.distinct().firstOrNull()?.toString() ?: ""
+                        }
+
+                        TextFieldValue(
+                            text = currentText,
+                            selection = TextRange(currentText.length) // Or calculate appropriate position
+                        )
+                    }
+                )
+            }
+
+            LaunchedEffect(selectedObjectsReferences) {
+
+                val textValue = rotationTextFieldValue.text.toFloatOrNull()
+                val rotation = selectedObjects.map {
+                    org.joml.Math.toDegrees(it.rotation!!)
+                }.distinct().firstOrNull()
+                if (textValue != rotation || (textValue != null && isRotationMixed)) {
+                    val finalValue: String = if (rotation != null && !isRotationMixed) rotation.toString()
+                    else ""
+                    rotationTextFieldValue = rotationTextFieldValue.copy(text = finalValue)
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Text("Rotation:")
+            AngleDial(
+                org.joml.Math.toRadians(rotationTextFieldValue.text.toFloatOrNull() ?: 0f),
+                color = Color(230, 230, 230),
+                modifier = Modifier.size(100.dp)
+            )
+
+            if (isRotationMixed) {
+                Spacer(Modifier.height(4.dp))
+                Text("Mixed")
+                Spacer(Modifier.height(4.dp))
+            }
+
+            TextField(
+                value = rotationTextFieldValue,
+                onValueChange = { newValue ->
+                    // Simply update the state with the complete new value
+                    rotationTextFieldValue = newValue
+                    rotationTextFieldValue = rotationTextFieldValue.copy(
+                        text = newValue.text
+                            .replace(Regex("[^0-9.]"), "").let { str ->
+                                val value = str.toFloatOrNull() ?: return@let str
+                                val coercedValue = value.coerceIn(0f, 359f)
+                                if (coercedValue == value) return@let str
+                                coercedValue.toString()
+                            }
+                    )
+
+
+                    val finalText: Float = org.joml.Math.toRadians(
+                        rotationTextFieldValue.text.ifEmpty { "0" }.toFloatOrNull() ?: 0f
+                    )
+
+                    onUpdate {
+                        it.withRotation(finalText)
+                    }
+                },
+                modifier = Modifier.onFocusChanged { focus ->
+                    if (!focus.isFocused) {
+                        onFlush()
+                    }
+                },
+                placeholder = { Text(if (isRotationMixed) "Mixed" else "0") },
+
+                )
+
+            Slider(
+                value = org.joml.Math.toRadians(rotationTextFieldValue.text.toFloatOrNull() ?: 0f),
+                onValueChange = { newRotation ->
+
+                    rotationTextFieldValue = rotationTextFieldValue.copy(
+                        text = org.joml.Math.toDegrees(newRotation).coerceIn(0f, 359f).toString()
+                    )
+
+                    onUpdate {
+                        it.withRotation(org.joml.Math.toRadians(rotationTextFieldValue.text.ifEmpty { "0" }
+                            .toFloatOrNull() ?: 0f))
+                    }
+                },
+                valueRange = 0f..(2 * Math.PI).toFloat(),
+                modifier = Modifier.fillMaxWidth().onFocusChanged {
+                    if (!it.isFocused) {
+                        onFlush()
+                    }
+                }
+            )
         }
+
+
     }
 
 }
