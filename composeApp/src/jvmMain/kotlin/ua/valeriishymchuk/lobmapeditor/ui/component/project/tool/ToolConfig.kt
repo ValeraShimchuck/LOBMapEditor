@@ -121,6 +121,13 @@ fun ToolConfig(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TriggerToolConfig() {
+
+    // TODO
+    // Add additional warning messages if objective with certain name wasn't found
+    // make actions:
+    // make objects created by actions visible in editor and be treated as units(make visual difference)
+    // think of improving actions(adding ability to directly order)
+
     val toolService by rememberInstance<ToolService<*>>()
     val editorService by rememberInstance<EditorService<*>>()
     val scenarioNullable by editorService.scenario.collectAsState()
@@ -135,9 +142,6 @@ private fun TriggerToolConfig() {
         }
         trigger
     }
-    val currentTriggerPopupManager = remember { PopupManager() }
-
-
 
     Text("Current Trigger")
     DropDownNullable(
@@ -151,7 +155,29 @@ private fun TriggerToolConfig() {
         }
     )
 
-    if (currentTrigger == null) return
+    @Composable
+    fun funEnding() {
+        DefaultButton(
+            onClick = {
+                val oldList = scenario.triggers
+                val newList = oldList.toMutableList()
+                newList.add(GameTrigger.DEFAULT)
+                val lastIndex = newList.lastIndex
+                editorService.execute(UpdateGameTriggerListCommand(
+                    oldList,
+                    newList
+                ))
+                tool.currentTrigger.value = Reference(lastIndex)
+            },
+        ) {
+            Text("Add new Trigger")
+        }
+    }
+
+    if (currentTrigger == null) {
+        funEnding()
+        return
+    }
 
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger) {
         val reference = currentTriggerReference!!
@@ -174,7 +200,7 @@ private fun TriggerToolConfig() {
     Text("Triggers settings:")
     Spacer(Modifier.height(5.dp))
     // event
-    Row {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Event:")
         Spacer(Modifier.height(5.dp))
 
@@ -197,7 +223,7 @@ private fun TriggerToolConfig() {
     Spacer(Modifier.height(5.dp))
 
     // Condition Logic
-    Row {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Condition Logic:")
         Spacer(Modifier.height(5.dp))
 
@@ -217,9 +243,9 @@ private fun TriggerToolConfig() {
         )
     }
 
-    Spacer(Modifier.height(5.dp))
-    Text("Conditions:")
     Spacer(Modifier.height(10.dp))
+    Text("Conditions:")
+    Spacer(Modifier.height(5.dp))
 
     currentTrigger.conditions.withIndex().forEach { item ->
         val condition: Condition = item.value
@@ -241,12 +267,14 @@ private fun TriggerToolConfig() {
             }
         }
 
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(5.dp))
+
 
         DropDown(
             condition.enumRepresentation,
             Condition.ConditionEnum.entries,
             { _, value ->
+                println("Value: ${value.displayName}")
                 value.displayName
             },
             { _, value ->
@@ -758,7 +786,8 @@ private fun TriggerToolConfig() {
 
     }
 
-    Spacer(Modifier.height(20.dp))
+    Spacer(Modifier.height(5.dp))
+
 
     DefaultButton(
         onClick = {
@@ -774,13 +803,68 @@ private fun TriggerToolConfig() {
         Text("Add new condition")
     }
 
-    Spacer(Modifier.height(20.dp))
+
+    Spacer(Modifier.height(10.dp))
+
+
     Text("Actions:")
 
     currentTrigger.actions.forEachIndexed { actionIndex, action ->
         action // TODO continue
     }
 
+    Row {
+
+        funEnding()
+
+        Spacer(Modifier.width(10.dp))
+
+        DefaultButton(
+            style = JewelTheme.defaultButtonStyle.let { style ->
+                val color = Color(196, 27, 27, 255)
+                val color2 = Color(182, 25, 25, 255)
+                val color3 = Color(165, 21, 21, 255)
+                ButtonStyle(
+                    colors = ButtonColors(
+//                        style.colors.background,
+                        Brush.linearGradient(listOf(color, color)),
+                        style.colors.backgroundDisabled,
+                        Brush.linearGradient(listOf(color, color)),
+                        Brush.linearGradient(listOf(color3, color3)),
+                        Brush.linearGradient(listOf(color2, color2)),
+                        style.colors.content,
+                        style.colors.contentDisabled,
+                        style.colors.contentFocused,
+                        style.colors.contentPressed,
+                        style.colors.contentHovered,
+                        style.colors.border,
+                        style.colors.borderDisabled,
+                        style.colors.borderFocused,
+                        style.colors.borderPressed,
+                        style.colors.borderHovered
+                    ),
+                    metrics = style.metrics,
+                    focusOutlineAlignment = style.focusOutlineAlignment
+                )
+            },
+            onClick = {
+                val list = scenario.triggers
+                val newList = list.filterIndexed { idx, _ ->
+                    currentTriggerReference!!.key != idx
+                }
+
+                editorService.execute(UpdateGameTriggerListCommand(
+                    list,
+                    newList
+                ))
+
+                tool.currentTrigger.value = null
+            },
+        ) {
+            Text("Delete Trigger" )
+        }
+
+    }
 
 }
 

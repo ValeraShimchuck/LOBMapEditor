@@ -56,6 +56,15 @@ data class GameTrigger(
     }
 
     companion object {
+
+        val DEFAULT = GameTrigger(
+            emptyList(),
+            emptyList(),
+            EventTriggerType.ON_TURN_START,
+            ConditionLogicType.AND,
+            true
+        )
+
         fun deserialize(json: JsonObject): GameTrigger {
             val actionsArray = json.getAsJsonArray("actions")
             val actions = actionsArray.map {

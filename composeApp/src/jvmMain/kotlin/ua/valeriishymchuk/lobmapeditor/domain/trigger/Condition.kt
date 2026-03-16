@@ -19,20 +19,22 @@ sealed interface Condition {
     }
 
     enum class ConditionEnum(
-        val default: Condition,
+        private val defaultLazy: () -> Condition,
         val displayName: String
     ) {
 
-        IS_TURN(IsTurn(2), "Is Turn"),
-        IS_TURN_MULTIPLE_OF(IsTurnMultipleOf(2,0), "Is Turn Multiple Of"),
-        IS_TURN_GREATER_THAN(IsTurnGreaterThan(2), "Is Turn Greater Than"),
-        IS_TURN_LESS_THAN(IsTurnLessThan(2), "Is Turn Less Than"),
-        OBJECTIVE_BELONGS_TO(ObjectiveBelongsTo("OBJECTIVE_NAME", PlayerTeam.BLUE, null), "Objective Belongs To"),
-        IS_UNIT_NOT_ALIVE(IsUnitNotAlive("UNIT_NAME"), "Is Unit Not Alive"),
-        IS_UNIT_ROUTING(IsUnitRouting("UNIT_NAME"), "Is Unit Routing"),
-        UNIT_MOVED_THIS_TURN(UnitMovedThisTurn("UNIT_NAME"), "Unit Moved This Turn"),
-        CHANCE(Chance(50f), "Chance"),
-        IS_VAR(IsVar("VAR_NAME", 1f, null), "Is Var")
+        IS_TURN({ IsTurn(2) }, "Is Turn"),
+        IS_TURN_MULTIPLE_OF({ IsTurnMultipleOf(2, 0) }, "Is Turn Multiple Of"),
+        IS_TURN_GREATER_THAN({ IsTurnGreaterThan(2) }, "Is Turn Greater Than"),
+        IS_TURN_LESS_THAN({ IsTurnLessThan(2) }, "Is Turn Less Than"),
+        OBJECTIVE_BELONGS_TO({ ObjectiveBelongsTo("OBJECTIVE_NAME", PlayerTeam.BLUE, null) }, "Objective Belongs To"),
+        IS_UNIT_NOT_ALIVE({ IsUnitNotAlive("UNIT_NAME") }, "Is Unit Not Alive"),
+        IS_UNIT_ROUTING({ IsUnitRouting("UNIT_NAME") }, "Is Unit Routing"),
+        UNIT_MOVED_THIS_TURN({ UnitMovedThisTurn("UNIT_NAME") }, "Unit Moved This Turn"),
+        CHANCE({ Chance(50f) }, "Chance"),
+        IS_VAR({ IsVar("VAR_NAME", 1f, null) }, "Is Var");
+
+        val default by lazy { defaultLazy() }
 
 
     }

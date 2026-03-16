@@ -66,7 +66,7 @@ fun <T> DropDownNullable(
         ).flatten(),
         { idx, value ->
             if (value == null) "None"
-            else elementText(idx, value)
+            else elementText(idx?.minus(1), value)
         },
         { idx, value ->
             onClick(idx - 1, value)
