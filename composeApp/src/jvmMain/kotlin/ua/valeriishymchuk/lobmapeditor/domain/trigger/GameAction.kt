@@ -25,55 +25,54 @@ sealed interface GameAction {
 
     enum class ActionEnum(
         val key: String,
-        val default: GameAction
+        defaultGetter: () -> GameAction
     ) {
-        ADD_UNIT("addUnit", AddUnit(
-            listOf(
-                GameUnit(
-                    null,
-                    Reference(1),
-                    Position(500f, 500f),
-                    0f,
-                    GameUnitType.LINE_INFANTRY,
-                    UnitStatus.STANDING,
-                    null,
-                    GameUnitType.LINE_INFANTRY.defaultHealth,
-                    GameUnitType.LINE_INFANTRY.defaultOrganization,
-                    GameUnitType.LINE_INFANTRY.defaultStamina
+        ADD_UNIT("addUnit", {
+            AddUnit(
+                listOf(
+                    GameUnit.DEFAULT
                 )
             )
-        )),
-        REMOVE_UNIT("removeUnit", RemoveUnit(
-            listOf("UNIT_NAME1", "UNIT_NAME2")
-        )),
-        ADD_TRIGGER("addTrigger", AddTrigger(emptyList())),
-        SHOW_MESSAGE("showMessage", ShowMessage("TITLE", "MESSAGE")),
-        DEFEAT_PLAYER("defeatPlayer", DefeatPlayer(Reference(1))),
-        MOVE_CAMERA("moveCamera", MoveCamera(Position(0f, 0f), 1f, 2f)),
-        SPAWN_NEUTRAL_OBJECTIVES("spawnNeutralObjectives", SpawnNeutralObjectives(
-            0.25f,
-            mapOf(
-                BattleType.CLASH to 1,
-                BattleType.COMBAT to 2,
-                BattleType.BATTLE to 3,
-                BattleType.GRAND_BATTLE to 3
-            ),
-            0.1f,
-            0.9f,
-            0.1f,
-            0.9f,
-            null
-        )),
-        SET_VAR("setVar", SetVar("VAR_NAME", 1f)),
-        END_GAME("endGame", EndGame(GameEndReason.VICTORY)),
-        ORDER_UNIT("orderUnit", OrderUnit(
-            OrderType.WALK,
-            "UNIT_NAME",
-            "TARGET_UNIT_NAME",
-            null,
-            null,
-            null
-        ));
+        }),
+        REMOVE_UNIT("removeUnit", {
+            RemoveUnit(
+                listOf("UNIT_NAME1", "UNIT_NAME2")
+            )
+        }),
+        ADD_TRIGGER("addTrigger", { AddTrigger(emptyList()) }),
+        SHOW_MESSAGE("showMessage", { ShowMessage("TITLE", "MESSAGE") }),
+        DEFEAT_PLAYER("defeatPlayer", { DefeatPlayer(Reference(1)) }),
+        MOVE_CAMERA("moveCamera", { MoveCamera(Position(0f, 0f), 1f, 2f) }),
+        SPAWN_NEUTRAL_OBJECTIVES("spawnNeutralObjectives", {
+            SpawnNeutralObjectives(
+                0.25f,
+                mapOf(
+                    BattleType.CLASH to 1,
+                    BattleType.COMBAT to 2,
+                    BattleType.BATTLE to 3,
+                    BattleType.GRAND_BATTLE to 3
+                ),
+                0.1f,
+                0.9f,
+                0.1f,
+                0.9f,
+                null
+            )
+        }),
+        SET_VAR("setVar", { SetVar("VAR_NAME", 1f) }),
+        END_GAME("endGame", { EndGame(GameEndReason.VICTORY) }),
+        ORDER_UNIT("orderUnit", {
+            OrderUnit(
+                OrderType.WALK,
+                "UNIT_NAME",
+                "TARGET_UNIT_NAME",
+                null,
+                null,
+                null
+            )
+        });
+
+        val default by lazy(defaultGetter)
 
         companion object {
             fun fromKey(str: String): ActionEnum {
@@ -85,13 +84,13 @@ sealed interface GameAction {
 
 
     data class AddUnit(
-        val gameUnit: List<GameUnit>
+        val gameUnits: List<GameUnit>
     ): GameAction {
         override val enumRepresentation: ActionEnum = ActionEnum.ADD_UNIT
 
         override fun serializeValue(): JsonElement {
             val jsonArray = JsonArray()
-            gameUnit.forEach {
+            gameUnits.forEach {
                 jsonArray.add(it.serialize())
             }
             return jsonArray

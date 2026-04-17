@@ -1,4 +1,4 @@
-package ua.valeriishymchuk.lobmapeditor.ui.component
+package ua.valeriishymchuk.lobmapeditor.ui.component.common
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column

@@ -187,6 +187,18 @@ data class GameUnit(
         const val MIN_HEALTH = 1
         const val MIN_STAMINA = 0
         val UNIT_DIMENSIONS = Vector2f(1f, 2f).mul(16f).mul(0.75f)
+        val DEFAULT = GameUnit(
+            null,
+            Reference(0),
+            Position(0f, 0f),
+            0f,
+            GameUnitType.LINE_INFANTRY,
+            UnitStatus.STANDING,
+            UnitFormation.LINE,
+            GameUnitType.LINE_INFANTRY.defaultHealth,
+            GameUnitType.LINE_INFANTRY.defaultOrganization,
+            GameUnitType.LINE_INFANTRY.defaultStamina
+        )
 
         fun deserialize(json: JsonObject): GameUnit {
             val name = json.getAsJsonPrimitive("name")?.asString
