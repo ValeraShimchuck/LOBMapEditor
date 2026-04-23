@@ -26,6 +26,13 @@ data class RectanglePoints(
             )
         }
 
+        fun centered(dimensions: Vector2f): RectanglePoints {
+            return RectanglePoints.fromPoints(
+                dimensions.mul(-0.5f, -0.5f, Vector2f()),
+                dimensions.mul(0.5f, 0.5f, Vector2f()),
+            )
+        }
+
         val TEXTURE_CORDS: RectanglePoints = fromPoints(Vector2f(0f, 0f), Vector2f(1f, 1f))
 
     }

@@ -59,6 +59,8 @@ class TextureStorage {
         private set
     var selectionTexture: Int = -1
         private set
+    var scriptIconTexture: Int = -1
+        private set
 
     var arrowBody: Int = -1
         private set
@@ -99,9 +101,12 @@ class TextureStorage {
     fun loadTextures(ctx: CurrentGL) {
 
         loadInternalTexture(ctx, "wood")
+        loadInternalTexture(ctx, "icons/script")
+        scriptIconTexture = textures["icons/script"]!!
         TerrainType.MAIN_TERRAIN.forEach { terrain ->
             loadInternalTexture(ctx, "tilesets/${terrain.textureLocation}", false)
         }
+
         TerrainType.BLOB_TERRAIN.forEach { terrain ->
             loadAtlas(
                 ctx, "tilesets/${terrain.textureLocation}", Vector2i(16), Vector2i(8, 6), ImageFilter(

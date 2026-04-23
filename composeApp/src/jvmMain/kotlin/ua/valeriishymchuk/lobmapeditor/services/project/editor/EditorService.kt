@@ -1,42 +1,31 @@
 package ua.valeriishymchuk.lobmapeditor.services.project.editor
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.joml.Matrix4f
-import org.joml.Vector2f
-import org.joml.Vector2i
-import org.joml.Vector3f
-import org.joml.Vector4f
+import org.joml.*
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.Command.Companion.applyAllCompound
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
-import ua.valeriishymchuk.lobmapeditor.commands.UpdateObjectiveListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
-import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
 import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import ua.valeriishymchuk.lobmapeditor.shared.editor.ProjectRef
-import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.collections.minus
+import kotlin.collections.emptyList
 import kotlin.concurrent.withLock
 
 sealed class EditorService<T : GameScenario<T>>(
     override val di: DI,
-): DIAware {
+) : DIAware {
 
     val throwTestError: MutableStateFlow<Boolean> = MutableStateFlow(false)
     protected val scenarioIOService by di.instance<ScenarioIOService>()
@@ -45,7 +34,7 @@ sealed class EditorService<T : GameScenario<T>>(
 
     protected val lock = ReentrantLock()
 
-    protected var composedCommands: MutableList<CommandWrapper<*>>  = mutableListOf()
+    protected var composedCommands: MutableList<CommandWrapper<*>> = mutableListOf()
 
     var openglUpdateState = MutableStateFlow(0)
 
@@ -55,9 +44,53 @@ sealed class EditorService<T : GameScenario<T>>(
 
     open fun getAllObjects(): Set<ScenarioReference> {
         // TODO add other objects, such as objectives and objectives/units from triggers
-        return scenario.value!!.objectives.indices.map {
+        val set: MutableSet<ScenarioReference> = scenario.value!!.objectives.indices.map {
             Objective.ScenarioObjectiveReference(it)
-        }.toSet()
+        }.toMutableSet()
+
+        set.addAll(findAllTriggerUnits())
+        return set
+    }
+
+    private fun findAllTriggerUnits(): Set<ScenarioReference> {
+        val set: MutableSet<ScenarioReference> = mutableSetOf()
+
+        scenario.value!!.triggers.forEachIndexed { triggerId, trigger ->
+            trigger.actions.forEachIndexed { actionId, action ->
+                if (action is GameAction.AddUnit) {
+                    set.addAll(action.gameUnits.mapIndexed { unitId, _ ->
+                        GameUnit.TriggerUnitReference(
+                            triggerId,
+                            actionId,
+                            listOf(unitId)
+                        )
+                    })
+                    return@forEachIndexed
+                }
+                if (action !is GameAction.AddTrigger) return@forEachIndexed
+                fun traverseDeep(action: GameAction.AddTrigger, subAddress: List<Int>) {
+                    action.triggers.forEachIndexed { deepTriggerId, deepTrigger ->
+                        deepTrigger.actions.forEachIndexed { deepActionId, deepAction ->
+                            val currentSubAddress = subAddress.toMutableList()
+                            currentSubAddress.add(deepTriggerId)
+                            currentSubAddress.add(deepActionId)
+                            if (deepAction is GameAction.AddUnit) {
+                                deepAction.gameUnits.forEachIndexed { deepUnitId, _ ->
+                                    val unitAddress = currentSubAddress.toMutableList()
+                                    unitAddress.add(deepUnitId)
+                                    set.add(GameUnit.TriggerUnitReference(triggerId, actionId, unitAddress))
+                                }
+                                return@forEachIndexed
+                            }
+                            if (deepAction !is GameAction.AddTrigger) return@forEachIndexed
+                            traverseDeep(deepAction, currentSubAddress)
+                        }
+                    }
+                }
+                traverseDeep(action, emptyList())
+            }
+        }
+        return set
     }
 
     var lastSave: Long = 0
@@ -73,7 +106,6 @@ sealed class EditorService<T : GameScenario<T>>(
     }
 
 
-
     protected val scenarioGetter: () -> T = {
         scenario.value!!
     }
@@ -83,6 +115,7 @@ sealed class EditorService<T : GameScenario<T>>(
     var selectionEnabled: Boolean = false
     var width: Int = 0
     var height: Int = 0
+
     // hoi4 mode
     var enableColorClosestPoint = false
 
@@ -94,10 +127,10 @@ sealed class EditorService<T : GameScenario<T>>(
 
     var cameraPosition: Vector2f
         get() {
-        val centerX = width / 2
-        val centerY = height / 2
-        return fromScreenToWorldSpace(centerX, centerY)
-    }
+            val centerX = width / 2
+            val centerY = height / 2
+            return fromScreenToWorldSpace(centerX, centerY)
+        }
         set(value) {
 
             val centerX = width / 2
@@ -129,7 +162,6 @@ sealed class EditorService<T : GameScenario<T>>(
         if (!composedCommands.all { typeChecker(it.command) })
             throw IllegalStateException("The composed commands list doesn't have integrity: $composedCommands")
     }
-
 
 
     fun updateCommonData(updater: (GameScenario.CommonData) -> GameScenario.CommonData) {
@@ -177,7 +209,6 @@ sealed class EditorService<T : GameScenario<T>>(
                 save0()
             }
         }
-
 
 
     }

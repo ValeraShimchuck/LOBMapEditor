@@ -4,16 +4,20 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.joml.Vector2f
 import ua.valeriishymchuk.lobmapeditor.commands.Command
+import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameTriggerListCommand
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameUnitListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective.ScenarioObjectiveReference
 import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.NameProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.UnitProperty
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import kotlin.reflect.KClass
 
@@ -113,10 +117,186 @@ data class GameUnit(
         return copy(rotation = rotation)
     }
 
+    data class TriggerUnitReference(
+        val triggerId: Int,
+        val actionId: Int,
+        val address: List<Int>
+    ): ScenarioReference {
 
+        init {
+            if (address.isEmpty()) throw IllegalArgumentException("Address should have at least 1 element")
+            if (address.size % 2 == 0) throw IllegalArgumentException("Address should always have an odd size of elements")
+        }
+
+        val unitId by lazy {
+            address.last()
+        }
+
+        fun changeUnitId(newId: Int): TriggerUnitReference {
+            val newAddress = address.toMutableList()
+            newAddress.removeLast()
+            newAddress.add(newId)
+            return copy(
+                address = newAddress
+            )
+        }
+
+        private fun traverseAddress(
+            triggers: List<GameTrigger>,
+            actionHandler: (Int, GameAction.AddTrigger) -> Unit = { _, _ -> },
+            unitActionHandler: (GameAction.AddUnit) -> Unit = {}
+        ) {
+            var action = triggers[triggerId].actions[actionId]
+            val addressQueue = ArrayDeque(address)
+            var addressId = -1
+            while (addressQueue.isNotEmpty()) {
+                val currentId = addressQueue.removeFirst() // unit id or trigger id within the action
+                addressId++
+                if (action is GameAction.AddUnit) {
+                    if (addressQueue.isNotEmpty()) throw IllegalStateException("Invalid address, the unit id is not the last in the address")
+                    unitActionHandler(action)
+                    return
+                }
+                if (action is GameAction.AddTrigger) {
+                    actionHandler(addressId, action)
+                    val nextId = addressQueue.removeFirstOrNull() // only action id within trigger list
+                        ?: throw IllegalArgumentException(
+                            "Invalid address, for AddTrigger action there should be 2 ids in the list per 1 action"
+                        )
+                    addressId++
+                    action = action.triggers[currentId].actions[nextId]
+                } else {
+                    throw IllegalArgumentException("Invalid address, ids within address can only point to a unit or AddTrigger action")
+                }
+            }
+
+            throw IllegalStateException("Invalid address, addresses should contain last id that points to a unit within an AddUnit action")
+        }
+
+        private fun <T> updateUnitList(triggers: List<GameTrigger>, updater: (List<GameUnit>) -> Pair<List<GameUnit>, T> ): Pair<List<GameTrigger>, T>  {
+            val actionList: MutableList<Pair<Int, GameAction.AddTrigger>> = mutableListOf()
+            var addUnitAction: GameAction.AddUnit? = null
+            traverseAddress(
+                triggers,
+                { id, action -> actionList.add(id to action) },
+                { addUnitAction = it }
+            )
+            addUnitAction!!
+            val oldUnitList = addUnitAction.gameUnits
+            val (newUnitList, value) = updater(oldUnitList)
+            val newAddUnitAction = addUnitAction.copy(gameUnits = newUnitList)
+            val newAction = actionList.foldRight(newAddUnitAction as GameAction) { el, acc ->
+                val triggerId = address[el.first]
+                val actionId = address[el.first + 1]
+                val action = el.second
+                val oldList = action.triggers
+                val newList: List<GameTrigger> = oldList.mapIndexed { id, trigger ->
+                    if (id != triggerId) return@mapIndexed trigger
+                    val oldActionList = trigger.actions
+                    val newActionList = oldActionList.mapIndexed { currentActionId, currentAction ->
+                        if (currentActionId != actionId) return@mapIndexed currentAction
+                        acc
+                    }
+                    trigger.copy(actions = newActionList)
+                }
+                action.copy(triggers = newList)
+            }
+
+            val newTriggerList = triggers.mapIndexed { id, trigger ->
+                if (id != triggerId) return@mapIndexed trigger
+                trigger.copy(actions = trigger.actions.mapIndexed { currentActionId, currentAction ->
+                    if (actionId != currentActionId) return@mapIndexed currentAction
+                    newAction
+                })
+            }
+            return newTriggerList to value
+        }
+
+
+
+        override fun dereference(scenario: GameScenario<*>): DomainProperty<*> {
+            var unit: GameUnit? = null
+            traverseAddress(scenario.triggers, unitActionHandler = {
+                unit = it.gameUnits[unitId]
+            })
+            return unit!!
+        }
+
+        override fun <T : DomainProperty<*>> duplicate0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>
+        ): Pair<Command<*>, Set<ScenarioReference>> {
+            val references = references.map { (it as TriggerUnitReference) }.toSet()
+            val oldTriggers = scenario.triggers
+            val newReferenceSet: MutableSet<ScenarioReference> = mutableSetOf()
+            val newTriggers = references.fold(oldTriggers) { acc, reference ->
+                val (updatedTriggers, newReference) = reference.updateUnitList(acc) { units ->
+                    val newUnitList = units.toMutableList()
+                    newUnitList.add(units[reference.unitId])
+                    newUnitList to reference.changeUnitId(newUnitList.lastIndex)
+                }
+                newReferenceSet.add(newReference)
+                updatedTriggers
+            }
+
+            return UpdateGameTriggerListCommand(
+                oldTriggers = oldTriggers,
+                newTriggers = newTriggers
+            ) to newReferenceSet
+        }
+
+        override fun <T : DomainProperty<*>> delete0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>
+        ): Command<*> {
+            val references = references.map { (it as TriggerUnitReference) }.toSet()
+            val oldTriggers = scenario.triggers
+            val newTriggers = references.fold(oldTriggers) { acc, reference ->
+                val (updatedTriggers, _) = reference.updateUnitList(acc) { units ->
+                    val newUnitList = units.toMutableList()
+                    newUnitList.removeAt(reference.unitId)
+                    newUnitList to Unit
+                }
+                updatedTriggers
+            }
+
+            return UpdateGameTriggerListCommand(
+                oldTriggers = oldTriggers,
+                newTriggers = newTriggers
+            )
+        }
+
+        override fun <T : DomainProperty<*>> update0(
+            clazz: KClass<T>,
+            references: List<ScenarioReference>,
+            scenario: GameScenario<*>,
+            updater: (T) -> T
+        ): Command<*> {
+            val references = references.map { (it as TriggerUnitReference) }.toSet()
+            val oldTriggers = scenario.triggers
+            val newTriggers = references.fold(oldTriggers) { acc, reference ->
+                val (updatedTriggers, _) = reference.updateUnitList(acc) { units ->
+                    val newUnitList = units.mapIndexed { unitId, unit ->
+                        if (unitId != reference.unitId) return@mapIndexed unit
+                        updater(unit as T) as GameUnit
+                    }
+                    newUnitList to Unit
+                }
+                updatedTriggers
+            }
+
+            return UpdateGameTriggerListCommand(
+                oldTriggers = oldTriggers,
+                newTriggers = newTriggers
+            )
+        }
+
+    }
 
     data class ScenarioUnitReference(
-        override val listId: Int
+        val listId: Int
     ) : ScenarioReference.Preset {
 
         override fun dereferencePreset(scenario: GameScenario.Preset): DomainProperty<*> {
@@ -130,7 +310,7 @@ data class GameUnit(
             scenario: GameScenario.Preset,
             updater: (T) -> T
         ): Command<*> {
-            val ids = references.map { it.listId }.toSet()
+            val ids = references.map { (it as ScenarioUnitReference).listId }.toSet()
             val old = scenario.units
             val new = scenario.units.mapIndexed { id, unit ->
                 if (!ids.contains(id)) return@mapIndexed unit
@@ -168,7 +348,7 @@ data class GameUnit(
             references: List<ScenarioReference>,
             scenario: GameScenario.Preset
         ): Command<*> {
-            val ids = references.map { it.listId }.toSet()
+            val ids = references.map { (it as ScenarioUnitReference).listId }.toSet()
             val old = scenario.units
             val new = scenario.units.filterIndexed { id, _ ->
                 !ids.contains(id)

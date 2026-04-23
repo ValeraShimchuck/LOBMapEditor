@@ -81,7 +81,7 @@ data class Objective(
     }
 
     data class ScenarioObjectiveReference(
-        override val listId: Int
+        val listId: Int
     ) : ScenarioReference {
         override fun dereference(scenario: GameScenario<*>): DomainProperty<*> {
             return scenario.commonData.objectives[listId]
@@ -113,7 +113,7 @@ data class Objective(
             references: List<ScenarioReference>,
             scenario: GameScenario<*>
         ): Command<*> {
-            val ids = references.map { it.listId }.toSet()
+            val ids = references.map { (it as ScenarioObjectiveReference).listId }.toSet()
             val old = scenario.objectives
             val new = scenario.objectives.filterIndexed { id, _ ->
                 !ids.contains(id)
@@ -130,7 +130,7 @@ data class Objective(
             scenario: GameScenario<*>,
             updater: (T) -> T
         ): Command<*> {
-            val ids = references.map { it.listId }.toSet()
+            val ids = references.map { (it as ScenarioObjectiveReference).listId }.toSet()
             val old = scenario.objectives
             val new = scenario.objectives.mapIndexed { id, unit ->
                 if (!ids.contains(id)) return@mapIndexed unit

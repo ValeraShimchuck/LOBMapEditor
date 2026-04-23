@@ -7,7 +7,6 @@ import kotlin.reflect.KClass
 
 interface ScenarioReference {
 
-    val listId: Int
 
     fun dereference(scenario: GameScenario<*>): DomainProperty<*>
 

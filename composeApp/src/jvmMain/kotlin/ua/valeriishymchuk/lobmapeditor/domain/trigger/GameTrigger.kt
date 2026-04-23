@@ -3,6 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.domain.trigger
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 
 data class GameTrigger(
     val actions: List<GameAction>,
@@ -56,6 +57,17 @@ data class GameTrigger(
     }
 
     companion object {
+
+        fun List<GameTrigger>.findAllUnits(): List<GameUnit> {
+            return this.flatMap { trigger ->
+                val list: MutableList<GameUnit> = trigger.actions.filterIsInstance<GameAction.AddUnit>()
+                    .flatMap { action -> action.gameUnits }
+                    .toMutableList()
+                val nestedTriggers = trigger.actions.filterIsInstance<GameAction.AddTrigger>().flatMap { it.triggers }
+                list.addAll(nestedTriggers.findAllUnits())
+                list
+            }
+        }
 
         val DEFAULT = GameTrigger(
             emptyList(),

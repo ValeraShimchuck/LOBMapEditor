@@ -5,8 +5,12 @@ import com.jogamp.opengl.GL.GL_TRIANGLES
 import org.joml.*
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
+import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllUnits
 import ua.valeriishymchuk.lobmapeditor.domain.unit.*
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
 import ua.valeriishymchuk.lobmapeditor.render.context.HybridRenderContext
@@ -21,6 +25,9 @@ import ua.valeriishymchuk.lobmapeditor.shared.GameConstants
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.max
+
+typealias UnitsRenderContext = Map<Optional<PlayerTeam>, Map<Pair<GameUnitType, UnitFormation?>, List<GameUnit>>>
+
 
 class SpriteStage(
     ctx: CurrentGL
@@ -166,7 +173,10 @@ class SpriteStage(
 
         val positionsAndAngles: List<Pair<Vector2f, Float>> = listOf(
             Vector2f(selection.position.x + selection.width / 2, selection.position.y) to -90f, // top
-            Vector2f(selection.position.x + selection.width / 2, selection.position.y + selection.height) to 90f, // bottom
+            Vector2f(
+                selection.position.x + selection.width / 2,
+                selection.position.y + selection.height
+            ) to 90f, // bottom
             Vector2f(selection.position.x, selection.position.y + selection.height / 2) to 180f, // left
             Vector2f(selection.position.x + selection.width, selection.position.y + selection.height / 2) to 0f
         ).map { (pos, angle) ->
@@ -259,20 +269,29 @@ class SpriteStage(
 
     }
 
-    private fun PresetRenderContext.renderUnits() {
-        val unitsToRender: Map<PlayerTeam, Map<Pair<GameUnitType, UnitFormation?>, List<GameUnit>>> = scenario.units
-            .groupBy { it.owner.getValue(scenario.players::get).team }
+    private fun List<GameUnit>.toRenderContext(playersNullable: List<Player>?): UnitsRenderContext {
+        return this.groupBy {
+            playersNullable?.let { players -> it.owner.getValue(players::get).team }
+                .let { value -> Optional.ofNullable(value) }
+        }
             .mapValues { (_, value) ->
                 value.groupBy { it.type to it.formation }
             }
+    }
 
+    private fun RenderContext<*>.renderUnits(
+        unitsToRender: UnitsRenderContext,
+        areScripted: Boolean
+    ) {
         val unitShadowsToRender: MutableMap<String, MutableList<GameUnit>> = mutableMapOf()
-        val preparedUnitsToRender: MutableMap<Triple<PlayerTeam, GameUnitType, UnitFormation?>, MutableList<GameUnit>> =
+        val plainUnitList: MutableList<GameUnit> = mutableListOf()
+        val preparedUnitsToRender: MutableMap<Triple<Optional<PlayerTeam>, GameUnitType, UnitFormation?>, MutableList<GameUnit>> =
             mutableMapOf()
 
-
+        // Preparation
         unitsToRender.forEach { (team, units) ->
             units.forEach { (pair, unitInfo) ->
+                plainUnitList.addAll(unitInfo)
                 val unitType = pair.first
                 val formation = pair.second
                 val maskTexture = when (val texture = unitType.texture) {
@@ -289,6 +308,7 @@ class SpriteStage(
             }
         }
 
+        // Shadows
         unitShadowsToRender.forEach {
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
@@ -323,6 +343,7 @@ class SpriteStage(
 
         }
 
+        // Unit Sprite Rendering
         preparedUnitsToRender.forEach { (triple, units) ->
             val unitType = triple.second
             val team = triple.first
@@ -338,7 +359,7 @@ class SpriteStage(
                 is UnitTypeTexture.MaskAndOverlay -> texture.maskTexture
                 is UnitTypeTexture.MaskOnly -> texture.maskTexture
             }
-
+            val color = team.map { it.color }.orElse(Color(0.369f, 0.369f, 0.369f, 1.0f))
             // not routing
             spriteProgram.setUpVAO(glCtx)
             spriteProgram.applyUniform(
@@ -348,9 +369,9 @@ class SpriteStage(
                     true,
                     overlayTexture != null,
                     Vector4f(
-                        team.color.red,
-                        team.color.green,
-                        team.color.blue,
+                        color.red,
+                        color.green,
+                        color.blue,
                         1f
                     ),
                     textureStorage.textures[maskTexture]!!,
@@ -386,9 +407,9 @@ class SpriteStage(
                     true,
                     overlayTexture != null,
                     Vector4f(
-                        team.color.red,
-                        team.color.green,
-                        team.color.blue,
+                        color.red,
+                        color.green,
+                        color.blue,
                         0.5f
                     ),
                     textureStorage.textures[maskTexture]!!,
@@ -416,6 +437,48 @@ class SpriteStage(
 
 
         }
+
+        if (!areScripted) return
+
+        // Scripted Icon Render
+        spriteProgram.setUpVAO(glCtx)
+        spriteProgram.applyUniform(
+            glCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                drawMask = false,
+                drawOverlay = true,
+                maskColor = Vector4f(),
+                maskTexture = -1,
+                overlayTexture = textureStorage.scriptIconTexture
+            )
+        )
+
+        val vboInput = plainUnitList.map { unit ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setTranslation(Vector3f(unit.position.x + 12, unit.position.y - 14, 0f))
+            SpriteProgram.BufferData(
+                RectanglePoints.centered(Vector2f(8f)),
+                RectanglePoints.TEXTURE_CORDS,
+                positionMatrix
+            )
+        }
+
+
+        if (!vboInput.isEmpty()) {
+            spriteProgram.setUpVBO(glCtx, vboInput)
+            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+        }
+
+
+    }
+
+
+
+    private fun PresetRenderContext.renderUnits() {
+        val unitsToRender = scenario.units
+            .toRenderContext(scenario.players)
+        renderUnits(unitsToRender, false)
     }
 
     override fun RenderContext<*>.draw0() {
@@ -430,6 +493,10 @@ class SpriteStage(
         if (this is PresetRenderContext) {
             renderUnits()
         }
+
+        val players = if (this is PresetRenderContext) this.scenario.players else null
+        val scriptedUnits = scenario.commonData.triggers.findAllUnits()
+        renderUnits(scriptedUnits.toRenderContext(players), true)
 
         if (this is HybridRenderContext) {
             renderZoneArrows()

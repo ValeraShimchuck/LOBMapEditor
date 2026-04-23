@@ -6,6 +6,8 @@ import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.joml.Vector4f
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllUnits
+import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
 import ua.valeriishymchuk.lobmapeditor.render.context.PresetRenderContext
 import ua.valeriishymchuk.lobmapeditor.render.context.RenderContext
@@ -27,7 +29,6 @@ class UnitBarsStage(
     )
 
     override fun RenderContext<*>.draw0() {
-        if (this !is PresetRenderContext) return
         glCtx.glUseProgram(program.program)
         glCtx.glBindVertexArray(program.vao)
         glCtx.glBindVBO(program.vbo)
@@ -42,11 +43,13 @@ class UnitBarsStage(
             )
         )
 
-        val healthBars = this.scenario.units.filter { unit -> unit.health < unit.type.defaultHealth }
+        val units: MutableList<GameUnit> = mutableListOf()
+        if (this is PresetRenderContext) units.addAll(this.scenario.units)
+        units.addAll(this.scenario.triggers.findAllUnits())
 
         val vbo: MutableList<ManyColorProgram.BufferData> = arrayListOf()
 
-        this.scenario.units.forEach { unit ->
+        units.forEach { unit ->
             var positionOffset = 0
             val bgDimensions = Vector2f(16f, 3f)
             val barDimensions = bgDimensions.sub(Vector2f(1.5f), Vector2f())

@@ -10,6 +10,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.Position
 @Composable
 fun PositionFieldComponent(
     mapDimensions: Vector2fc,
+    rememberSubject: Any,
     currentPos: Position,
     onUpdate:(Position) -> Unit,
     flush: () -> Unit = {}
@@ -18,8 +19,8 @@ fun PositionFieldComponent(
     CenteredRow {
         // X
         FloatTextField(
-            currentPos,
-            { it.x },
+            rememberSubject,
+            { currentPos.x },
             { onUpdate(currentPos.copy(x = it)) },
             flush,
             { x -> x.coerceIn(0f, mapDimensions.x()) },
@@ -29,8 +30,8 @@ fun PositionFieldComponent(
 
         // Y
         FloatTextField(
-            currentPos,
-            { it.y },
+            rememberSubject,
+            { currentPos.y },
             { onUpdate(currentPos.copy(y = it)) },
             flush,
             { y -> y.coerceIn(0f, mapDimensions.y()) },

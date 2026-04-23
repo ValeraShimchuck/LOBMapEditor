@@ -29,7 +29,13 @@ import kotlin.math.roundToInt
 @Composable
 fun TriggerToolConfig() {
     // TODO
-    // Create rendering for trigger units
+    // test how nested trigger units work
+    // test ctrl+z with trigger and nested trigger units
+    // make dropdown for actions, conditions and units within AddUnit
+    // remove properties for units, only show name(or team and type) and add 'move to' button
+
+    // add AddObjective action
+    // think about how to show orders
 
     // Also
     // Add additional warning messages if objective with certain name wasn't found
@@ -773,6 +779,7 @@ fun TriggerToolConfig() {
                             scenario.map.widthPixels.toFloat(),
                             scenario.map.heightPixels.toFloat()
                         ),
+                        currentTriggerReference?.key ?: 0,
                         unit.position,
                         { newPos ->
                             updateUnit(unit.copy(position = newPos))
