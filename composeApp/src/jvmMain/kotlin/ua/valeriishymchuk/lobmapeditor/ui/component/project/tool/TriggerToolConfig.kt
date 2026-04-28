@@ -12,10 +12,12 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.jewel.foundation.ExperimentalJewelApi
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.ui.component.*
-import org.joml.Vector2f
+import org.jetbrains.jewel.ui.icons.AllIconsKeys
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameTriggerListCommand
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.*
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
@@ -29,9 +31,9 @@ import kotlin.math.roundToInt
 @Composable
 fun TriggerToolConfig() {
     // TODO
+    // make dropdown for actions, conditions and units within AddUnit
     // test how nested trigger units work
     // test ctrl+z with trigger and nested trigger units
-    // make dropdown for actions, conditions and units within AddUnit
     // remove properties for units, only show name(or team and type) and add 'move to' button
 
     // add AddObjective action
@@ -58,7 +60,8 @@ fun TriggerToolConfig() {
         trigger
     }
 
-    Text("Current Trigger")
+    Text("Current Trigger:")
+    DefaultVSpacer()
     DropDownNullable(
         currentTrigger,
         scenario.commonData.triggers,
@@ -71,7 +74,7 @@ fun TriggerToolConfig() {
     )
 
     @Composable
-    fun funEnding() {
+    fun AddTriggerButton() {
         DefaultButton(
             onClick = {
                 val oldList = scenario.triggers
@@ -92,7 +95,8 @@ fun TriggerToolConfig() {
     }
 
     if (currentTrigger == null) {
-        funEnding()
+        DefaultVSpacer()
+        AddTriggerButton()
         return
     }
 
@@ -118,14 +122,41 @@ fun TriggerToolConfig() {
         updateCurrentTrigger(updater, flush = true)
     }
 
-    Spacer(Modifier.height(20.dp))
+    DefaultVSpacer()
+
+    CenteredRow {
+
+        AddTriggerButton()
+
+        LongHSpacer()
+
+        RedButton(
+            "Delete Trigger"
+        ) {
+            val list = scenario.triggers
+            val newList = list.filterIndexed { idx, _ ->
+                currentTriggerReference!!.key != idx
+            }
+
+            editorService.execute(
+                UpdateGameTriggerListCommand(
+                    list,
+                    newList
+                )
+            )
+
+            tool.currentTrigger.value = null
+        }
+
+    }
+
+    DefaultVSpacer()
 
     Text("Triggers settings:")
     DefaultVSpacer()
     // event
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Event:")
-        Spacer(Modifier.height(5.dp))
+        Text("Event: ")
 
         DropDown(
             currentTrigger.eventType,
@@ -147,8 +178,7 @@ fun TriggerToolConfig() {
 
     // Condition Logic
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Condition Logic:")
-        Spacer(Modifier.height(5.dp))
+        Text("Condition Logic: ")
 
         DropDown(
             currentTrigger.conditionLogicType,
@@ -166,18 +196,70 @@ fun TriggerToolConfig() {
         )
     }
 
-    LongVSpacer()
-    Text("Conditions:")
+    SimpleDivider()
+
+
+    var currentConditionReference: Int? by remember(currentTriggerReference) {
+        mutableStateOf(currentTrigger.conditions.indices.firstOrNull())
+    }
+
+    CenteredRow {
+        Text("Current Condition: ")
+        DropDownNullable(
+            currentConditionReference,
+            currentTrigger.conditions.indices.toList(),
+            { _, id ->
+                "$id ${currentTrigger.conditions[id].key}"
+            },
+            { _, selection ->
+                currentConditionReference = selection
+            }
+        )
+    }
+
     DefaultVSpacer()
 
-    currentTrigger.conditions.withIndex().forEach { item ->
-        val condition: Condition = item.value
+
+    @Composable
+    fun AddConditionButton() {
+        DefaultButton(
+            onClick = {
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(
+                        conditions = trigger.conditions.toMutableList().also {
+                            it.add(Condition.ConditionEnum.IS_TURN.default)
+                        }
+                    )
+                }
+            },
+        ) {
+            Text("Add new condition")
+        }
+    }
+
+    val finalConditionReference = currentConditionReference
+    if (finalConditionReference != null) {
+        CenteredRow {
+            AddConditionButton()
+
+            LongHSpacer()
+
+            RedButton("Delete Condition") {
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(conditions = trigger.conditions.filterIndexed { idx, _ ->
+                        finalConditionReference != idx
+                    })
+                }
+            }
+        }
+
+        val condition: Condition = currentTrigger.conditions[finalConditionReference]
 
         fun updateCondition(updater: (Condition) -> Condition) {
             updateCurrentTrigger { trigger ->
                 trigger.copy(
                     conditions = trigger.conditions.mapIndexed { idx2, condition2 ->
-                        if (idx2 != item.index) return@mapIndexed condition2
+                        if (idx2 != finalConditionReference) return@mapIndexed condition2
                         updater(condition2)
                     }
                 )
@@ -193,19 +275,24 @@ fun TriggerToolConfig() {
         DefaultVSpacer()
 
 
-        DropDown(
-            condition.enumRepresentation,
-            Condition.ConditionEnum.entries,
-            { _, value ->
-                println("Value: ${value.displayName}")
-                value.displayName
-            },
-            { _, value ->
-                updateCondition { _ ->
-                    value.default
+        CenteredRow {
+            Text("Condition Type: ")
+            DropDown(
+                condition.enumRepresentation,
+                Condition.ConditionEnum.entries,
+                { _, value ->
+                    println("Value: ${value.displayName}")
+                    value.displayName
+                },
+                { _, value ->
+                    updateCondition { _ ->
+                        value.default
+                    }
                 }
-            }
-        )
+            )
+
+        }
+
         DefaultVSpacer()
 
 
@@ -677,44 +764,71 @@ fun TriggerToolConfig() {
             }
         }
 
-        RedButton(
-            "Delete Condition",
 
-        ) {
+
+    }
+    else {
+        AddConditionButton()
+    }
+
+    SimpleDivider()
+
+    var currentActionReference: Int? by remember(currentTriggerReference) {
+        mutableStateOf(currentTrigger.actions.indices.firstOrNull())
+    }
+
+
+    CenteredRow {
+        Text("Current Action: ")
+
+        DropDownNullable(
+            currentActionReference,
+            currentTrigger.actions.indices.toList(),
+            { _, id ->
+                "$id ${currentTrigger.actions[id].enumRepresentation.key}"
+            },
+            { _, selection ->
+                currentActionReference = selection
+            }
+        )
+    }
+
+    @Composable
+    fun AddActionButton() {
+        BlueButton("Add Action") {
             updateCurrentTrigger { trigger ->
-                trigger.copy(conditions = trigger.conditions.filterIndexed { idx, _ ->
-                    item.index != idx
-                })
+                trigger.copy(actions = trigger.actions.addImmutably(GameAction.ActionEnum.ADD_UNIT.default))
             }
         }
-
     }
 
     DefaultVSpacer()
 
-    DefaultButton(
-        onClick = {
-            updateCurrentTrigger { trigger ->
-                trigger.copy(
-                    conditions = trigger.conditions.toMutableList().also {
-                        it.add(Condition.ConditionEnum.IS_TURN.default)
-                    }
-                )
+
+    val finalActionReference = currentActionReference
+    if (finalActionReference != null) {
+
+        CenteredRow {
+            AddActionButton()
+
+            LongHSpacer()
+
+            RedButton("Delete Action") {
+                updateCurrentTrigger { trigger ->
+                    trigger.copy(actions = trigger.actions.filterIndexed { idx, _ ->
+                        finalActionReference != idx
+                    })
+                }
             }
-        },
-    ) {
-        Text("Add new condition")
-    }
 
-    LongVSpacer()
+        }
 
-    Text("Actions:")
-    currentTrigger.actions.forEachIndexed { actionIndex, action ->
+        val action = currentTrigger.actions[finalActionReference]
         fun updateAction(updater: (GameAction) -> GameAction, flush: Boolean = true) {
             updateCurrentTrigger({ trigger ->
                 trigger.copy(
                     actions = trigger.actions.mapIndexed { idx2, condition2 ->
-                        if (idx2 != actionIndex) return@mapIndexed condition2
+                        if (idx2 != finalActionReference) return@mapIndexed condition2
                         updater(condition2)
                     }
                 )
@@ -753,7 +867,8 @@ fun TriggerToolConfig() {
 
         when (action) {
             is GameAction.AddUnit -> {
-
+                Text("Units")
+                DefaultVSpacer()
                 action.gameUnits.forEachIndexed { unitId, unit ->
                     fun updateUnit(unit: GameUnit?) {
                         updateActionTyped(
@@ -767,32 +882,25 @@ fun TriggerToolConfig() {
                             flush = false
                         )
                     }
+                    CenteredRow {
+                        val unitTeam = (scenario as? GameScenario.Preset)?.players?.get(unit.owner.key)?.team
+                        Text("$unitId ${unit.name ?: let {
+                            if (unitTeam != null) "${unit.type.name} $unitTeam"
+                            else unit.type.name
+                        }}")
 
-                    UnitPrototypeProperties(unit, {
-                        updateUnit(it)
-                    }, { editorService.flushCompound() })
+                        IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
 
-                    DefaultVSpacer()
-                    Text("Position:")
-                    PositionFieldComponent(
-                        Vector2f(
-                            scenario.map.widthPixels.toFloat(),
-                            scenario.map.heightPixels.toFloat()
-                        ),
-                        currentTriggerReference?.key ?: 0,
-                        unit.position,
-                        { newPos ->
-                            updateUnit(unit.copy(position = newPos))
-                        },
-                        flush = {
+                            editorService.cameraPosition = unit.position.toVector2f()
+
+
+                        })
+
+                        IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
+                            updateUnit(null)
                             editorService.flushCompound()
-                        }
-                    )
+                        })
 
-                    DefaultVSpacer()
-                    RedButton("Delete Unit") {
-                        updateUnit(null)
-                        editorService.flushCompound()
                     }
 
                 }
@@ -818,51 +926,10 @@ fun TriggerToolConfig() {
             is GameAction.SpawnNeutralObjectives -> TODO()
         }
 
-        LongVSpacer()
+        DefaultVSpacer()
 
-        RedButton("Delete Action") {
-            updateCurrentTrigger { trigger ->
-                trigger.copy(actions = trigger.actions.filterIndexed { idx, _ ->
-                    actionIndex != idx
-                })
-            }
-        }
-    }
-
-    DefaultVSpacer()
-
-    BlueButton("Add Action") {
-        updateCurrentTrigger { trigger ->
-            trigger.copy(actions = trigger.actions.addImmutably(GameAction.ActionEnum.ADD_UNIT.default))
-        }
-    }
-
-    LongVSpacer()
-
-    CenteredRow {
-
-        funEnding()
-
-        LongVSpacer()
-
-        RedButton(
-            "Delete Trigger"
-        ) {
-            val list = scenario.triggers
-            val newList = list.filterIndexed { idx, _ ->
-                currentTriggerReference!!.key != idx
-            }
-
-            editorService.execute(
-                UpdateGameTriggerListCommand(
-                    list,
-                    newList
-                )
-            )
-
-            tool.currentTrigger.value = null
-        }
-
+    } else {
+        AddActionButton()
     }
 
 }
