@@ -10,6 +10,13 @@ interface ScenarioReference {
 
     fun dereference(scenario: GameScenario<*>): DomainProperty<*>
 
+    fun isValid(scenario: GameScenario<*>): Boolean
+
+    fun tryDereference(scenario: GameScenario<*>): DomainProperty<*>? {
+        return if (!isValid(scenario)) null
+        else dereference(scenario)
+    }
+
     private fun <T: DomainProperty<*>> ensureArgumentsValidity(
         clazz: KClass<T>,
         references: List<ScenarioReference>,

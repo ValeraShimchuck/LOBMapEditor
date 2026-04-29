@@ -87,6 +87,10 @@ data class Objective(
             return scenario.commonData.objectives[listId]
         }
 
+        override fun isValid(scenario: GameScenario<*>): Boolean {
+            return scenario.commonData.objectives.indices.contains(listId)
+        }
+
         override fun <T : DomainProperty<*>> duplicate0(
             clazz: KClass<T>,
             references: List<ScenarioReference>,

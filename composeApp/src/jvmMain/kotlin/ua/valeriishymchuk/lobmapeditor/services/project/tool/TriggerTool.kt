@@ -9,6 +9,7 @@ import ua.valeriishymchuk.lobmapeditor.ui.component.project.tool.ToolUiInfo
 
 class TriggerTool: Tool()  {
 
+    @Deprecated("remember { mutableStateOf } is used instead ")
     val currentTrigger: MutableStateFlow<Reference<Int, GameTrigger>?> = MutableStateFlow(null)
 
 

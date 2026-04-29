@@ -40,7 +40,8 @@ interface PositionProperty<SELF : PositionProperty<SELF>> : DomainProperty<SELF>
         ) {
             val editorService by rememberInstance<EditorService<*>>()
 
-
+            val rerenderTriggerState by editorService.rerenderTrigger.collectAsState()
+            val finalRerenderTriggerState = rerenderTriggerState
             val scenarioNullable by editorService.scenario.collectAsState()
             val scenario = scenarioNullable ?: return
 
@@ -55,7 +56,7 @@ interface PositionProperty<SELF : PositionProperty<SELF>> : DomainProperty<SELF>
             val isYPositionMixed by derivedStateOf { selectedObjects.map { it.position.y }.distinct().size > 1 }
 
 
-            var xPositionTextFieldValue by remember {
+            var xPositionTextFieldValue by remember(finalRerenderTriggerState) {
                 mutableStateOf(
                     Unit.let {
                         val currentText = when {
@@ -82,7 +83,7 @@ interface PositionProperty<SELF : PositionProperty<SELF>> : DomainProperty<SELF>
             }
 
 
-            var yPositionTextFieldValue by remember {
+            var yPositionTextFieldValue by remember(finalRerenderTriggerState) {
                 mutableStateOf(
                     Unit.let {
                         val currentText = when {
@@ -192,7 +193,7 @@ interface PositionProperty<SELF : PositionProperty<SELF>> : DomainProperty<SELF>
 
             val isRotationMixed by derivedStateOf { selectedObjects.map { it.rotation }.distinct().size > 1 }
 
-            var rotationTextFieldValue by remember {
+            var rotationTextFieldValue by remember(finalRerenderTriggerState) {
                 mutableStateOf(
                     Unit.let {
 

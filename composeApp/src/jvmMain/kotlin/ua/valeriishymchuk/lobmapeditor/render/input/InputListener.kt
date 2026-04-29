@@ -487,6 +487,7 @@ abstract class InputListener<S: GameScenario<S>>(
         if (rotatableUnit != null) {
             rotatableUnit = null
             editorService.flushCompound()
+            editorService.rerenderTrigger.value = !editorService.rerenderTrigger.value
             return true
         }
         return false
@@ -528,6 +529,7 @@ abstract class InputListener<S: GameScenario<S>>(
         if (shouldDragSelectedObjects) {
             shouldDragSelectedObjects = false
             editorService.flushCompound()
+            editorService.rerenderTrigger.value = !editorService.rerenderTrigger.value
             return
         }
         if (!editorService.selectionEnabled) {

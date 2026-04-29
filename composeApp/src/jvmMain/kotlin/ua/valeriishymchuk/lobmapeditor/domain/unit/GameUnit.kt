@@ -214,12 +214,25 @@ data class GameUnit(
 
 
 
+
+
         override fun dereference(scenario: GameScenario<*>): DomainProperty<*> {
             var unit: GameUnit? = null
             traverseAddress(scenario.triggers, unitActionHandler = {
-                unit = it.gameUnits[unitId]
+                unit = it.gameUnits.getOrNull(unitId) ?:
+                throw IllegalStateException(
+                    "Invalid reference. It points to $address, unit id: $unitId while size of the list is ${it.gameUnits.size}"
+                )
             })
             return unit!!
+        }
+
+        override fun isValid(scenario: GameScenario<*>): Boolean {
+            var unit: GameUnit? = null
+            traverseAddress(scenario.triggers, unitActionHandler = {
+                unit = it.gameUnits.getOrNull(unitId)
+            })
+            return unit != null
         }
 
         override fun <T : DomainProperty<*>> duplicate0(
@@ -299,10 +312,14 @@ data class GameUnit(
         val listId: Int
     ) : ScenarioReference.Preset {
 
+        override fun isValid(scenario: GameScenario<*>): Boolean {
+            return (scenario as? GameScenario.Preset)?.units?.indices?.contains(listId) ?: false
+        }
+
+
         override fun dereferencePreset(scenario: GameScenario.Preset): DomainProperty<*> {
             return scenario.units[listId]
         }
-
 
         override fun <T : DomainProperty<*>> updatePreset(
             clazz: KClass<T>,

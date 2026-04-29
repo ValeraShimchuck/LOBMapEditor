@@ -31,12 +31,8 @@ import kotlin.math.roundToInt
 @Composable
 fun TriggerToolConfig() {
     // TODO
-    // make dropdown for actions, conditions and units within AddUnit
-    // test how nested trigger units work
-    // test ctrl+z with trigger and nested trigger units
-    // remove properties for units, only show name(or team and type) and add 'move to' button
-
     // add AddObjective action
+    // try make other actions other than order
     // think about how to show orders
 
     // Also
@@ -45,49 +41,103 @@ fun TriggerToolConfig() {
     // make objects created by actions visible in editor and be treated as units(make visual difference)
     // think of improving actions(adding ability to directly order)
 
+
+    // At some point add a tool that will convert replay to map
+    // reference https://github.com/egueneysaye/Replay_to_Scenario/blob/main/index.html
+
     val toolService by rememberInstance<ToolService<*>>()
     val editorService by rememberInstance<EditorService<*>>()
     val scenarioNullable by editorService.scenario.collectAsState()
     val scenario = scenarioNullable ?: return
-    val tool = toolService.triggerTool
-    val currentTriggerReference by tool.currentTrigger.collectAsState()
-    val currentTrigger: GameTrigger? = currentTriggerReference?.let { triggerReference ->
-        val trigger = triggerReference.getValueOrNull(scenario.commonData.triggers::getOrNull)
-        if (trigger == null) {
-            tool.currentTrigger.value = null
-            return
+//    val tool = toolService.triggerTool
+//    val currentTriggerReference by tool.currentTrigger.collectAsState()
+//    val currentTrigger: GameTrigger? = currentTriggerReference?.let { triggerReference ->
+//        val trigger = triggerReference.getValueOrNull(scenario.commonData.triggers::getOrNull)
+//        if (trigger == null) {
+//            tool.currentTrigger.value = null
+//            return
+//        }
+//        trigger
+//    }
+//    currentTriggerReference?.let { reference ->
+//        val trigger = scenario.triggers.getOrNull(reference.key)
+//        if (trigger == null) {
+//            tool.currentTrigger.value = null
+//            return
+//        }
+//    }
+
+
+    TriggerComponent(Unit, scenario.triggers, { newTriggerList, flush ->
+        val command = UpdateGameTriggerListCommand(
+            scenario.triggers,
+            newTriggerList
+        )
+        if (flush) {
+            editorService.execute(command)
+        } else {
+            editorService.executeCompound(command)
         }
-        trigger
+    }, { editorService.flushCompound() })
+
+}
+
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalJewelApi::class)
+@Composable
+private fun TriggerComponent(
+    rememberKey: Any,
+    triggerList: List<GameTrigger>,
+    updateTriggerList: (List<GameTrigger>, Boolean) -> Unit, // newList, flush
+    flush: () -> Unit,
+) {
+
+    val editorService by rememberInstance<EditorService<*>>()
+
+
+    var currentTriggerReference: Int? by remember(rememberKey) {
+        mutableStateOf(null)
     }
 
-    Text("Current Trigger:")
-    DefaultVSpacer()
-    DropDownNullable(
-        currentTrigger,
-        scenario.commonData.triggers,
-        { idx, value ->
-            value.displayText("${idx ?: currentTriggerReference!!.key}")
-        },
-        { idx, value ->
-            tool.currentTrigger.value = value?.let { Reference(idx) }
+    val currentTrigger: GameTrigger? = currentTriggerReference?.let { ref ->
+        triggerList.getOrNull( ref) ?: Unit.let {
+            currentTriggerReference = null
+            return
         }
-    )
+    }
+
+
+    CenteredRow {
+        Text("Current Trigger: ")
+        DropDownNullable(
+            currentTrigger,
+            triggerList,
+            { idx, value ->
+                value.displayText("${idx ?: currentTriggerReference}")
+            },
+            { idx, _ ->
+                currentTriggerReference = idx
+            }
+        )
+    }
+
 
     @Composable
     fun AddTriggerButton() {
         DefaultButton(
             onClick = {
-                val oldList = scenario.triggers
-                val newList = oldList.toMutableList()
+                val newList = triggerList.toMutableList()
                 newList.add(GameTrigger.DEFAULT)
                 val lastIndex = newList.lastIndex
-                editorService.execute(
-                    UpdateGameTriggerListCommand(
-                        oldList,
-                        newList
-                    )
-                )
-                tool.currentTrigger.value = Reference(lastIndex)
+                updateTriggerList(newList, true)
+//                editorService.execute(
+//                    UpdateGameTriggerListCommand(
+//                        oldList,
+//                        newList
+//                    )
+//                )
+//                tool.currentTrigger.value = Reference(lastIndex)
+                currentTriggerReference = lastIndex
             },
         ) {
             Text("Add new Trigger")
@@ -100,22 +150,26 @@ fun TriggerToolConfig() {
         return
     }
 
+    val nonNullReference = currentTriggerReference!!
+
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger, flush: Boolean = true) {
-        val reference = currentTriggerReference!!
-        val oldList = scenario.triggers
-        val newList = scenario.triggers.mapIndexed { idx, value ->
-            if (idx != reference.key) return@mapIndexed value
+        val reference = currentTriggerReference
+        val newList = triggerList.mapIndexed { idx, value ->
+            if (idx != reference) return@mapIndexed value
             updater(value)
         }
-        val command = UpdateGameTriggerListCommand(
-            oldList,
-            newList
-        )
-        if (flush) {
-            editorService.execute(command)
-        } else {
-            editorService.executeCompound(command)
-        }
+
+        updateTriggerList(newList, flush)
+
+//        val command = UpdateGameTriggerListCommand(
+//            oldList,
+//            newList
+//        )
+//        if (flush) {
+//            editorService.execute(command)
+//        } else {
+//            editorService.executeCompound(command)
+//        }
     }
 
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger) {
@@ -133,19 +187,22 @@ fun TriggerToolConfig() {
         RedButton(
             "Delete Trigger"
         ) {
-            val list = scenario.triggers
-            val newList = list.filterIndexed { idx, _ ->
-                currentTriggerReference!!.key != idx
+            val newList = triggerList.filterIndexed { idx, _ ->
+                currentTriggerReference != idx
             }
 
-            editorService.execute(
-                UpdateGameTriggerListCommand(
-                    list,
-                    newList
-                )
-            )
+            updateTriggerList(newList, true)
 
-            tool.currentTrigger.value = null
+
+//            editorService.execute(
+//                UpdateGameTriggerListCommand(
+//                    list,
+//                    newList
+//                )
+//            )
+//
+//            tool.currentTrigger.value = null
+            currentTriggerReference = null
         }
 
     }
@@ -155,7 +212,7 @@ fun TriggerToolConfig() {
     Text("Triggers settings:")
     DefaultVSpacer()
     // event
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    CenteredRow {
         Text("Event: ")
 
         DropDown(
@@ -170,14 +227,16 @@ fun TriggerToolConfig() {
                         eventType = value
                     )
                 }
-            }
+            },
+            modifier = Modifier.widthIn(max = 130.dp)
         )
+
     }
 
     DefaultVSpacer()
 
     // Condition Logic
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    CenteredRow {
         Text("Condition Logic: ")
 
         DropDown(
@@ -192,7 +251,8 @@ fun TriggerToolConfig() {
                         conditionLogicType = value
                     )
                 }
-            }
+            },
+            modifier = Modifier.widthIn(max = 170.dp)
         )
     }
 
@@ -213,7 +273,8 @@ fun TriggerToolConfig() {
             },
             { _, selection ->
                 currentConditionReference = selection
-            }
+            },
+            modifier = Modifier.widthIn(max = 180.dp)
         )
     }
 
@@ -224,13 +285,19 @@ fun TriggerToolConfig() {
     fun AddConditionButton() {
         DefaultButton(
             onClick = {
+                var newId: Int? = null
                 updateCurrentTrigger { trigger ->
-                    trigger.copy(
+                    val newTriggers = trigger.copy(
                         conditions = trigger.conditions.toMutableList().also {
                             it.add(Condition.ConditionEnum.IS_TURN.default)
                         }
                     )
+                    newId = newTriggers.conditions.lastIndex
+                    newTriggers
                 }
+
+                currentConditionReference = newId
+
             },
         ) {
             Text("Add new condition")
@@ -288,7 +355,9 @@ fun TriggerToolConfig() {
                     updateCondition { _ ->
                         value.default
                     }
-                }
+                },
+
+                modifier = Modifier.widthIn(max = 180.dp)
             )
 
         }
@@ -459,7 +528,7 @@ fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompound()
+                            flush()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -496,7 +565,7 @@ fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompound()
+                            flush()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -533,7 +602,7 @@ fun TriggerToolConfig() {
                         },
                         modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompound()
+                                flush()
                             }
                         },
                         placeholder = { Text("Empty") }
@@ -579,7 +648,7 @@ fun TriggerToolConfig() {
                         },
                         modifier = Modifier.onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompound()
+                                flush()
                             }
                         },
                         leadingIcon = {
@@ -643,7 +712,7 @@ fun TriggerToolConfig() {
                         },
                         modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompound()
+                                flush()
                             }
                         },
                         placeholder = { Text("Empty") }
@@ -711,7 +780,7 @@ fun TriggerToolConfig() {
                         },
                         modifier = Modifier.onFocusChanged { focus ->
                             if (!focus.isFocused) {
-                                editorService.flushCompound()
+                                flush()
                             }
                         },
                         leadingIcon = {
@@ -756,7 +825,7 @@ fun TriggerToolConfig() {
                     },
                     modifier = Modifier.fillMaxWidth().onFocusChanged { focus ->
                         if (!focus.isFocused) {
-                            editorService.flushCompound()
+                            flush()
                         }
                     },
                     placeholder = { Text("Empty") }
@@ -789,16 +858,24 @@ fun TriggerToolConfig() {
             },
             { _, selection ->
                 currentActionReference = selection
-            }
+            },
+            modifier = Modifier.widthIn(max = 180.dp)
         )
     }
 
     @Composable
     fun AddActionButton() {
         BlueButton("Add Action") {
+            var newId: Int? = null
             updateCurrentTrigger { trigger ->
-                trigger.copy(actions = trigger.actions.addImmutably(GameAction.ActionEnum.ADD_UNIT.default))
+                val newTrigger = trigger.copy(
+                    actions = trigger.actions.addImmutably(GameAction.ActionEnum.ADD_UNIT.default)
+                )
+                newId = newTrigger.actions.lastIndex
+                newTrigger
             }
+
+            currentActionReference = newId
         }
     }
 
@@ -849,19 +926,22 @@ fun TriggerToolConfig() {
             updateActionTyped(action, updater, flush = true)
         }
 
-        Text("Action Type:")
-        DropDown(
-            action.enumRepresentation,
-            GameAction.ActionEnum.entries.toList(),
-            { _, enum -> enum.name },
-            { _, enum ->
-                if (enum == action.enumRepresentation) return@DropDown
-                updateAction {
-                    enum.default
-                }
-            }
+        CenteredRow {
+            Text("Action Type: ")
+            DropDown(
+                action.enumRepresentation,
+                GameAction.ActionEnum.entries.toList(),
+                { _, enum -> enum.name },
+                { _, enum ->
+                    if (enum == action.enumRepresentation) return@DropDown
+                    updateAction {
+                        enum.default
+                    }
+                },
+                modifier = Modifier.widthIn(max = 200.dp)
 
-        )
+            )
+        }
 
         DefaultVSpacer()
 
@@ -883,7 +963,7 @@ fun TriggerToolConfig() {
                         )
                     }
                     CenteredRow {
-                        val unitTeam = (scenario as? GameScenario.Preset)?.players?.get(unit.owner.key)?.team
+                        val unitTeam = (editorService.scenario.value as? GameScenario.Preset)?.players?.get(unit.owner.key)?.team
                         Text("$unitId ${unit.name ?: let {
                             if (unitTeam != null) "${unit.type.name} $unitTeam"
                             else unit.type.name
@@ -898,7 +978,7 @@ fun TriggerToolConfig() {
 
                         IconActionButton(AllIconsKeys.General.Delete, null, onClick = {
                             updateUnit(null)
-                            editorService.flushCompound()
+                            flush()
                         })
 
                     }
@@ -915,7 +995,19 @@ fun TriggerToolConfig() {
 
             }
 
-            is GameAction.AddTrigger -> TODO()
+            is GameAction.AddTrigger -> {
+
+                TriggerComponent(
+                    nonNullReference,
+                    action.triggers,
+                    { newList, flush ->
+                        updateAction({
+                            action.copy(triggers = newList)
+                        }, flush)
+                    },
+                    flush
+                )
+            }
             is GameAction.DefeatPlayer -> TODO()
             is GameAction.EndGame -> TODO()
             is GameAction.MoveCamera -> TODO()

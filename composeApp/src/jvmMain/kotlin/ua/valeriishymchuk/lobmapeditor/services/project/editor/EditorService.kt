@@ -36,6 +36,8 @@ sealed class EditorService<T : GameScenario<T>>(
 
     protected var composedCommands: MutableList<CommandWrapper<*>> = mutableListOf()
 
+    val rerenderTrigger = MutableStateFlow(true)
+
     var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
@@ -101,8 +103,10 @@ sealed class EditorService<T : GameScenario<T>>(
         protected set
     protected var savingJob: Job? = null
 
-    protected val scenarioSetter: (T) -> Unit = {
-        this.scenario.value = it
+    protected val scenarioSetter: (T) -> Unit = { newScenario ->
+        val newSelectedObjects = selectedObjects.value.filter { it.isValid(newScenario) }
+        if (newSelectedObjects.size != selectedObjects.value.size) selectedObjects.value = newSelectedObjects.toSet()
+        this.scenario.value = newScenario
     }
 
 
