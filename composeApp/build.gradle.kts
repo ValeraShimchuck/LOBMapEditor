@@ -39,7 +39,7 @@ kotlin {
                 google()
                 mavenCentral()
                 maven("https://maven.pkg.jetbrains.space/public/p/compose/dev") // для JetBrains Compose
-                maven("https://jogamp.org/deployment/maven")
+//                maven("https://jogamp.org/deployment/maven")
                 maven("https://www.jetbrains.com/intellij-repository/releases/")
             }
             dependencies {
@@ -58,8 +58,8 @@ kotlin {
                 implementation("org.jetbrains.jewel:jewel-ui:0.29.0-252.24604")
                 implementation("com.jetbrains.intellij.platform:icons:252.23892.439")
 
-                implementation("org.jogamp.jogl:jogl-all-main:2.5.0")
-                implementation("org.jogamp.gluegen:gluegen-rt-main:2.5.0")
+                implementation("org.jogamp.jogl:jogl-all-main:2.6.0")
+                implementation("org.jogamp.gluegen:gluegen-rt-main:2.6.0")
                 implementation("com.google.code.gson:gson:2.13.1")
 
                 val voyagerVersion = "1.1.0-beta03"

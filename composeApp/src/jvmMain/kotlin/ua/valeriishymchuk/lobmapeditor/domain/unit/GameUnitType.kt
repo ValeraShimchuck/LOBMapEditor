@@ -75,7 +75,7 @@ enum class GameUnitType(
         texture = UnitTypeTexture.Formation.baseIntoFormation("guards"),
         shootingRange = INFANTRY_FORMATION_RANGES,
         defaultHealth = 1000,
-        defaultOrganization = 775,
+        defaultOrganization = 1125,
         defaultStamina = 1900
     ),
     MILITIA(
@@ -139,7 +139,7 @@ enum class GameUnitType(
             closeRange(60)
         }),
         defaultHealth = 400,
-        defaultOrganization = 750,
+        defaultOrganization = 400,
         defaultStamina = 1650
     ),
 
