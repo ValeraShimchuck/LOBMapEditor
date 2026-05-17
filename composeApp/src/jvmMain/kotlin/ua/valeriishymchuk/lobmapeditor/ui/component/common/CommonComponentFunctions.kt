@@ -27,6 +27,11 @@ fun DefaultVSpacer() {
 }
 
 @Composable
+fun DefaultHSpacer() {
+    HorizontalSpacer(7)
+}
+
+@Composable
 fun LongVSpacer() {
     VerticalSpacer(10)
 }

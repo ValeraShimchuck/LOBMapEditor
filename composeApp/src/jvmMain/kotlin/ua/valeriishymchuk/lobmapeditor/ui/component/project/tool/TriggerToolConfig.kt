@@ -25,48 +25,41 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.shared.utils.addImmutably
 import ua.valeriishymchuk.lobmapeditor.ui.component.common.*
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TriggerToolConfig() {
     // TODO
-    // add AddObjective action
+
+
+    // make remove unit and move camera
+
+    // then finish the final boss
+
     // try make other actions other than order
     // think about how to show orders
 
     // Also
     // Add additional warning messages if objective with certain name wasn't found
     // make actions:
-    // make objects created by actions visible in editor and be treated as units(make visual difference)
+    // show relative coordinates of spawned neutral objectives
     // think of improving actions(adding ability to directly order)
+    // show units those might be affected by remove unit action
+    // Show move camera action on the map(maybe make it as an object that can be dragged
+    // If remove unit doesn't affect anyone then write a warning message
+    // If war is not defined anywhere(when polling in condition) - write a warning message
+
 
 
     // At some point add a tool that will convert replay to map
     // reference https://github.com/egueneysaye/Replay_to_Scenario/blob/main/index.html
 
-    val toolService by rememberInstance<ToolService<*>>()
     val editorService by rememberInstance<EditorService<*>>()
     val scenarioNullable by editorService.scenario.collectAsState()
     val scenario = scenarioNullable ?: return
-//    val tool = toolService.triggerTool
-//    val currentTriggerReference by tool.currentTrigger.collectAsState()
-//    val currentTrigger: GameTrigger? = currentTriggerReference?.let { triggerReference ->
-//        val trigger = triggerReference.getValueOrNull(scenario.commonData.triggers::getOrNull)
-//        if (trigger == null) {
-//            tool.currentTrigger.value = null
-//            return
-//        }
-//        trigger
-//    }
-//    currentTriggerReference?.let { reference ->
-//        val trigger = scenario.triggers.getOrNull(reference.key)
-//        if (trigger == null) {
-//            tool.currentTrigger.value = null
-//            return
-//        }
-//    }
-
 
     TriggerComponent(Unit, scenario.triggers, { newTriggerList, flush ->
         val command = UpdateGameTriggerListCommand(
@@ -100,7 +93,7 @@ private fun TriggerComponent(
     }
 
     val currentTrigger: GameTrigger? = currentTriggerReference?.let { ref ->
-        triggerList.getOrNull( ref) ?: Unit.let {
+        triggerList.getOrNull(ref) ?: Unit.let {
             currentTriggerReference = null
             return
         }
@@ -834,9 +827,7 @@ private fun TriggerComponent(
         }
 
 
-
-    }
-    else {
+    } else {
         AddConditionButton()
     }
 
@@ -963,11 +954,16 @@ private fun TriggerComponent(
                         )
                     }
                     CenteredRow {
-                        val unitTeam = (editorService.scenario.value as? GameScenario.Preset)?.players?.get(unit.owner.key)?.team
-                        Text("$unitId ${unit.name ?: let {
-                            if (unitTeam != null) "${unit.type.name} $unitTeam"
-                            else unit.type.name
-                        }}")
+                        val unitTeam =
+                            (editorService.scenario.value as? GameScenario.Preset)?.players?.get(unit.owner.key)?.team
+                        Text(
+                            "$unitId ${
+                                unit.name ?: let {
+                                    if (unitTeam != null) "${unit.type.name} $unitTeam"
+                                    else unit.type.name
+                                }
+                            }"
+                        )
 
                         IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
 
@@ -1008,14 +1004,357 @@ private fun TriggerComponent(
                     flush
                 )
             }
-            is GameAction.DefeatPlayer -> TODO()
-            is GameAction.EndGame -> TODO()
+
+            is GameAction.DefeatPlayer -> {
+                Text("Player")
+                IntTextField(
+                    finalActionReference,
+                    {
+                        action.player.key
+                    },
+                    { newId ->
+                        updateActionTyped(action, {
+                            it.copy(player = Reference(newId))
+                        }, false)
+                    },
+                    flush
+                )
+                // TODO show if player does not exist(only in preset mode)
+                // keep in mind that internal list starts from 0, where as LoB's ids start from 1
+
+            }
+            is GameAction.EndGame -> {
+                Text("Reason:")
+                DropDown(
+                    action.reason,
+                    GameAction.GameEndReason.entries.toList(),
+                    { _, reason -> reason.name },
+                    { _, reason ->
+                        updateActionTyped(action, {
+                            it.copy(
+                                reason = reason
+                            )
+                        })
+                    }
+                )
+            }
             is GameAction.MoveCamera -> TODO()
             is GameAction.OrderUnit -> TODO()
             is GameAction.RemoveUnit -> TODO()
-            is GameAction.SetVar -> TODO()
-            is GameAction.ShowMessage -> TODO()
-            is GameAction.SpawnNeutralObjectives -> TODO()
+            is GameAction.SetVar -> {
+                // name
+                Text("Name:")
+                ReactiveTextField(
+                    finalActionReference,
+                    action.name,
+                    { newText ->
+                        updateActionTyped(action, {
+                            it.copy(
+                                name = newText
+                            )
+                        }, false)
+                    },
+                    onFocusLoss = flush
+                )
+                DefaultVSpacer()
+                Text("Value:")
+                FloatTextField(
+                    finalActionReference,
+                    { action.value },
+                    {  newValue ->
+                        updateActionTyped(action, {
+                            it.copy(
+                                value = newValue
+                            )
+                        }, false)
+                    },
+                    flush
+                )
+                // value
+            }
+            is GameAction.ShowMessage -> {
+                // title
+                Text("Title:")
+                ReactiveTextField(
+                    finalActionReference,
+                    action.title,
+                    { newText ->
+                        updateActionTyped(action, {
+                            it.copy(
+                                title = newText
+                            )
+                        }, false)
+                    },
+                    onFocusLoss = flush
+                )
+                DefaultVSpacer()
+                // message
+                Text("Message:")
+                ReactiveTextField(
+                    finalActionReference,
+                    action.message,
+                    { newText ->
+                        updateActionTyped(action, {
+                            it.copy(
+                                message = newText
+                            )
+                        }, false)
+                    },
+                    onFocusLoss = flush
+                )
+            }
+            is GameAction.SpawnNeutralObjectives -> {
+                // per battle amount
+                val battleAmount = action.amount
+
+                CenteredRow {
+                    Text("Amount of objectives per battle type")
+                    Checkbox(battleAmount != null, { newState ->
+                        if (newState) {
+                            updateActionTyped(action) {
+                                it.copy(
+                                    amount = (GameAction.ActionEnum.SPAWN_NEUTRAL_OBJECTIVES.default as GameAction.SpawnNeutralObjectives).amount
+                                )
+                            }
+                        } else {
+                            updateActionTyped(action) {
+                                it.copy(
+                                    amount = null
+                                )
+                            }
+                        }
+                    })
+                }
+
+                if (battleAmount != null) {
+                    DefaultVSpacer()
+                    GameAction.BattleType.entries.forEach { battleType ->
+                        CenteredRow {
+                            Text(battleType.displayName)
+                            DefaultHSpacer()
+                            IntTextField(
+                                finalActionReference, {
+                                    battleAmount[battleType] ?: 1
+                                },
+                                {
+                                    updateActionTyped(action) { action ->
+                                        val newAmount = battleAmount.toMutableMap()
+                                        newAmount[battleType] = it
+                                        action.copy(
+                                            amount = newAmount
+                                        )
+                                    }
+                                }, adjustValue = { max(it, 1) },
+                                modifier = Modifier,
+                                onFocusLoss = flush
+                            )
+
+                        }
+                    }
+
+                }
+
+                DefaultVSpacer()
+
+
+                // min/max positions, they are from 0-1 actually, no idea what is that, probably it is relative to the map
+
+                println("Current action positions: $action")
+
+                val hasPositions = listOf(
+                    action.minX,
+                    action.maxX,
+                    action.minY,
+                    action.maxY
+                ).all { it != null }
+                CenteredRow {
+                    Text("Objective Spawn Relative Boundaries")
+                    Checkbox(
+                        hasPositions,
+                        { state ->
+                            if (state) {
+                                updateActionTyped(action) { typedAction ->
+                                    typedAction.copy(
+                                        minX = 0.0f,
+                                        maxX = 1.0f,
+                                        minY = 0.0f,
+                                        maxY = 1.0f
+                                    )
+                                }
+                            } else {
+                                updateActionTyped(action) { typedAction ->
+                                    typedAction.copy(
+                                        minX = null,
+                                        maxX = null,
+                                        minY = null,
+                                        maxY = null
+                                    )
+                                }
+                            }
+                        })
+                }
+
+                if (hasPositions) {
+                    DefaultVSpacer()
+                    CenteredRow {
+                        Text("Start")
+                        DefaultHSpacer()
+                        Text("X")
+                        Slider(
+                            action.minX!!, {
+                                updateActionTyped(
+                                    action,
+                                    { actionTyped ->
+                                        actionTyped.copy(
+                                            minX = it
+                                        )
+                                    }, false
+                                )
+                            }, onValueChangeFinished = {
+                                flush()
+                            }, modifier = Modifier.weight(0.5f)
+                        )
+
+                        DefaultHSpacer()
+                        Text("Y")
+                        Slider(
+                            action.minY!!, {
+                                updateActionTyped(
+                                    action,
+                                    { actionTyped ->
+                                        actionTyped.copy(
+                                            minY = it
+                                        )
+                                    }, false
+                                )
+                            }, onValueChangeFinished = {
+                                flush()
+                            },
+                            modifier = Modifier.weight(0.5f)
+                        )
+
+                    }
+
+                    CenteredRow {
+                        Text("End")
+                        DefaultHSpacer()
+                        Text("X")
+                        Slider(
+                            action.maxX!!, {
+                                updateActionTyped(
+                                    action,
+                                    { actionTyped ->
+                                        actionTyped.copy(
+                                            maxX = it
+                                        )
+                                    }, false
+                                )
+                            }, onValueChangeFinished = {
+                                flush()
+                            },
+                            modifier = Modifier.weight(0.5f)
+                        )
+
+                        DefaultHSpacer()
+                        Text("Y")
+                        Slider(
+                            action.maxY!!, {
+                                updateActionTyped(
+                                    action,
+                                    { actionTyped ->
+                                        actionTyped.copy(
+                                            maxY = it
+                                        )
+                                    },
+                                    false,
+                                )
+                            }, onValueChangeFinished = {
+                                flush()
+                            },
+                            modifier = Modifier.weight(0.5f)
+                        )
+
+                    }
+
+                }
+                DefaultVSpacer()
+
+
+                // ojbective spawn orientation
+                CenteredRow {
+                    Text("Orientation")
+                    Checkbox(action.orientation != null, { state ->
+                        if (state) {
+                            updateActionTyped(action) { action ->
+                                action.copy(
+                                    orientation = GameAction.ObjectiveSpawnOrientation.entries.first()
+                                )
+                            }
+                        } else {
+                            updateActionTyped(action) { action ->
+                                action.copy(
+                                    orientation = null
+                                )
+                            }
+                        }
+                    })
+
+
+                    val orientation = action.orientation
+                    if (orientation != null) {
+                        DropDown(orientation, GameAction.ObjectiveSpawnOrientation.entries.toList(), { _, orientation ->
+                            orientation.name
+
+                        }, { _, orientation ->
+                            updateActionTyped(action) { action ->
+                                action.copy(
+                                    orientation = orientation
+                                )
+                            }
+                        })
+                    }
+
+                }
+
+                // spacing
+                CenteredRow {
+                    Text("Spacing")
+                    val spacing = action.spacing
+                    Checkbox(spacing != null, { state ->
+                        if (state) {
+                            updateActionTyped(action) { action ->
+                                action.copy(
+                                    spacing = 0.25f
+                                )
+                            }
+                        } else {
+                            updateActionTyped(action) { action ->
+                                action.copy(
+                                    spacing = null
+                                )
+                            }
+                        }
+                    })
+
+                    if (spacing != null) {
+                        FloatTextField(spacing, { it }, {
+                            updateActionTyped(
+                                action,
+                                { action ->
+                                    action.copy(
+                                        spacing = it
+                                    )
+                                },
+                                false
+                            )
+                        }, flush, adjustValue = { number ->
+                            max(number, 0.0f)
+                        }, modifier = Modifier)
+                    }
+
+                }
+
+            }
         }
 
         DefaultVSpacer()

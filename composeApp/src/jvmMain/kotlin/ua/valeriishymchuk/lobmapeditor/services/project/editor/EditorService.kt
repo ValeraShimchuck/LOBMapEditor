@@ -12,6 +12,7 @@ import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
@@ -62,9 +63,11 @@ sealed class EditorService<T : GameScenario<T>>(
                 if (action is GameAction.AddUnit) {
                     set.addAll(action.gameUnits.mapIndexed { unitId, _ ->
                         GameUnit.TriggerUnitReference(
-                            triggerId,
-                            actionId,
-                            listOf(unitId)
+                            TriggerScenarioReference.ObjectAddress(
+                                triggerId,
+                                actionId,
+                                listOf(unitId)
+                            )
                         )
                     })
                     return@forEachIndexed
@@ -80,7 +83,11 @@ sealed class EditorService<T : GameScenario<T>>(
                                 deepAction.gameUnits.forEachIndexed { deepUnitId, _ ->
                                     val unitAddress = currentSubAddress.toMutableList()
                                     unitAddress.add(deepUnitId)
-                                    set.add(GameUnit.TriggerUnitReference(triggerId, actionId, unitAddress))
+                                    set.add(GameUnit.TriggerUnitReference(
+                                        TriggerScenarioReference.ObjectAddress(
+                                            triggerId, actionId, unitAddress
+                                        )
+                                    ))
                                 }
                                 return@forEachIndexed
                             }

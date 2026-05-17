@@ -193,12 +193,14 @@ sealed interface GameAction {
     }
 
     // reference https://github.com/sophie-games/lob-sdk/blob/main/src/game-data/eras/napoleonic/battle-types.json
-    enum class BattleType {
-        MICRO,
-        CLASH,
-        COMBAT,
-        BATTLE,
-        GRAND_BATTLE;
+    enum class BattleType(
+        val displayName: String
+    ) {
+        MICRO("Micro"),
+        CLASH("Clash"),
+        COMBAT("Combat"),
+        BATTLE("Battle"),
+        GRAND_BATTLE("Grand Battle");
         val key: String get() = name.lowercase()
     }
 
@@ -386,7 +388,7 @@ sealed interface GameAction {
                                 .mapValues { it.value.asInt }
                         },
                         obj.getOrNull("minX")?.asFloat,
-                        obj.getOrNull("maX")?.asFloat,
+                        obj.getOrNull("maxX")?.asFloat,
                         obj.getOrNull("minY")?.asFloat,
                         obj.getOrNull("maxY")?.asFloat,
                         obj.getOrNull("orientation")?.asString?.let { orientation ->
