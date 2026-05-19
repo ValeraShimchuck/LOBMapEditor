@@ -61,6 +61,10 @@ class TextureStorage {
         private set
     var scriptIconTexture: Int = -1
         private set
+    var cameraIconTexture: Int = -1
+        private set
+    var removeIconTexture: Int = -1
+        private set
 
     var arrowBody: Int = -1
         private set
@@ -102,7 +106,11 @@ class TextureStorage {
 
         loadInternalTexture(ctx, "wood")
         loadInternalTexture(ctx, "icons/script")
+        loadInternalTexture(ctx, "icons/cameraicon")
+        loadInternalTexture(ctx, "icons/removedbyscripticon")
         scriptIconTexture = textures["icons/script"]!!
+        cameraIconTexture = textures["icons/cameraicon"]!!
+        removeIconTexture = textures["icons/removedbyscripticon"]!!
         TerrainType.MAIN_TERRAIN.forEach { terrain ->
             loadInternalTexture(ctx, "tilesets/${terrain.textureLocation}", false)
         }

@@ -3,6 +3,7 @@ package ua.valeriishymchuk.lobmapeditor.domain.trigger
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 
 data class GameTrigger(
@@ -65,6 +66,31 @@ data class GameTrigger(
                     .toMutableList()
                 val nestedTriggers = trigger.actions.filterIsInstance<GameAction.AddTrigger>().flatMap { it.triggers }
                 list.addAll(nestedTriggers.findAllUnits())
+                list
+            }
+        }
+
+        fun List<GameTrigger>.findAllRemovableUnitsNames(): Set<String> {
+            return this.flatMap { trigger ->
+                val set: MutableSet<String> = trigger.actions
+                    .filterIsInstance<GameAction.RemoveUnit>()
+                    .flatMap { action -> action.units }
+                    .toMutableSet()
+                val nestedTriggers = trigger.actions
+                    .filterIsInstance<GameAction.AddTrigger>()
+                    .flatMap { it.triggers }
+                set.addAll(nestedTriggers.findAllRemovableUnitsNames())
+                set
+            }.toSet()
+        }
+
+        fun List<GameTrigger>.findAllCameraMovements(): List<Position> {
+            return this.flatMap { trigger ->
+                val list: MutableList<Position> = trigger.actions.filterIsInstance<GameAction.MoveCamera>()
+                    .map { action -> action.position }
+                    .toMutableList()
+                val nestedTriggers = trigger.actions.filterIsInstance<GameAction.AddTrigger>().flatMap { it.triggers }
+                list.addAll(nestedTriggers.findAllCameraMovements())
                 list
             }
         }

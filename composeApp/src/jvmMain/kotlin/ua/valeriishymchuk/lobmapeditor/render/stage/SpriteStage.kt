@@ -10,6 +10,8 @@ import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllCameraMovements
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllRemovableUnitsNames
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllUnits
 import ua.valeriishymchuk.lobmapeditor.domain.unit.*
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit.Companion.UNIT_DIMENSIONS
@@ -38,6 +40,45 @@ class SpriteStage(
         loadShaderSource("vsprite"),
         loadShaderSource("fsprite")
     )
+
+    private fun RenderContext<*>.renderCameraMovements() {
+        val positionsToRender = scenario.triggers.findAllCameraMovements()
+        spriteProgram.setUpVAO(glCtx)
+        spriteProgram.applyUniform(
+            glCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                false,
+                true,
+                Vector4f(0f, 0f, 0f, 0.6f),
+                -1,
+                textureStorage.cameraIconTexture
+            )
+        )
+
+        val vbo = positionsToRender.map { pos ->
+            val positionMatrix = Matrix4f()
+            positionMatrix.setTranslation(Vector3f(pos.x, pos.y, 0f))
+            val selectionDimensions = Vector2f(
+                32f
+            )
+            SpriteProgram.BufferData(
+                RectanglePoints.fromPoints(
+                    selectionDimensions.div(-2f, Vector2f()),
+                    selectionDimensions.div(2f, Vector2f()),
+                ),
+                RectanglePoints.TEXTURE_CORDS,
+                positionMatrix
+            )
+        }
+
+
+        if (vbo.isEmpty()) return
+
+        spriteProgram.setUpVBO(glCtx, vbo)
+
+        glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+    }
 
     private fun RenderContext<*>.renderSelections() {
         val selectionsToRender = selectedObjects.mapNotNull { it as? PositionProperty }.toList()
@@ -288,6 +329,9 @@ class SpriteStage(
         val preparedUnitsToRender: MutableMap<Triple<Optional<PlayerTeam>, GameUnitType, UnitFormation?>, MutableList<GameUnit>> =
             mutableMapOf()
 
+        val removableUnitsNames = scenario.commonData.triggers.findAllRemovableUnitsNames()
+
+
         // Preparation
         unitsToRender.forEach { (team, units) ->
             units.forEach { (pair, unitInfo) ->
@@ -438,6 +482,40 @@ class SpriteStage(
 
         }
 
+        val removableUnits = plainUnitList.filter {
+            it.name != null && removableUnitsNames.contains(it.name)
+        }
+
+        spriteProgram.setUpVAO(glCtx)
+        spriteProgram.applyUniform(
+            glCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                drawMask = false,
+                drawOverlay = true,
+                maskColor = Vector4f(),
+                maskTexture = -1,
+                overlayTexture = textureStorage.removeIconTexture
+            )
+        )
+
+        if (removableUnits.isNotEmpty()) {
+            val vboInput = removableUnits.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(unit.position.x + 18, unit.position.y - 14, 0f))
+                SpriteProgram.BufferData(
+                    RectanglePoints.centered(Vector2f(8f)),
+                    RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+            if (!vboInput.isEmpty()) {
+                spriteProgram.setUpVBO(glCtx, vboInput)
+                glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vboInput.size)
+            }
+        }
+
         if (!areScripted) return
 
         // Scripted Icon Render
@@ -486,6 +564,8 @@ class SpriteStage(
         glCtx.glBindVertexArray(spriteProgram.vao)
         glCtx.glBindVBO(spriteProgram.vbo)
 
+
+        renderCameraMovements()
 
         renderSelections()
         renderUnitArrows()

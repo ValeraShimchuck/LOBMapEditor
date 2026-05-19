@@ -25,6 +25,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.shared.utils.addImmutably
 import ua.valeriishymchuk.lobmapeditor.ui.component.common.*
+import java.lang.IllegalStateException
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -35,7 +36,7 @@ fun TriggerToolConfig() {
     // TODO
 
 
-    // make remove unit and move camera
+    // implement move camera, make it as a reference object
 
     // then finish the final boss
 
@@ -61,7 +62,7 @@ fun TriggerToolConfig() {
     val scenarioNullable by editorService.scenario.collectAsState()
     val scenario = scenarioNullable ?: return
 
-    TriggerComponent(Unit, scenario.triggers, { newTriggerList, flush ->
+    TriggerComponent(Unit, editorService.scenario.value!!.triggers, { newTriggerList, flush ->
         val command = UpdateGameTriggerListCommand(
             scenario.triggers,
             newTriggerList
@@ -80,12 +81,13 @@ fun TriggerToolConfig() {
 @Composable
 private fun TriggerComponent(
     rememberKey: Any,
-    triggerList: List<GameTrigger>,
+    triggerList0: List<GameTrigger>,
     updateTriggerList: (List<GameTrigger>, Boolean) -> Unit, // newList, flush
     flush: () -> Unit,
 ) {
 
     val editorService by rememberInstance<EditorService<*>>()
+    var triggerList by remember(rememberKey) { mutableStateOf(triggerList0) }
 
 
     var currentTriggerReference: Int? by remember(rememberKey) {
@@ -147,11 +149,13 @@ private fun TriggerComponent(
 
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger, flush: Boolean = true) {
         val reference = currentTriggerReference
+        println("Current trigger list: ${triggerList}")
         val newList = triggerList.mapIndexed { idx, value ->
             if (idx != reference) return@mapIndexed value
             updater(value)
         }
 
+        triggerList = newList
         updateTriggerList(newList, flush)
 
 //        val command = UpdateGameTriggerListCommand(
@@ -908,8 +912,9 @@ private fun TriggerComponent(
         }
 
         fun <T : GameAction> updateActionTyped(action: T, updater: (T) -> T, flush: Boolean = true) {
-            updateAction({ _ ->
-                updater(action)
+            updateAction({ actualAction ->
+                val castedAction = (actualAction as? T) ?: throw IllegalStateException("Wtf")
+                updater(castedAction)
             }, flush)
         }
 
@@ -1040,7 +1045,25 @@ private fun TriggerComponent(
             }
             is GameAction.MoveCamera -> TODO()
             is GameAction.OrderUnit -> TODO()
-            is GameAction.RemoveUnit -> TODO()
+            is GameAction.RemoveUnit -> {
+                Text("Units:")
+                println("Units to be removed: ${action.units}")
+                action.units.forEachIndexed { id, name ->
+                    ReactiveTextField(finalActionReference to id, name, { newName ->
+                        updateActionTyped(action, { action ->
+                            println("${action.units}")
+                            println("Got new name: ${newName}")
+                            action.copy(
+                                units = action.units.toMutableList().also {
+                                    it[id] = newName
+                                }
+                            )
+                        }, false)
+                        println(action.units)
+                    },
+                        onFocusLoss = flush)
+                }
+            }
             is GameAction.SetVar -> {
                 // name
                 Text("Name:")
