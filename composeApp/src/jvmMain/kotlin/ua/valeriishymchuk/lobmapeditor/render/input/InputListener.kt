@@ -47,8 +47,8 @@ abstract class InputListener<S: GameScenario<S>>(
     protected var rotatableUnit: ScenarioReference? = null
 
 
-    protected var leftLastX: Int? = null
-    protected var leftLastY: Int? = null
+    protected var leftLastX: Int? = null // used for tiles
+    protected var leftLastY: Int? = null // used for tiles
     protected var isToolDragging = false
 
     protected var isShiftPressed = false
@@ -297,7 +297,8 @@ abstract class InputListener<S: GameScenario<S>>(
         if (editorService.selectedObjects.value.isNotEmpty()) {
             ScenarioReference.updateList(
                 PositionProperty::class,
-                editorService.selectedObjects.value, scenario
+                editorService.selectedObjects.value,
+                scenario
             ) { obj ->
                 val newUnitPos = Vector2f(obj.position.x, obj.position.y).add(change)
                 obj.withPosition(

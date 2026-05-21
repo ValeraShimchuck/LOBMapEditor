@@ -1043,7 +1043,14 @@ private fun TriggerComponent(
                     }
                 )
             }
-            is GameAction.MoveCamera -> TODO()
+            is GameAction.MoveCamera -> {
+                CenteredRow {
+                    Text("Move to:")
+                    IconActionButton(AllIconsKeys.Actions.MoveToButton, null, onClick = {
+                        editorService.cameraPosition = action.position.toVector2f()
+                    })
+                }
+            }
             is GameAction.OrderUnit -> TODO()
             is GameAction.RemoveUnit -> {
                 Text("Units:")
@@ -1051,15 +1058,12 @@ private fun TriggerComponent(
                 action.units.forEachIndexed { id, name ->
                     ReactiveTextField(finalActionReference to id, name, { newName ->
                         updateActionTyped(action, { action ->
-                            println("${action.units}")
-                            println("Got new name: ${newName}")
                             action.copy(
                                 units = action.units.toMutableList().also {
                                     it[id] = newName
                                 }
                             )
                         }, false)
-                        println(action.units)
                     },
                         onFocusLoss = flush)
                 }
@@ -1182,7 +1186,6 @@ private fun TriggerComponent(
 
                 // min/max positions, they are from 0-1 actually, no idea what is that, probably it is relative to the map
 
-                println("Current action positions: $action")
 
                 val hasPositions = listOf(
                     action.minX,

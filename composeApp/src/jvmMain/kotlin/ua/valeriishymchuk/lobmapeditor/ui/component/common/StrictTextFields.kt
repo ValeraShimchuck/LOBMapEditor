@@ -28,6 +28,7 @@ fun <T> IntTextField(
     onFocusLoss: () -> Unit = {},
     adjustValue: (Int) -> Int = { it }, // for coercing usually
     leadingText: String? = null,
+    placeholder: String? = null,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     StrictTextField(
@@ -48,6 +49,7 @@ fun <T> IntTextField(
         },
         onFocusLoss = onFocusLoss,
         leadingText = leadingText,
+        placeholder = placeholder,
         modifier
     )
 }
@@ -56,17 +58,18 @@ fun <T> IntTextField(
 @Composable
 fun <T> FloatTextField(
     rememberSubject: T,
-    subjectToFloat: (T) -> Float,
+    subjectToFloat: (T) -> Float?,
     onUpdate: (Float) -> Unit,
     onFocusLoss: () -> Unit = {},
     adjustValue: (Float) -> Float = { it }, // for coercing usually
     leadingText: String? = null,
+    placeholder: String? = null,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     StrictTextField(
         rememberSubject,
         {
-            subjectToFloat(rememberSubject).toString()
+            subjectToFloat(rememberSubject)?.toString() ?: ""
         },
         { str ->
             str.replace(Regex("[^0-9.]"), "").let { str ->
@@ -81,6 +84,7 @@ fun <T> FloatTextField(
         },
         onFocusLoss = onFocusLoss,
         leadingText = leadingText,
+        placeholder = placeholder,
         modifier
     )
 }
@@ -94,6 +98,7 @@ fun <T> StrictTextField(
     onUpdate: (String) -> Unit,
     onFocusLoss: () -> Unit = {},
     leadingText: String? = null,
+    placeholder: String? = null,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     var textValue by remember(rememberSubject) {
@@ -131,6 +136,12 @@ fun <T> StrictTextField(
                     Spacer(Modifier.width(4.dp))
                 }
             }
+        },
+        placeholder = {
+            if (placeholder != null) {
+                Text(placeholder)
+            }
+
         }
     )
 }

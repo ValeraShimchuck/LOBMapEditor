@@ -60,7 +60,7 @@ class SpriteStage(
             val positionMatrix = Matrix4f()
             positionMatrix.setTranslation(Vector3f(pos.x, pos.y, 0f))
             val selectionDimensions = Vector2f(
-                32f
+                32f * 0.8f
             )
             SpriteProgram.BufferData(
                 RectanglePoints.fromPoints(
@@ -565,9 +565,9 @@ class SpriteStage(
         glCtx.glBindVBO(spriteProgram.vbo)
 
 
-        renderCameraMovements()
 
         renderSelections()
+        renderCameraMovements()
         renderUnitArrows()
 
         if (this is PresetRenderContext) {

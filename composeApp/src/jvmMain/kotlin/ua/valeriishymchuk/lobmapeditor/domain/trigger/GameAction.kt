@@ -4,8 +4,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import org.joml.Vector2f
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
+import ua.valeriishymchuk.lobmapeditor.domain.property.CameraProperty
+import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnitType
 import ua.valeriishymchuk.lobmapeditor.domain.unit.UnitStatus
@@ -123,10 +126,10 @@ sealed interface GameAction {
     }
 
     data class MoveCamera(
-        val position: Position,
-        val zoom: Float?,
-        val duration: Float
-    ): GameAction {
+        override val position: Position,
+        override val zoom: Float?,
+        override val duration: Float
+    ): GameAction, PositionProperty<MoveCamera>, CameraProperty<MoveCamera> {
         override val enumRepresentation: ActionEnum = ActionEnum.MOVE_CAMERA
 
         override fun serializeValue(): JsonElement {
@@ -136,6 +139,27 @@ sealed interface GameAction {
                 }
                 add("duration", JsonPrimitive(duration))
             }
+        }
+
+        override val hitboxDimensions: Vector2f = Vector2f(26f)
+        override val rotation: Float? = null
+
+        override fun withPosition(pos: Position): MoveCamera {
+            return copy(position = pos)
+        }
+
+        override fun withRotation(rotation: Float): MoveCamera {
+            throw IllegalStateException("Rotation is not supported")
+        }
+
+        override val identification: String = "$position. Camera Movement"
+
+        override fun withZoom(zoom: Float?): MoveCamera {
+            return copy(zoom = zoom)
+        }
+
+        override fun withDuration(duration: Float): MoveCamera {
+            return copy(duration = duration)
         }
     }
 

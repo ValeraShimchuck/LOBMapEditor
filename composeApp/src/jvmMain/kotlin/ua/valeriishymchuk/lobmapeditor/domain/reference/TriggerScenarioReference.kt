@@ -4,6 +4,7 @@ import ua.valeriishymchuk.lobmapeditor.commands.Command
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameTriggerListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.property.DomainProperty
+import ua.valeriishymchuk.lobmapeditor.domain.reference.address.ObjectAddress
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import kotlin.reflect.KClass
@@ -124,9 +125,7 @@ abstract class TriggerScenarioReference<
         return newTriggerList to value
     }
 
-    data class ObjectAddress(
-        val triggerId: Int, val actionId: Int, val address: List<Int>
-    )
+
 
     override fun dereference(scenario: GameScenario<*>): DomainProperty<*> {
         var associatedActionObject: ASSOCIATED_ACTION_OBJECT? = null

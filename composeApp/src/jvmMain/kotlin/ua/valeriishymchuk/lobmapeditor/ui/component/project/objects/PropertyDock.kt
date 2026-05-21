@@ -15,6 +15,7 @@ import org.jetbrains.jewel.ui.component.styling.ButtonStyle
 import org.jetbrains.jewel.ui.theme.defaultButtonStyle
 import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.Command.Companion.applyAllCompound
+import ua.valeriishymchuk.lobmapeditor.domain.property.CameraProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.NameProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.ObjectiveProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
@@ -24,7 +25,7 @@ import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
 import kotlin.getValue
 
 @Composable
-fun PropertyDock() { // TODO continue adding new properties and add selection dock from old dock
+fun PropertyDock() {
     val editorService by rememberInstance<EditorService<*>>()
 
     val scenarioNullable by editorService.scenario.collectAsState()
@@ -52,6 +53,15 @@ fun PropertyDock() { // TODO continue adding new properties and add selection do
                 selectedObjectReferences,
                 { updater ->
                     ScenarioReference.updateList(PositionProperty::class, selectedObjectReferences,scenario, updater)
+                        .applyAllCompound(editorService)
+                },
+                flusher
+            )
+
+            CameraProperty.Component(
+                selectedObjectReferences,
+                { updater ->
+                    ScenarioReference.updateList(CameraProperty::class, selectedObjectReferences,scenario, updater)
                         .applyAllCompound(editorService)
                 },
                 flusher

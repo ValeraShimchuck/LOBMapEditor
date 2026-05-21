@@ -14,6 +14,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
 import ua.valeriishymchuk.lobmapeditor.domain.property.UnitProperty
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.reference.address.ObjectAddress
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import kotlin.reflect.KClass
@@ -141,6 +142,14 @@ data class GameUnit(
 
         override fun castToAssociatedObject(obj: Any): GameUnit {
             return obj as GameUnit
+        }
+
+        override fun equals(other: Any?): Boolean {
+            return (other as? TriggerUnitReference)?.objectAddress == objectAddress
+        }
+
+        override fun hashCode(): Int {
+            return objectAddress.hashCode()
         }
 
 

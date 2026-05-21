@@ -25,7 +25,7 @@ fun PositionFieldComponent(
             flush,
             { x -> x.coerceIn(0f, mapDimensions.x()) },
             "X",
-            Modifier.weight(0.5f)
+            modifier = Modifier.weight(0.5f)
         )
 
         // Y
@@ -36,7 +36,7 @@ fun PositionFieldComponent(
             flush,
             { y -> y.coerceIn(0f, mapDimensions.y()) },
             "Y",
-            Modifier.weight(0.5f)
+            modifier = Modifier.weight(0.5f)
         )
     }
 

@@ -11,9 +11,12 @@ import ua.valeriishymchuk.lobmapeditor.commands.Command.Companion.applyAllCompou
 import ua.valeriishymchuk.lobmapeditor.commands.ComposedCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
+import ua.valeriishymchuk.lobmapeditor.domain.reference.MoveCameraScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.reference.address.ObjectAddress
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.LifecycleService
 import ua.valeriishymchuk.lobmapeditor.services.ScenarioIOService
@@ -52,6 +55,7 @@ sealed class EditorService<T : GameScenario<T>>(
         }.toMutableSet()
 
         set.addAll(findAllTriggerUnits())
+        set.addAll(findAllTriggerCameraMovements())
         return set
     }
 
@@ -63,7 +67,7 @@ sealed class EditorService<T : GameScenario<T>>(
                 if (action is GameAction.AddUnit) {
                     set.addAll(action.gameUnits.mapIndexed { unitId, _ ->
                         GameUnit.TriggerUnitReference(
-                            TriggerScenarioReference.ObjectAddress(
+                            ObjectAddress(
                                 triggerId,
                                 actionId,
                                 listOf(unitId)
@@ -84,7 +88,7 @@ sealed class EditorService<T : GameScenario<T>>(
                                     val unitAddress = currentSubAddress.toMutableList()
                                     unitAddress.add(deepUnitId)
                                     set.add(GameUnit.TriggerUnitReference(
-                                        TriggerScenarioReference.ObjectAddress(
+                                        ObjectAddress(
                                             triggerId, actionId, unitAddress
                                         )
                                     ))
@@ -98,6 +102,39 @@ sealed class EditorService<T : GameScenario<T>>(
                 }
                 traverseDeep(action, emptyList())
             }
+        }
+        return set
+    }
+
+    private fun traverseTriggers(
+        triggers: List<GameTrigger>,
+        flatAddress: List<Int>,
+        visitor: (ObjectAddress, GameAction) -> Unit
+    ) {
+        triggers.forEachIndexed { triggerId, trigger ->
+            trigger.actions.forEachIndexed { actionId, action ->
+                val newFlatAddress = flatAddress.toMutableList()
+                newFlatAddress.add(triggerId)
+                newFlatAddress.add(actionId)
+                val address = ObjectAddress(
+                    newFlatAddress[0],
+                    newFlatAddress[1],
+                    newFlatAddress.drop(2)
+                )
+                visitor(address, action)
+                if (action is GameAction.AddTrigger) {
+                    traverseTriggers(action.triggers, newFlatAddress, visitor)
+                }
+            }
+        }
+    }
+
+    private fun findAllTriggerCameraMovements(): Set<ScenarioReference> {
+        val set: MutableSet<ScenarioReference> = mutableSetOf()
+
+        traverseTriggers(scenario.value!!.triggers, emptyList()) { address, action ->
+            if (action !is GameAction.MoveCamera) return@traverseTriggers
+            set.add(MoveCameraScenarioReference(address))
         }
         return set
     }

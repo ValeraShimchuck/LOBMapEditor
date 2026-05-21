@@ -39,7 +39,6 @@ fun WindowScope.CreateProjectWindow() {
     var errors: List<String> by remember { mutableStateOf(emptyList()) }
 
     fun create(): Boolean {
-        println("Before validating $form")
         val validate = CreateProjectData.validator.validate(form)
         if(validate.isValid) {
             errors = emptyList()

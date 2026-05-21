@@ -17,8 +17,6 @@ import kotlin.reflect.KClass
 
 interface DomainProperty<SELF: DomainProperty<SELF>> {
 
-
     val identification: String
-
 
 }
