@@ -17,17 +17,16 @@ import org.kodein.di.compose.rememberInstance
 import ua.valeriishymchuk.lobmapeditor.commands.UpdateGameTriggerListCommand
 import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
+import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerOrderReference
+import ua.valeriishymchuk.lobmapeditor.domain.reference.address.ObjectAddress
 import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.*
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
 import ua.valeriishymchuk.lobmapeditor.services.project.editor.EditorService
-import ua.valeriishymchuk.lobmapeditor.services.project.tool.ToolService
 import ua.valeriishymchuk.lobmapeditor.shared.refence.Reference
 import ua.valeriishymchuk.lobmapeditor.shared.utils.addImmutably
 import ua.valeriishymchuk.lobmapeditor.ui.component.common.*
-import java.lang.IllegalStateException
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalJewelApi::class, ExperimentalFoundationApi::class)
@@ -36,9 +35,7 @@ fun TriggerToolConfig() {
     // TODO
 
 
-    // implement move camera, make it as a reference object
-
-    // then finish the final boss
+    // Implement order issuing trigger
 
     // try make other actions other than order
     // think about how to show orders
@@ -48,11 +45,8 @@ fun TriggerToolConfig() {
     // make actions:
     // show relative coordinates of spawned neutral objectives
     // think of improving actions(adding ability to directly order)
-    // show units those might be affected by remove unit action
-    // Show move camera action on the map(maybe make it as an object that can be dragged
-    // If remove unit doesn't affect anyone then write a warning message
-    // If war is not defined anywhere(when polling in condition) - write a warning message
-
+    // If remove unit doesn't affect anyone then write a warning message. Same with OrderUnit(both for target and unit)
+    // If var is not defined anywhere(when polling in condition) - write a warning message
 
 
     // At some point add a tool that will convert replay to map
@@ -62,7 +56,8 @@ fun TriggerToolConfig() {
     val scenarioNullable by editorService.scenario.collectAsState()
     val scenario = scenarioNullable ?: return
 
-    TriggerComponent(Unit, editorService.scenario.value!!.triggers, { newTriggerList, flush ->
+    TriggerComponent(
+        Unit, editorService.scenario.value!!.triggers, { newTriggerList, flush ->
         val command = UpdateGameTriggerListCommand(
             scenario.triggers,
             newTriggerList
@@ -72,7 +67,9 @@ fun TriggerToolConfig() {
         } else {
             editorService.executeCompound(command)
         }
-    }, { editorService.flushCompound() })
+    }, { editorService.flushCompound() },
+        emptyList()
+    )
 
 }
 
@@ -84,6 +81,7 @@ private fun TriggerComponent(
     triggerList0: List<GameTrigger>,
     updateTriggerList: (List<GameTrigger>, Boolean) -> Unit, // newList, flush
     flush: () -> Unit,
+    addressPrepender: List<Int>
 ) {
 
     val editorService by rememberInstance<EditorService<*>>()
@@ -149,7 +147,6 @@ private fun TriggerComponent(
 
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger, flush: Boolean = true) {
         val reference = currentTriggerReference
-        println("Current trigger list: ${triggerList}")
         val newList = triggerList.mapIndexed { idx, value ->
             if (idx != reference) return@mapIndexed value
             updater(value)
@@ -157,16 +154,6 @@ private fun TriggerComponent(
 
         triggerList = newList
         updateTriggerList(newList, flush)
-
-//        val command = UpdateGameTriggerListCommand(
-//            oldList,
-//            newList
-//        )
-//        if (flush) {
-//            editorService.execute(command)
-//        } else {
-//            editorService.executeCompound(command)
-//        }
     }
 
     fun updateCurrentTrigger(updater: (GameTrigger) -> GameTrigger) {
@@ -1006,7 +993,11 @@ private fun TriggerComponent(
                             action.copy(triggers = newList)
                         }, flush)
                     },
-                    flush
+                    flush,
+                    addressPrepender.toMutableList().also { list ->
+                        list.add(nonNullReference)
+                        list.add(finalActionReference)
+                    }
                 )
             }
 
@@ -1028,6 +1019,7 @@ private fun TriggerComponent(
                 // keep in mind that internal list starts from 0, where as LoB's ids start from 1
 
             }
+
             is GameAction.EndGame -> {
                 Text("Reason:")
                 DropDown(
@@ -1043,6 +1035,7 @@ private fun TriggerComponent(
                     }
                 )
             }
+
             is GameAction.MoveCamera -> {
                 CenteredRow {
                     Text("Move to:")
@@ -1051,23 +1044,83 @@ private fun TriggerComponent(
                     })
                 }
             }
-            is GameAction.OrderUnit -> TODO()
+
+            is GameAction.OrderUnit -> {
+                // might be helpful https://github.com/sophie-games/lob-sdk/blob/main/src/types/trigger.ts#L342
+                // TODO maybe add a warning if there is no order and if unit for that order does not exist
+                // also if several target unit has the same name - write a warning
+
+                // order type
+
+                Text("Order type:")
+                DropDownNullable(
+                    action.type,
+                    GameAction.OrderType.entries.filter { it != GameAction.OrderType.PLACE_ENTITY },
+                    { _, type -> type.name },
+                    { _, type ->
+                        updateActionTyped(action) {
+                            it.copy(type = type)
+                        }
+                    }
+                )
+
+                DefaultVSpacer()
+
+                Text("Unit to order:")
+                ReactiveTextField(finalActionReference, action.unitName, { newName ->
+                    updateActionTyped(action, { action ->
+                        action.copy(
+                            unitName = newName
+                        )
+                    }, false)
+                }, onFocusLoss = flush)
+
+
+                if (action.type != null) {
+                    DefaultVSpacer()
+                    val currentRawReference = addressPrepender.toMutableList()
+                    currentRawReference.add(nonNullReference)
+                    currentRawReference.add(finalActionReference)
+                    val currentReference = ObjectAddress.fromRaw(currentRawReference)
+                    val selectedDrawOrder by  editorService.currentDrawOrderReference.collectAsState()
+                    if (selectedDrawOrder?.address == currentReference) {
+                        RedButton("Cancel draw order") { editorService.currentDrawOrderReference.value = null }
+                    } else {
+                        BlueButton(
+                            "Draw an order"
+                        ) {
+                            editorService.currentDrawOrderReference.value = TriggerOrderReference(currentReference)
+                        }
+                    }
+
+
+                }
+
+
+                // button for drawing an order
+
+                // TODO add order type selection and button to make an order
+                TODO()
+            }
+
             is GameAction.RemoveUnit -> {
                 Text("Units:")
-                println("Units to be removed: ${action.units}")
                 action.units.forEachIndexed { id, name ->
-                    ReactiveTextField(finalActionReference to id, name, { newName ->
-                        updateActionTyped(action, { action ->
-                            action.copy(
-                                units = action.units.toMutableList().also {
-                                    it[id] = newName
-                                }
-                            )
-                        }, false)
-                    },
-                        onFocusLoss = flush)
+                    ReactiveTextField(
+                        finalActionReference to id, name, { newName ->
+                            updateActionTyped(action, { action ->
+                                action.copy(
+                                    units = action.units.toMutableList().also {
+                                        it[id] = newName
+                                    }
+                                )
+                            }, false)
+                        },
+                        onFocusLoss = flush
+                    )
                 }
             }
+
             is GameAction.SetVar -> {
                 // name
                 Text("Name:")
@@ -1088,7 +1141,7 @@ private fun TriggerComponent(
                 FloatTextField(
                     finalActionReference,
                     { action.value },
-                    {  newValue ->
+                    { newValue ->
                         updateActionTyped(action, {
                             it.copy(
                                 value = newValue
@@ -1099,6 +1152,7 @@ private fun TriggerComponent(
                 )
                 // value
             }
+
             is GameAction.ShowMessage -> {
                 // title
                 Text("Title:")
@@ -1130,6 +1184,7 @@ private fun TriggerComponent(
                     onFocusLoss = flush
                 )
             }
+
             is GameAction.SpawnNeutralObjectives -> {
                 // per battle amount
                 val battleAmount = action.amount

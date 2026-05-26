@@ -3,14 +3,18 @@ package ua.valeriishymchuk.lobmapeditor.render.stage
 import androidx.compose.ui.graphics.Color
 import com.jogamp.opengl.GL.GL_TRIANGLES
 import org.joml.*
+import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
+import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.objective.ObjectiveType
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.player.PlayerTeam
 import ua.valeriishymchuk.lobmapeditor.domain.property.PositionProperty
+import ua.valeriishymchuk.lobmapeditor.domain.toVector2f
+import ua.valeriishymchuk.lobmapeditor.domain.toVector2i
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
-import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllCameraMovements
+import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllOrders
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllRemovableUnitsNames
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameTrigger.Companion.findAllUnits
 import ua.valeriishymchuk.lobmapeditor.domain.unit.*
@@ -121,6 +125,165 @@ class SpriteStage(
 
 
         glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+    }
+
+    private fun calculateArrowBody(start: Vector2f, end: Vector2f): Pair<Vector2f, Matrix4f>  {
+        val midPoint = start.lerp(end, 0.5f, Vector2f())
+        val size = start.distance(end)
+        val positionMatrix = Matrix4f()
+        positionMatrix.setTranslation(Vector3f(midPoint.x, midPoint.y, 0f))
+        positionMatrix.setRotationXYZ(0f, 0f, start.angle(end))
+        val selectionDimensions = Vector2f(
+            size,
+            8f * 0.8f
+        )
+        return selectionDimensions to positionMatrix
+    }
+
+    private fun deconstructPath(startPos: Position, positions: List<Position>): List<Pair<Vector2f, Vector2f>> {
+        var start = startPos
+        val list = mutableListOf<Pair<Vector2f, Vector2f>>()
+        positions.forEach { pos ->
+            list.add(start.toVector2f() to pos.toVector2f())
+            start = pos
+        }
+        return list
+    }
+
+    private fun RenderContext<*>.renderOrderArrows() {
+        val allOrders = scenario.triggers.findAllOrders()
+        val allUnits = listOf(scenario.triggers.findAllUnits(), (scenario as? GameScenario.Preset)?.units ?: listOf())
+            .flatten().filter { it.name != null }
+
+
+        val sortedByType: Map<Optional<GameAction.OrderType>, Map<List<GameAction.OrderUnit>, List<GameUnit>>> =
+            allOrders.groupBy { Optional.ofNullable(it.type) }
+                .mapValues { (_, orders) -> allUnits.groupBy { unit -> orders.filter { order -> order.unitName == unit.name } } }
+
+        val unitNameMap = allUnits.groupBy { it.name!! }
+                                    //   pos     , rotation
+        val arrowHeads: MutableMap<GameAction.OrderType, MutableList<Pair<Vector2f, Float>>>  = mutableMapOf()
+
+        // bodies
+
+        sortedByType.filter { it.key.isPresent }
+            .map { it.key.get() to it.value }.forEach { (orderType, ordersAndUnits) ->
+                spriteProgram.setUpVAO(glCtx)
+                spriteProgram.applyUniform(
+                    glCtx, SpriteProgram.Uniform(
+                        projectionMatrix,
+                        viewMatrix,
+                        true,
+                        false,
+                        Vector4f(
+                            orderType.color.x,
+                            orderType.color.y,
+                            orderType.color.z,
+                            1f
+                        ),
+                        textureStorage.arrowBody,
+                        -1
+                    )
+                )
+
+                val vbo = ordersAndUnits.map { (orders, units) ->
+                    units.map { unit ->
+                        orders.map { order ->
+                            if (order.path != null) {
+                                deconstructPath(unit.position, order.path).also { path ->
+                                    path.lastOrNull()?.let { last ->
+                                        arrowHeads.computeIfAbsent(order.type!!) { mutableListOf() }
+                                            .add(last.second to (order.rotation ?: last.first.angle(last.second)))
+                                    }
+                                }
+                            } else if (order.targetName != null) {
+                                unitNameMap[order.targetName]?.minBy { it.position.toVector2f().distance(unit.position.toVector2f()) }
+                                    ?.let { unit2 -> listOf(unit.position.toVector2f() to unit2.position.toVector2f() ) } ?: emptyList()
+
+                            } else if (order.pos != null) {
+                                listOf(unit.position.toVector2f() to order.pos.toVector2f()).also { path ->
+                                    path.lastOrNull()?.let { last ->
+                                        arrowHeads.computeIfAbsent(order.type!!) { mutableListOf() }
+                                            .add(last.second to (order.rotation ?: last.first.angle(last.second)))
+                                    }
+                                }
+                            } else {
+                                println("Invalid order $order")
+                                emptyList()
+                            }
+                        }
+                    }.flatten().flatten().map { (start, end) ->
+                        calculateArrowBody(start, end)
+                    }.map { (dimensions, matrix) ->
+
+                        SpriteProgram.BufferData(
+                            RectanglePoints.fromPoints(
+                                dimensions.mul(-0.5f, -0.5f, Vector2f()),
+                                dimensions.mul(0.5f, 0.5f, Vector2f()),
+                            ),
+                            RectanglePoints.TEXTURE_CORDS,
+                            matrix
+                        )
+                    }
+                }.flatten()
+
+
+                spriteProgram.setUpVBO(glCtx, vbo)
+
+
+                glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+            }
+
+        // arrow head
+
+        arrowHeads.forEach { (orderType, arrowHeadPoints) ->
+            spriteProgram.setUpVAO(glCtx)
+            spriteProgram.applyUniform(
+                glCtx, SpriteProgram.Uniform(
+                    projectionMatrix,
+                    viewMatrix,
+                    true,
+                    false,
+                    Vector4f(
+                        orderType.color.x,
+                        orderType.color.y,
+                        orderType.color.z,
+                        1f
+                    ),
+                    textureStorage.arrowHead,
+                    -1
+                )
+            )
+
+            val vbo = arrowHeadPoints.map { (pos, rotation) ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(pos.x, pos.y, 0f))
+                positionMatrix.setRotationXYZ(0f, 0f, rotation)
+                val selectionDimensions = Vector2f(
+                    48f,
+                    8f
+                ).mul(0.8f)
+                val arrowDimensions = Vector2f(
+                    32f
+                ).mul(0.5f)
+                SpriteProgram.BufferData(
+                    RectanglePoints.fromPoints(
+                        selectionDimensions.mul(0.8f, 0f, Vector2f())
+                            .add(arrowDimensions.mul(0f, -0.5f, Vector2f())),
+                        selectionDimensions.mul(0.8f, 0f, Vector2f())
+                            .add(arrowDimensions.mul(1f, 0.5f, Vector2f())),
+                    ),
+                    RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+            spriteProgram.setUpVBO(glCtx, vbo)
+
+
+            glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+        }
+
     }
 
     private fun RenderContext<*>.renderUnitArrows() {
@@ -482,6 +645,40 @@ class SpriteStage(
 
         }
 
+        val removableOrderUnits = scenario.triggers.findAllOrders().filter { it.type == null }.map { it.unitName }.toSet()
+
+        val removeOrderUnits = plainUnitList.filter { it.name != null && removableOrderUnits.contains(it.name) }
+
+        spriteProgram.setUpVAO(glCtx)
+        spriteProgram.applyUniform(
+            glCtx, SpriteProgram.Uniform(
+                projectionMatrix,
+                viewMatrix,
+                drawMask = false,
+                drawOverlay = true,
+                maskColor = Vector4f(),
+                maskTexture = -1,
+                overlayTexture = textureStorage.removeOrderIconTexture
+            )
+        )
+
+        if (removeOrderUnits.isNotEmpty()) {
+            val vbo = removeOrderUnits.map { unit ->
+                val positionMatrix = Matrix4f()
+                positionMatrix.setTranslation(Vector3f(unit.position.x + 25, unit.position.y - 14, 0f))
+                SpriteProgram.BufferData(
+                    RectanglePoints.centered(Vector2f(8f)),
+                    RectanglePoints.TEXTURE_CORDS,
+                    positionMatrix
+                )
+            }
+
+            if (!vbo.isEmpty()) {
+                spriteProgram.setUpVBO(glCtx, vbo)
+                glCtx.glDrawArrays(GL_TRIANGLES, 0, 6 * vbo.size)
+            }
+        }
+
         val removableUnits = plainUnitList.filter {
             it.name != null && removableUnitsNames.contains(it.name)
         }
@@ -499,6 +696,7 @@ class SpriteStage(
             )
         )
 
+        // Removed by trigger icon
         if (removableUnits.isNotEmpty()) {
             val vboInput = removableUnits.map { unit ->
                 val positionMatrix = Matrix4f()
@@ -566,6 +764,7 @@ class SpriteStage(
 
 
 
+        renderOrderArrows()
         renderSelections()
         renderCameraMovements()
         renderUnitArrows()

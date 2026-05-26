@@ -13,6 +13,7 @@ import ua.valeriishymchuk.lobmapeditor.domain.GameScenario
 import ua.valeriishymchuk.lobmapeditor.domain.objective.Objective
 import ua.valeriishymchuk.lobmapeditor.domain.reference.MoveCameraScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.ScenarioReference
+import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerOrderReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.TriggerScenarioReference
 import ua.valeriishymchuk.lobmapeditor.domain.reference.address.ObjectAddress
 import ua.valeriishymchuk.lobmapeditor.domain.trigger.GameAction
@@ -45,6 +46,8 @@ sealed class EditorService<T : GameScenario<T>>(
     var openglUpdateState = MutableStateFlow(0)
 
     var scenario: MutableStateFlow<T?> = MutableStateFlow(null)
+
+    val currentDrawOrderReference: MutableStateFlow<TriggerOrderReference?>  = MutableStateFlow(null)
 
     var selectedObjects: MutableStateFlow<Set<ScenarioReference>> = MutableStateFlow(emptySet())
 

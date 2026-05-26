@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.unit.GameUnit
+import kotlin.reflect.KClass
 
 data class GameTrigger(
     val actions: List<GameAction>,
@@ -59,40 +60,32 @@ data class GameTrigger(
 
     companion object {
 
-        fun List<GameTrigger>.findAllUnits(): List<GameUnit> {
+        fun <T: GameAction> List<GameTrigger>.findAllActions(kClass: Class<T>): List<T> {
             return this.flatMap { trigger ->
-                val list: MutableList<GameUnit> = trigger.actions.filterIsInstance<GameAction.AddUnit>()
-                    .flatMap { action -> action.gameUnits }
+                val list: MutableList<T> = trigger.actions.filterIsInstance(kClass)
                     .toMutableList()
                 val nestedTriggers = trigger.actions.filterIsInstance<GameAction.AddTrigger>().flatMap { it.triggers }
-                list.addAll(nestedTriggers.findAllUnits())
+                list.addAll(nestedTriggers.findAllActions(kClass))
                 list
             }
+        }
+
+        fun List<GameTrigger>.findAllOrders(): List<GameAction.OrderUnit> {
+            return findAllActions(GameAction.OrderUnit::class.java)
+        }
+
+        fun List<GameTrigger>.findAllUnits(): List<GameUnit> {
+            return findAllActions(GameAction.AddUnit::class.java).flatMap { it.gameUnits }
         }
 
         fun List<GameTrigger>.findAllRemovableUnitsNames(): Set<String> {
-            return this.flatMap { trigger ->
-                val set: MutableSet<String> = trigger.actions
-                    .filterIsInstance<GameAction.RemoveUnit>()
-                    .flatMap { action -> action.units }
-                    .toMutableSet()
-                val nestedTriggers = trigger.actions
-                    .filterIsInstance<GameAction.AddTrigger>()
-                    .flatMap { it.triggers }
-                set.addAll(nestedTriggers.findAllRemovableUnitsNames())
-                set
-            }.toSet()
+            return findAllActions(GameAction.RemoveUnit::class.java)
+                .flatMap { it.units}
+                .toSet()
         }
 
         fun List<GameTrigger>.findAllCameraMovements(): List<Position> {
-            return this.flatMap { trigger ->
-                val list: MutableList<Position> = trigger.actions.filterIsInstance<GameAction.MoveCamera>()
-                    .map { action -> action.position }
-                    .toMutableList()
-                val nestedTriggers = trigger.actions.filterIsInstance<GameAction.AddTrigger>().flatMap { it.triggers }
-                list.addAll(nestedTriggers.findAllCameraMovements())
-                list
-            }
+            return findAllActions(GameAction.MoveCamera::class.java).map { it.position }
         }
 
         val DEFAULT = GameTrigger(

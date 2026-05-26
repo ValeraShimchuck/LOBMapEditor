@@ -5,6 +5,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.joml.Vector2f
+import org.joml.Vector3f
 import ua.valeriishymchuk.lobmapeditor.domain.Position
 import ua.valeriishymchuk.lobmapeditor.domain.player.Player
 import ua.valeriishymchuk.lobmapeditor.domain.property.CameraProperty
@@ -282,14 +283,16 @@ sealed interface GameAction {
 
     }
 
-    enum class OrderType {
-        WALK,
-        RUN,
-        SHOOT,
-        FIRE_AND_ADVANCE,
-        PLACE_ENTITY,
-        FALLBACK,
-        ROTATE;
+    enum class OrderType(
+        val color: Vector3f,
+    ) {
+        WALK(Vector3f(85f, 85f, 255f).div(255f)),
+        RUN(Vector3f(255f, 85f, 85f).div(255f)),
+        SHOOT(Vector3f(255f, 255f, 85f).div(255f)),
+        FIRE_AND_ADVANCE(Vector3f(255f, 165f, 0f).div(255f)),
+        PLACE_ENTITY(Vector3f(0f, 165f, 255f).div(255f)),
+        FALLBACK(Vector3f(204f).div(255f)),
+        ROTATE(Vector3f(0f, 255f, 255f).div(255f));
         val id: Int get() = ordinal + 1
     }
 
@@ -312,9 +315,11 @@ sealed interface GameAction {
     data class OrderUnit(
         val type: OrderType?, // null will be serialized as -1
         val unitName: String,
-        val targetName: String?,
-        val path: List<Position>?, // positions will be stored as array of 2 numbers
-        val pos: Position?,
+        // either targetName, path or pos should be used(exclusively)
+        val targetName: String?, // For orders that require a target (follow, shoot, etc.).
+        val path: List<Position>?, // positions will be stored as array of 2 numbers. For orders with path (movement, etc.).
+        val pos: Position?, // For orders with position (shoot at location, etc.).
+
         val rotation: Float? // in radians
 
     ): GameAction{
